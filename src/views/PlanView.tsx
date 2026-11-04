@@ -3,7 +3,8 @@ import { addDays, fmtDate } from '../dates';
 import { appendStop, branchesOf, chosenOption, legOvernight, outs, schedule, setActiveOut } from '../model';
 import { go } from '../nav';
 import { useStore } from '../store';
-import { legSummary, Stepper } from '../ui';
+import { Icon } from '../icons';
+import { LegSummary, Stepper } from '../ui';
 
 export function PlanView() {
   const { plan, update } = useStore();
@@ -68,7 +69,7 @@ export function PlanView() {
             {aLeg && (
               <div className="legrow" onClick={() => go({ view: 'place', id })}>
                 <span className="line" />
-                <span className="pill">{legSummary(aLeg)}</span>
+                <span className="pill"><LegSummary leg={aLeg} /></span>
                 {aLeg.options.length > 1 && <span className="pill alt">{aLeg.options.length} options</span>}
                 {chosenOption(aLeg)?.cost && <span className="pill alt">{chosenOption(aLeg)!.cost}</span>}
               </div>
@@ -77,7 +78,7 @@ export function PlanView() {
         );
       })}
       <button className="big" onClick={() => update((d) => { const last = s.path[s.path.length - 1]; const n = appendStop(d, last); setTimeout(() => go({ view: 'place', id: n }), 0); })}>
-        ＋ Add stop
+        <Icon name="plus" size={16} /> Add stop
       </button>
       {orphans.length > 0 && (
         <section className="card">

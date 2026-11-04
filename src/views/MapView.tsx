@@ -4,6 +4,7 @@ import { fmtShortDate, addDays } from '../dates';
 import { chosenOption, liveLegs, liveStops, schedule } from '../model';
 import { go } from '../nav';
 import { useStore } from '../store';
+import { iconSvgString } from '../icons';
 import { modeIcon } from '../ui';
 
 export function MapView() {
@@ -53,7 +54,7 @@ export function MapView() {
         dashArray: active ? undefined : '6 8',
         opacity: active ? 0.9 : 0.8,
       }).addTo(g);
-      if (o) line.bindTooltip(`${modeIcon(o.mode)} ${o.mode}${o.duration ? ' · ' + o.duration : ''}${o.overnight ? ' 🌙' : ''}`, { sticky: true });
+      if (o) line.bindTooltip(`${iconSvgString(modeIcon(o.mode))} ${o.mode}${o.duration ? ' · ' + o.duration : ''}${o.overnight ? ' ' + iconSvgString('moon') : ''}`, { sticky: true });
     }
     for (const x of stops) {
       const p = at(x.id);

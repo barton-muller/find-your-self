@@ -1,74 +1,72 @@
 import { useMemo } from 'react';
 import { addDays, diffDays, fmtMonthName } from '../dates';
 import { chosenOption, lanes, legOvernight, liveLegs, liveStops, schedule } from '../model';
+import { iconPath } from '../icons';
 import { go } from '../nav';
 import { useStore } from '../store';
 import { modeIcon } from '../ui';
 
-const LANE_H = 78;
-const TOP = 44;
-const PAD = 16;
+const PPD = 34;
+const AXIS = 60;
+const TOP = 12;
+const BAR = 16;
+
+const WEEKDAY = new Intl.DateTimeFormat('en-GB', { weekday: 'narrow', timeZone: 'UTC' });
 
 export function Timeline() {
   const { plan } = useStore();
-  const PPD = Math.max(30, Math.floor((window.innerWidth - 40) / (Math.max(diffDays(plan.start, plan.end), 1) + 1)));
   const s = useMemo(() => schedule(plan), [plan]);
   const lane = useMemo(() => lanes(plan, s), [plan, s]);
   const days = Math.max(diffDays(plan.start, plan.end), 1);
   const stops = liveStops(plan).filter((x) => s.arrive[x.id] !== undefined);
-  const maxArrive = Math.max(days, ...stops.map((x) => s.arrive[x.id] + x.nights));
+  const maxDay = Math.max(days, ...stops.map((x) => s.arrive[x.id] + x.nights));
   const nLanes = Math.max(1, ...stops.map((x) => lane[x.id] + 1));
-  const W = PAD * 2 + (maxArrive + 1) * PPD;
-  const H = TOP + nLanes * LANE_H + 10;
-  const X = (d: number) => PAD + d * PPD;
-  const Y = (l: number) => TOP + l * LANE_H + 44;
-
-  const ticks = Array.from({ length: maxArrive + 1 }, (_, i) => i);
-  const perLane: Record<number, string[]> = {};
-  stops
-    .slice()
-    .sort((a, b) => s.arrive[a.id] - s.arrive[b.id])
-    .forEach((x) => {
-      const l = lane[x.id];
-      (perLane[l] ??= []).push(x.id);
-    });
+  const laneW = Math.max(150, Math.min(210, Math.floor((window.innerWidth - AXIS - 20) / nLanes)));
+  const W = AXIS + nLanes * laneW + 24;
+  const H = TOP + (maxDay + 1) * PPD + 20;
+  const Y = (d: number) => TOP + d * PPD;
+  const X = (l: number) => AXIS + 14 + l * laneW;
 
   return (
     <div className="tl-scroll">
       <svg width={W} height={H} role="img" aria-label="Trip timeline">
-        {ticks.map((i) => {
+        {Array.from({ length: maxDay + 1 }, (_, i) => {
           const d = addDays(plan.start, i);
           const dayNum = Number(d.slice(8));
           const first = dayNum === 1 || i === 0;
-          const weekly = i % 7 === 0;
+          const weekStart = new Date(d + 'T00:00:00Z').getUTCDay() === 1;
           return (
             <g key={i}>
-              <line x1={X(i)} x2={X(i)} y1={first ? 14 : TOP - 8} y2={H} className={first ? 'grid month' : weekly ? 'grid week' : 'grid'} />
-              {first && <text x={X(i) + 3} y={12} className="mon">{fmtMonthName(d)}</text>}
-              {(weekly || dayNum === 1) && <text x={X(i)} y={TOP - 12} textAnchor="middle" className="tick">{dayNum}</text>}
+              <line x1={AXIS - 4} x2={W} y1={Y(i)} y2={Y(i)} className={first ? 'grid month' : weekStart ? 'grid week' : 'grid'} />
+              <text x={AXIS - 8} y={Y(i) + PPD - 9} textAnchor="end" className="tick">
+                {dayNum} <tspan className="wd">{WEEKDAY.format(new Date(d + 'T00:00:00Z'))}</tspan>
+              </text>
+              {first && <text x={AXIS - 8} y={Y(i) + 12} textAnchor="end" className="mon">{fmtMonthName(d)}</text>}
             </g>
           );
         })}
-        <line x1={X(days)} x2={X(days)} y1={14} y2={H} className="endline" />
-        <text x={X(days) - 4} y={H - 4} textAnchor="end" className="tick">end</text>
+        <line x1={AXIS - 4} x2={W} y1={Y(days)} y2={Y(days)} className="endline" />
+        <text x={W - 6} y={Y(days) - 4} textAnchor="end" className="tick">trip end</text>
 
         {liveLegs(plan).map((l) => {
           if (s.arrive[l.from] === undefined || s.arrive[l.to] === undefined) return null;
           const fa = plan.stops[l.from];
-          const x1 = X(s.arrive[l.from] + fa.nights);
-          const x2 = X(s.arrive[l.to]);
-          const y1 = Y(lane[l.from]);
-          const y2 = Y(lane[l.to]);
-          const mx = (x1 + x2) / 2;
+          const x1 = X(lane[l.from]) + BAR / 2;
+          const x2 = X(lane[l.to]) + BAR / 2;
+          const y1 = Y(s.arrive[l.from] + fa.nights);
+          const y2 = Y(s.arrive[l.to]);
+          const my = (y1 + y2) / 2;
           const active = s.activeLegs.has(l.id);
           const o = chosenOption(l);
+          const ix = Math.min(x1, x2) - BAR / 2 - 11;
           return (
             <g key={l.id} className={active ? 'edge on' : 'edge'}>
-              <path d={`M${x1},${y1} C${mx + 12},${y1} ${mx - 12},${y2} ${x2},${y2}`} fill="none" />
+              <path d={`M${x1},${y1} C${x1},${my + 10} ${x2},${my - 10} ${x2},${y2}`} fill="none" />
               {active && o && (
-                <text x={mx} y={(y1 + y2) / 2 - 6} textAnchor="middle" className="ico">
-                  {modeIcon(o.mode)}{legOvernight(l) ? '🌙' : ''}
-                </text>
+                <g transform={`translate(${ix - 8},${Math.max(my, y1 + 8) - 8}) scale(0.67)`} className="eic">
+                  <path d={iconPath(modeIcon(o.mode))} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+                  {legOvernight(l) && <path transform="translate(0,20)" d={iconPath('moon')} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinejoin="round" />}
+                </g>
               )}
             </g>
           );
@@ -77,14 +75,12 @@ export function Timeline() {
         {stops.map((x) => {
           const l = lane[x.id];
           const on = s.onPath.has(x.id);
-          const idx = perLane[l].indexOf(x.id);
-          const w = Math.max(x.nights * PPD, 10);
+          const h = Math.max(x.nights * PPD, 6);
           return (
             <g key={x.id} className={`node ${on ? 'on' : 'alt'}`} onClick={() => go({ view: 'place', id: x.id })} style={{ cursor: 'pointer' }}>
-              <rect x={X(s.arrive[x.id])} y={Y(l) - 9} width={w} height={18} rx={9} />
-              <text x={X(s.arrive[x.id]) + 2} y={Y(l) - 14 - (idx % 2) * 14} className="lbl">
-                {x.name || '…'} <tspan className="n">{x.nights}n</tspan>
-              </text>
+              <rect x={X(l)} y={Y(s.arrive[x.id])} width={BAR} height={h} rx={BAR / 2} />
+              <text x={X(l) + BAR + 8} y={Y(s.arrive[x.id]) + 14} className="lbl">{x.name || '…'}</text>
+              <text x={X(l) + BAR + 8} y={Y(s.arrive[x.id]) + 28} className="n">{x.nights} {x.nights === 1 ? 'night' : 'nights'}</text>
             </g>
           );
         })}

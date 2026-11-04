@@ -1,0 +1,40 @@
+export type IconName =
+  | 'plane' | 'train' | 'bus' | 'boat' | 'car' | 'bike' | 'walk' | 'arrow' | 'moon'
+  | 'list' | 'map' | 'timeline' | 'settings' | 'check' | 'sync' | 'alert' | 'fork' | 'plus' | 'x' | 'cloud' | 'minus';
+
+const P: Record<IconName, string> = {
+  plane: 'M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z',
+  train: 'M7 3h10a2 2 0 0 1 2 2v10a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V5a2 2 0 0 1 2-2zM5 11h14M8 21l2-3M16 21l-2-3M8.5 14.5h.01M15.5 14.5h.01',
+  bus: 'M5 4h14a2 2 0 0 1 2 2v11H3V6a2 2 0 0 1 2-2zM3 11h18M7 17v3M17 17v3M7.5 14h.01M16.5 14h.01',
+  boat: 'M2 17l2 3h16l2-3zM12 3v11M12 4l6 9h-6M12 8l-5 5h5',
+  car: 'M4 17v-5l2-5h12l2 5v5zM4 12h16M7 17v2M17 17v2M7.5 14.5h.01M16.5 14.5h.01',
+  bike: 'M3 17a3 3 0 1 0 6 0 3 3 0 1 0-6 0M15 17a3 3 0 1 0 6 0 3 3 0 1 0-6 0M6 17l4-7h5l3 7M10 10 8 7H6',
+  walk: 'M12 5a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0-3 0M13 8l-2 5 3 3v5M11 13l-3 1M13 8l3 3 3 1M14 16l-2 5',
+  arrow: 'M5 12h14M13 6l6 6-6 6',
+  moon: 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z',
+  list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14',
+  timeline: 'M6 3v18M6 7h9M6 12h13M6 17h7',
+  settings: 'M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4',
+  check: 'M5 12l5 5L20 7',
+  sync: 'M21 12a9 9 0 0 1-15.5 6.2M3 12a9 9 0 0 1 15.5-6.2M18 2v4h-4M6 22v-4h4',
+  alert: 'M12 4 22 21H2zM12 10v5M12 18h.01',
+  fork: 'M12 21v-7M12 14 6 6M12 14l6-8M4 4h4M16 4h4',
+  plus: 'M12 5v14M5 12h14',
+  minus: 'M5 12h14',
+  x: 'M6 6l12 12M18 6 6 18',
+  cloud: 'M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z',
+};
+
+export const iconPath = (n: IconName) => P[n];
+
+export function Icon({ name, size = 18, className }: { name: IconName; size?: number; className?: string }) {
+  return (
+    <svg className={`ic ${className ?? ''}`} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={P[name]} />
+    </svg>
+  );
+}
+
+export const iconSvgString = (n: IconName, size = 14) =>
+  `<svg class="ic" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="${P[n]}"/></svg>`;

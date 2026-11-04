@@ -96,13 +96,22 @@ button.big { width: 100%; padding: 14px; border-style: dashed; color: var(--acce
 .maplabel { font-size: 12px; font-weight: 600; padding: 1px 6px; }
 .tl-scroll { overflow: auto; height: 100%; -webkit-overflow-scrolling: touch; background: var(--bg); }
 .tl-scroll svg { display: block; font-family: inherit; }
-.tl-scroll .grid { stroke: var(--line); stroke-width: 1; opacity: .35; }
-.tl-scroll .grid.week { opacity: .7; } .tl-scroll .grid.month { stroke: var(--muted); opacity: .6; }
+.tl-scroll .grid { stroke: var(--line); stroke-width: 1; opacity: .5; }
+.tl-scroll .grid.week { opacity: 1; } .tl-scroll .grid.month { stroke: var(--muted); }
 .tl-scroll .endline { stroke: var(--danger); stroke-dasharray: 4 4; }
-.tl-scroll .tick { fill: var(--muted); font-size: 10px; } .tl-scroll .mon { fill: var(--ink); font-size: 11px; font-weight: 700; }
+.tl-scroll .tick { fill: var(--muted); font-size: 11px; } .tl-scroll .wd { opacity: .7; }
+.tl-scroll .mon { fill: var(--ink); font-size: 11px; font-weight: 700; }
 .tl-scroll .edge path { stroke: var(--alt); stroke-width: 2; stroke-dasharray: 5 5; }
 .tl-scroll .edge.on path { stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: none; }
-.tl-scroll .edge .ico { font-size: 13px; }
+.tl-scroll .eic { color: var(--ink); }
 .tl-scroll .node rect { fill: var(--accent); } .tl-scroll .node.alt rect { fill: var(--alt); }
-.tl-scroll .node .lbl { fill: var(--ink); font-size: 12px; font-weight: 600; } .tl-scroll .node .n { fill: var(--muted); font-weight: 400; }
+.tl-scroll .node .lbl { fill: var(--ink); font-size: 13px; font-weight: 600; } .tl-scroll .node .n { fill: var(--muted); font-size: 11px; }
+.ic { flex: none; vertical-align: -3px; }
+.moon { color: var(--fork); }
+.ls { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.sync { display: inline-flex; align-items: center; gap: 4px; }
+.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
+button.big { display: flex; justify-content: center; align-items: center; gap: 6px; }
+.actions button { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.stepper button { display: grid; place-items: center; }
 @media (min-width: 700px) { .top { padding-left: 24px; padding-right: 24px; } .page { padding-top: 20px; } }

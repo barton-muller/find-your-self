@@ -7,7 +7,8 @@ import {
 import { CITIES, findCity } from '../cities';
 import { go } from '../nav';
 import { useStore } from '../store';
-import { AutoTextarea, legSummary, modeIcon, Stepper } from '../ui';
+import { Icon } from '../icons';
+import { AutoTextarea, LegSummary, modeIcon, Stepper } from '../ui';
 import type { Leg } from '../types';
 
 const MODES = ['Flight', 'Train', 'Bus', 'Minivan', 'Sleeper bus', 'Sleeper train', 'Boat', 'Ferry', 'Slow boat', 'Taxi', 'Motorbike', 'Car'];
@@ -123,7 +124,7 @@ export function Place({ id }: { id: string }) {
           <div key={i} className="card day">
             <div className="label">
               {lbl}{d && ` · ${fmtDate(d)}`}
-              {i === st.nights && outLeg && legOvernight(outLeg) && ' · 🌙 overnight travel'}
+              {i === st.nights && outLeg && legOvernight(outLeg) && <> · <Icon name="moon" size={13} className="moon" /> overnight travel</>}
             </div>
             <AutoTextarea
               value={st.days[i] ?? ''}
@@ -139,7 +140,7 @@ export function Place({ id }: { id: string }) {
       {prev.map((l) => (
         <div key={l.id} className="card row" onClick={() => go({ view: 'place', id: l.from })}>
           <span>From <b>{plan.stops[l.from].name}</b></span>
-          <span className="pill">{legSummary(l)}</span>
+          <span className="pill"><LegSummary leg={l} /></span>
         </div>
       ))}
 
@@ -151,9 +152,9 @@ export function Place({ id }: { id: string }) {
 
       <div className="actions">
         <button onClick={() => update((d) => { const n = appendStop(d, id); setTimeout(() => go({ view: 'place', id: n }), 0); })}>
-          ＋ {next.length === 1 ? 'Insert stop after' : next.length === 0 ? 'Next stop' : 'Stop on active route'}
+          <Icon name="plus" size={16} /> {next.length === 1 ? 'Insert stop after' : next.length === 0 ? 'Next stop' : 'Stop on active route'}
         </button>
-        <button onClick={() => update((d) => { const n = addBranch(d, id); setTimeout(() => go({ view: 'place', id: n }), 0); })}>⑂ Add branch</button>
+        <button onClick={() => update((d) => { const n = addBranch(d, id); setTimeout(() => go({ view: 'place', id: n }), 0); })}><Icon name="fork" size={16} /> Add branch</button>
         {linkable.length > 0 && (
           <div className="linkrow">
             <select value={linkTo} onChange={(e) => setLinkTo(e.target.value)}>
@@ -205,12 +206,12 @@ function LegEditor({ leg, fork, active }: { leg: Leg; fork: boolean; active: boo
                 <input type="radio" name={`c-${leg.id}`} checked={leg.chosen === o.id} onChange={() => edit((l) => { l.chosen = o.id; })} />
                 <span>{leg.chosen === o.id ? 'Chosen' : 'Use'}</span>
               </label>
-              <span className="ico">{modeIcon(o.mode)}</span>
+              <Icon name={modeIcon(o.mode)} size={22} className="ico" />
               <input list="modes" className="mode" value={o.mode} placeholder="Mode" onChange={(e) => upd((x) => { x.mode = e.target.value; })} />
               <button className="x" aria-label="remove option" onClick={() => edit((l) => {
                 l.options = l.options.filter((x) => x.id !== o.id);
                 if (l.chosen === o.id) l.chosen = l.options[0]?.id ?? null;
-              })}>✕</button>
+              })}><Icon name="x" size={14} /></button>
             </div>
             <div className="grid2">
               <input value={o.duration} placeholder="Duration (e.g. 10h)" onChange={(e) => upd((x) => { x.duration = e.target.value; })} />
@@ -218,7 +219,7 @@ function LegEditor({ leg, fork, active }: { leg: Leg; fork: boolean; active: boo
             </div>
             <input value={o.notes} placeholder="Notes: operator, times, booking…" onChange={(e) => upd((x) => { x.notes = e.target.value; })} />
             <div className="rowflex">
-              <label className="check"><input type="checkbox" checked={o.overnight} onChange={(e) => upd((x) => { x.overnight = e.target.checked; })} /> 🌙 Overnight</label>
+              <label className="check"><input type="checkbox" checked={o.overnight} onChange={(e) => upd((x) => { x.overnight = e.target.checked; })} /> <Icon name="moon" size={15} className="moon" /> Overnight</label>
               <label className="check">
                 +days
                 <input type="number" min={0} className="num" value={o.extraDays} onChange={(e) => upd((x) => { x.extraDays = Math.max(0, parseInt(e.target.value || '0', 10)); })} />
@@ -227,7 +228,7 @@ function LegEditor({ leg, fork, active }: { leg: Leg; fork: boolean; active: boo
           </div>
         );
       })}
-      <button className="link" onClick={() => edit((l) => { const o = newOption(''); l.options.push(o); if (!l.chosen) l.chosen = o.id; })}>＋ Add option</button>
+      <button className="link" onClick={() => edit((l) => { const o = newOption(''); l.options.push(o); if (!l.chosen) l.chosen = o.id; })}><Icon name="plus" size={14} /> Add option</button>
       <datalist id="modes">{MODES.map((m) => <option key={m} value={m} />)}</datalist>
     </div>
   );

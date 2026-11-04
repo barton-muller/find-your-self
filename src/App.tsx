@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { addDays, diffDays, fmtShortDate } from './dates';
 import { schedule, totals } from './model';
+import { Icon } from './icons';
 import { go, useRoute, href } from './nav';
 import { useStore } from './store';
 import { MapView } from './views/MapView';
@@ -9,7 +10,8 @@ import { PlanView } from './views/PlanView';
 import { Settings } from './views/Settings';
 import { Timeline } from './views/Timeline';
 
-const syncDot = { off: '', idle: '○', syncing: '↻', ok: '●', error: '⚠' } as const;
+const syncIcon = { off: null, idle: 'cloud', syncing: 'sync', ok: 'check', error: 'alert' } as const;
+const tabIcon = { plan: 'list', map: 'map', timeline: 'timeline' } as const;
 
 export function App() {
   const { plan, sync, setMeta } = useStore();
@@ -34,7 +36,8 @@ export function App() {
           </small>
         </div>
         <a className={`sync s-${sync.status}`} href={href({ view: 'settings' })} title={sync.error ?? sync.status}>
-          {syncDot[sync.status]} ⚙
+          {syncIcon[sync.status] && <Icon name={syncIcon[sync.status]!} size={16} className={sync.status === 'syncing' ? 'spin' : ''} />}
+          <Icon name="settings" size={20} />
         </a>
       </header>
       <main>
@@ -47,7 +50,7 @@ export function App() {
       <nav className="tabs">
         {(['plan', 'map', 'timeline'] as const).map((v) => (
           <button key={v} className={tab === v ? 'on' : ''} onClick={() => go({ view: v })}>
-            <span>{v === 'plan' ? '☰' : v === 'map' ? '🗺️' : '📊'}</span>
+            <Icon name={tabIcon[v]} size={22} />
             {v === 'plan' ? 'Plan' : v === 'map' ? 'Map' : 'Timeline'}
           </button>
         ))}

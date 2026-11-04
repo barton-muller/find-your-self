@@ -46,7 +46,7 @@ export function App() {
         {route.view === 'settings' && <Settings />}
       </main>
       <nav className="tabs">
-        {(['plan', 'map', 'timeline'] as const).map((v) => (
+        {(['map', 'timeline', 'plan'] as const).map((v) => (
           <button key={v} className={tab === v ? 'on' : ''} onClick={() => go({ view: v })}>
             <Icon name={tabIcon[v]} size={22} />
             {v === 'plan' ? 'Plan' : v === 'map' ? 'Map' : 'Timeline'}

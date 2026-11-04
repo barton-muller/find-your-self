@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { addDays, fmtDate } from '../dates';
 import {
   addBranch, appendStop, colorIndex, deleteLeg, deleteStop, insertOnLeg, ins, legOvernight, liveStops, linkStops, newOption, outs,
@@ -27,6 +27,19 @@ export function Place({ id }: { id: string }) {
   const ci = useMemo(() => colorIndex(plan, s), [plan, s]);
   const [coordDraft, setCoordDraft] = useState<{ id: string; v: string } | null>(null);
   const [linkTo, setLinkTo] = useState('');
+  const nameRef = useRef<HTMLInputElement>(null);
+  const isNew = st?.name === 'New stop';
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    if (isNew) {
+      const t = setTimeout(() => {
+        nameRef.current?.focus();
+        nameRef.current?.select();
+      }, 50);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   if (!st || st.deleted) {
     return (
@@ -74,6 +87,7 @@ export function Place({ id }: { id: string }) {
 
       <section className="card cbar" style={{ '--cc': `var(--c${ci[id] ?? 0})` } as React.CSSProperties}>
         <CitySearch
+          inputRef={nameRef}
           value={st.name}
           onType={(v) => {
             const c = findCity(v);

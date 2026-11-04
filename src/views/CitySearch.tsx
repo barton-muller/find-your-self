@@ -42,11 +42,12 @@ async function onlineHits(q: string, signal: AbortSignal): Promise<CityHit[]> {
 }
 
 export function CitySearch({
-  value, onType, onPick,
+  value, onType, onPick, inputRef,
 }: {
   value: string;
   onType: (v: string) => void;
   onPick: (h: CityHit) => void;
+  inputRef?: React.Ref<HTMLInputElement>;
 }) {
   const [focus, setFocus] = useState(false);
   const [online, setOnline] = useState<CityHit[]>([]);
@@ -84,6 +85,7 @@ export function CitySearch({
   return (
     <div className="citysearch">
       <input
+        ref={inputRef}
         className="title"
         value={value}
         placeholder="Search city…"

@@ -108,8 +108,8 @@ export function PlanView() {
                   {aLeg.options.length > 1 && <span className="pill alt">{aLeg.options.length} options</span>}
                   {chosenOption(aLeg)?.cost && <span className="pill alt">{chosenOption(aLeg)!.cost}</span>}
                 </span>
-                <button className="link ins" onClick={() => update((d) => openNew(insertOnLeg(d, aLeg.id)))}>
-                  <Icon name="plus" size={14} /> stop between
+                <button className="ins" aria-label="insert stop between" title="Insert stop between" onClick={() => update((d) => openNew(insertOnLeg(d, aLeg.id)))}>
+                  <Icon name="plus" size={16} />
                 </button>
               </div>
             )}

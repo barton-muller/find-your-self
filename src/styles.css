@@ -65,10 +65,10 @@ button.big { width: 100%; padding: 14px; border-style: dashed; color: var(--acce
 .branch { display: flex; gap: 10px; align-items: center; padding: 8px; border: 1px solid var(--line); border-radius: 10px; margin-top: 6px; }
 .branch.on { border-color: var(--fork); background: color-mix(in srgb, var(--fork) 10%, transparent); }
 .branch small { display: block; color: var(--muted); }
-.legrow { display: flex; gap: 6px; align-items: center; padding: 0 0 10px 13px; margin-top: -2px; flex-wrap: wrap; }
+.legrow { display: flex; gap: 6px; align-items: center; padding: 0 0 10px 13px; margin-top: -2px; }
 .legrow .line { width: 3px; height: 26px; background: var(--cc, var(--accent)); opacity: .6; margin-right: 8px; border-radius: 2px; }
-.legrow .go { cursor: pointer; display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-.legrow .ins { margin-left: auto; font-size: 13px; padding: 4px 8px; }
+.legrow .go { cursor: pointer; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; flex: 1; min-width: 0; }
+.legrow .ins { flex: none; width: 34px; height: 34px; padding: 0; border-radius: 50%; display: grid; place-items: center; color: var(--accent); border-style: dashed; }
 .pill { font-size: 13px; background: var(--accent-soft); color: var(--ink); padding: 3px 10px; border-radius: 99px; }
 .pill.alt { background: var(--line); color: var(--muted); }
 .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; cursor: pointer; }

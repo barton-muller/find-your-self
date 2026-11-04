@@ -2,7 +2,7 @@
   --bg: #FFFCF0; --bg2: #F2F0E5; --card: #FFFCF0; --ink: #100F0F; --muted: #6F6E69; --line: #E6E4D9; --line2: #CECDC3;
   --accent: #24837B; --accent-ink: #FFFCF0; --accent-soft: #C6E5DF; --warn: #BC5215; --danger: #AF3029; --alt: #B7B5AC; --fork: #5E409D;
   --c0: #205EA6; --c1: #BC5215; --c2: #66800B; --c3: #A02F6F; --c4: #24837B; --c5: #AD8301; --c6: #5E409D; --c7: #AF3029; --cink: #FFFCF0;
-  --hh: 56px; --th: 58px; --radius: 14px;
+  --hh: 46px; --th: 54px; --sat: 0px; --sab: 0px; --radius: 14px;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -12,20 +12,21 @@
     --c0: #4385BE; --c1: #DA702C; --c2: #879A39; --c3: #CE5D97; --c4: #3AA99F; --c5: #D0A215; --c6: #8B7EC8; --c7: #D14D41; --cink: #100F0F;
   }
 }
+@media (display-mode: standalone) { :root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); } }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { background: var(--bg); }
 body { margin: 0; min-height: 100dvh; background: var(--bg); color: var(--ink); font: 16px/1.4 -apple-system, system-ui, 'Segoe UI', Roboto, sans-serif;
-  padding-top: calc(var(--hh) + env(safe-area-inset-top)); padding-bottom: calc(var(--th) + env(safe-area-inset-bottom)); }
+  padding-top: calc(var(--hh) + var(--sat)); padding-bottom: calc(var(--th) + var(--sab)); }
 .boot { padding: 40px; text-align: center; color: var(--muted); }
-.top { position: fixed; z-index: 2000; top: 0; left: 0; right: 0; height: calc(var(--hh) + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 14px 0;
+.top { position: fixed; z-index: 2000; top: 0; left: 0; right: 0; height: calc(var(--hh) + var(--sat)); padding: var(--sat) 14px 0;
   display: flex; align-items: center; gap: 10px; background: var(--card); border-bottom: 1px solid var(--line); }
-.budget { line-height: 1.15; font-size: 17px; }
-.budget small { display: block; color: var(--muted); font-size: 12px; }
+.budget { line-height: 1.1; font-size: 16px; }
+.budget small { display: block; color: var(--muted); font-size: 11px; }
 .budget.over b { color: var(--danger); } .budget.under b { color: var(--warn); } .budget.ok b { color: var(--accent); }
 .spacer { flex: 1; }
 .sync { text-decoration: none; color: var(--muted); display: inline-flex; align-items: center; gap: 8px; padding: 8px; }
 .sync.s-error { color: var(--danger); } .sync.s-ok { color: var(--accent); } .sync.on { color: var(--accent); }
-.tabs { position: fixed; z-index: 2000; bottom: 0; left: 0; right: 0; height: calc(var(--th) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom);
+.tabs { position: fixed; z-index: 2000; bottom: 0; left: 0; right: 0; height: calc(var(--th) + var(--sab)); padding-bottom: var(--sab);
   display: flex; background: var(--card); border-top: 1px solid var(--line); }
 .tabs button { flex: 1; border: 0; border-radius: 0; background: none; color: var(--muted); font: inherit; font-size: 12px; padding: 6px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
 .tabs button.on { color: var(--accent); font-weight: 600; }
@@ -105,7 +106,7 @@ button.big { width: 100%; padding: 14px; border-style: dashed; color: var(--acce
 .moon { color: var(--fork); }
 .ls { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
-.mapwrap { position: fixed; z-index: 1; top: calc(var(--hh) + env(safe-area-inset-top)); bottom: calc(var(--th) + env(safe-area-inset-bottom)); left: 0; right: 0; display: flex; flex-direction: column; }
+.mapwrap { position: fixed; z-index: 1; top: calc(var(--hh) + var(--sat)); bottom: calc(var(--th) + var(--sab)); left: 0; right: 0; display: flex; flex-direction: column; }
 .map { flex: 1; min-height: 0; background: var(--bg2); }
 .maphint { padding: 8px 12px; font-size: 13px; background: var(--card); border-top: 1px solid var(--line); }
 .pin { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 12px; border: 2px solid #FFFCF0; box-shadow: 0 1px 4px #0006; color: var(--cink); }

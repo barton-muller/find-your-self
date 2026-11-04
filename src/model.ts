@@ -342,7 +342,7 @@ export const checklist = (p: Plan, s: Schedule, today = -1e9): CheckItem[] => {
       due: t.due ? parseDate(t.due) - parseDate(p.start) : null, done: t.done, todoId: t.id,
     });
   }
-  return out;
+  return out.filter((i) => i.due === null || i.due >= today);
 };
 
 export const sortCheck = (a: CheckItem, b: CheckItem) =>

@@ -64,8 +64,15 @@ export function mergePlans(local: Plan, remote: Plan): Plan {
   for (const id of new Set([...Object.keys(local.legs), ...Object.keys(remote.legs)])) {
     legs[id] = newer(local.legs[id], remote.legs[id])!;
   }
+  const todos: NonNullable<Plan['todos']> = {};
+  const lt = local.todos ?? {};
+  const rt = remote.todos ?? {};
+  for (const id of new Set([...Object.keys(lt), ...Object.keys(rt)])) {
+    todos[id] = newer(lt[id], rt[id])!;
+  }
   return {
     v: 1,
+    todos,
     start: metaWinner.start,
     end: metaWinner.end,
     startId: metaWinner.startId,

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { addDays, fmtDate } from '../dates';
 import {
   addBranch, appendStop, colorIndex, deleteLeg, deleteStop, insertOnLeg, ins, legOvernight, liveStops, linkStops, newOption, outs,
-  reachable, schedule, setActiveOut, touchLeg, touchStop,
+  hotelNights, reachable, schedule, setActiveOut, touchLeg, touchStop,
 } from '../model';
 import { CITIES, findCity } from '../cities';
 import { go } from '../nav';
@@ -116,6 +116,18 @@ export function Place({ id }: { id: string }) {
         <AutoTextarea value={st.notes} placeholder="Notes: accommodation, ideas, bookings…" onChange={(e) => edit((x) => { x.notes = e.target.value; })} />
       </section>
 
+      {hotelNights(plan, s, id) > 0 && (
+        <section className="card">
+          <div className="label">Accommodation</div>
+          <div className="rowflex" style={{ marginTop: 0 }}>
+            <input className="grow" value={st.accom ?? ''} placeholder="Hotel, ref, cost…" onChange={(e) => edit((x) => { x.accom = e.target.value; })} />
+            <button className={`bk big-bk ${st.accomBooked ? 'on' : ''}`} onClick={() => edit((x) => { x.accomBooked = !x.accomBooked; })}>
+              <Icon name="check" size={14} /> {st.accomBooked ? 'Booked' : 'Not booked'}
+            </button>
+          </div>
+        </section>
+      )}
+
       <h2>Days</h2>
       {Array.from({ length: st.nights + 1 }, (_, i) => {
         const d = arrive ? addDays(arrive, i) : null;
@@ -220,6 +232,9 @@ function LegEditor({ leg, fork, active }: { leg: Leg; fork: boolean; active: boo
             </div>
             <input value={o.notes} placeholder="Notes: operator, times, booking…" onChange={(e) => upd((x) => { x.notes = e.target.value; })} />
             <div className="rowflex">
+              <button className={`bk big-bk ${o.booked ? 'on' : ''}`} onClick={() => upd((x) => { x.booked = !x.booked; })}>
+                <Icon name="check" size={14} /> {o.booked ? 'Booked' : 'Not booked'}
+              </button>
               <label className="check"><input type="checkbox" checked={o.overnight} onChange={(e) => upd((x) => { x.overnight = e.target.checked; })} /> <Icon name="moon" size={15} className="moon" /> Overnight</label>
               <label className="check">
                 +days

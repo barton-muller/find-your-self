@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { addDays, diffDays, fmtMonthName } from '../dates';
+import { useEffect, useRef } from 'react';
+import { addDays, diffDays, fmtMonthName, todayStr } from '../dates';
 import { activeOutLeg, chosenOption, colorIndex, lanes, legOvernight, liveLegs, liveStops, schedule } from '../model';
 import { iconPath } from '../icons';
 import { go } from '../nav';
@@ -19,6 +20,11 @@ export function Timeline() {
   const lane = useMemo(() => lanes(plan, s), [plan, s]);
   const ci = useMemo(() => colorIndex(plan, s), [plan, s]);
   const days = Math.max(diffDays(plan.start, plan.end), 1);
+  const today = diffDays(plan.start, todayStr());
+  const todayRef = useRef<SVGRectElement>(null);
+  useEffect(() => {
+    todayRef.current?.scrollIntoView({ block: 'center' });
+  }, []);
   const stops = liveStops(plan).filter((x) => s.arrive[x.id] !== undefined);
   const maxDay = Math.max(days, ...stops.map((x) => s.arrive[x.id] + x.nights));
   const nLanes = Math.max(1, ...stops.map((x) => lane[x.id] + 1));
@@ -46,6 +52,12 @@ export function Timeline() {
             </g>
           );
         })}
+        {today >= 0 && today <= days && (
+          <g>
+            <rect ref={todayRef} x={AXIS - 4} y={Y(today)} width={W} height={PPD} className="todaybg" />
+            <text x={AXIS - 8} y={Y(today) + 12} textAnchor="end" className="todaylbl">today</text>
+          </g>
+        )}
         <line x1={AXIS - 4} x2={W} y1={Y(days)} y2={Y(days)} className="endline" />
         <text x={W - 6} y={Y(days) - 4} textAnchor="end" className="tick">trip end</text>
 

@@ -14,6 +14,8 @@ const fmt = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric',
 const fmtShort = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 const fmtMonth = new Intl.DateTimeFormat('en-GB', { month: 'short', timeZone: 'UTC' });
 
+export const todayStr = () => new Date().toLocaleDateString('en-CA');
+
 export const fmtDate = (s: string) => fmt.format(new Date(parseDate(s) * DAY));
 export const fmtShortDate = (s: string) => fmtShort.format(new Date(parseDate(s) * DAY));
 export const fmtMonthName = (s: string) => fmtMonth.format(new Date(parseDate(s) * DAY));

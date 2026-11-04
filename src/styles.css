@@ -134,3 +134,31 @@ button.big { width: 100%; padding: 14px; border-style: dashed; color: var(--acce
 .lc7 { stroke: var(--c7); }
 html.lock, html.lock body { overflow: hidden; height: 100%; min-height: 0; overscroll-behavior: none; position: fixed; width: 100%; }
 .map { overscroll-behavior: contain; touch-action: none; }
+.hb { border: 0; background: none; padding: 8px; color: var(--ink); display: grid; place-items: center; border-radius: 50%; }
+.hb:disabled { opacity: .3; }
+.tabs button { position: relative; }
+.badge { position: absolute; top: 4px; left: calc(50% + 6px); background: var(--danger); color: var(--cink); font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 8px; display: grid; place-items: center; padding: 0 4px; }
+.bk { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--warn); color: var(--warn); background: none; }
+.bk.on { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
+.bk.big-bk { font-size: 14px; padding: 7px 12px; }
+.stop-foot .bk { padding: 6px 12px; font-size: 13px; }
+.note-peek { margin-top: 8px; display: block; white-space: nowrap; }
+.today { border-color: var(--accent); }
+.today h3 { margin: 0; font-size: 20px; }
+.today ul { margin: 8px 0; padding-left: 20px; }
+.today-next { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+.locate { position: absolute; z-index: 1200; right: 12px; top: 12px; width: 44px; height: 44px; padding: 0; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 1px 6px #0004; }
+.pin.now { box-shadow: 0 0 0 4px var(--accent), 0 1px 4px #0006; }
+.tl-scroll .todaybg { fill: var(--accent); opacity: .12; pointer-events: none; }
+.tl-scroll .todaylbl { fill: var(--accent); font-size: 10px; font-weight: 700; }
+.addtodo { display: flex; gap: 8px; align-items: center; }
+.addtodo input[type=date] { width: 140px; flex: none; }
+.addtodo button { flex: none; width: 44px; display: grid; place-items: center; padding: 9px 0; }
+.trow { display: flex; gap: 12px; align-items: center; }
+.trow.done { opacity: .55; }
+.trow.done b, .trow.done .ttext { text-decoration: line-through; }
+.tick { flex: none; width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 2px solid var(--line2); display: grid; place-items: center; background: none; }
+.tick.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.ttext { border: 0; background: none; padding: 0; font-weight: 600; }
+.dateinline { width: auto; display: inline-block; padding: 2px 6px; margin-left: 8px; font-size: 13px; }
+.due.over { color: var(--danger); font-weight: 600; } .due.soon { color: var(--warn); font-weight: 600; }

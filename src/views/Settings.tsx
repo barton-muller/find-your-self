@@ -1,12 +1,17 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { overviewCount, overviewUrls, prefetchOverview } from '../tiles';
 import { configured } from '../sync';
 import { useStore } from '../store';
+import { Icon } from '../icons';
 import type { Plan, SyncConfig } from '../types';
 
 export function Settings() {
   const { setMeta, cfg, saveCfg, sync, syncNow, plan, replacePlan, resetSeed } = useStore();
   const [c, setC] = useState<SyncConfig>(cfg ?? { token: '', repo: '', path: 'plan.json', branch: 'main' });
   const file = useRef<HTMLInputElement>(null);
+  const [tiles, setTiles] = useState<string>('');
+  const refreshTiles = () => overviewCount().then((n) => setTiles(`${n}/${overviewUrls().length} overview tiles saved offline`)).catch(() => setTiles('Offline cache unavailable'));
+  useEffect(() => { refreshTiles(); }, []);
   const set = (k: keyof SyncConfig) => (e: React.ChangeEvent<HTMLInputElement>) => setC({ ...c, [k]: e.target.value.trim() });
 
   const exportJson = () => {
@@ -57,6 +62,16 @@ export function Settings() {
           {sync.status === 'error' && `Error: ${sync.error}`}
         </p>
         <p className="muted">Merging is per stop and per connection, newest edit wins. Edits made on two devices to the same stop before syncing: the later one is kept.</p>
+      </section>
+      <section className="card">
+        <h2>Offline map</h2>
+        <p className="muted">The overview map of South East Asia is downloaded automatically and kept for offline use. Areas you view are cached as you browse.</p>
+        <div className="rowflex">
+          <button onClick={() => { setTiles('Downloading…'); prefetchOverview(true).then(refreshTiles); }}>
+            <Icon name="download" size={16} /> Re-download overview
+          </button>
+        </div>
+        <p className="muted">{tiles}</p>
       </section>
       <section className="card">
         <h2>Backup</h2>

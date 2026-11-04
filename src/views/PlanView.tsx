@@ -2,11 +2,13 @@ import { Fragment, useMemo, useState } from 'react';
 import { addDays, fmtDate } from '../dates';
 import { Icon } from '../icons';
 import {
-  appendStop, branchesOf, canSwapNext, chosenOption, colorIndex, insertOnLeg, legOvernight, outs, schedule, setActiveOut, swapWithNext,
+  appendStop, branchesOf, canSwapNext, chosenOption, colorIndex, hotelNights, insertOnLeg, outs, schedule, setActiveOut, swapWithNext,
+  toggleLegBooked, toggleStay,
 } from '../model';
 import { go } from '../nav';
 import { useStore } from '../store';
 import { LegSummary, Stepper } from '../ui';
+import { Today } from './Today';
 
 const col = (i: number) => ({ '--cc': `var(--c${i})` }) as React.CSSProperties;
 
@@ -20,6 +22,7 @@ export function PlanView() {
 
   return (
     <div className="page">
+      {!reorder && <Today s={s} />}
       <div className="toolbar">
         <button className={reorder ? 'on' : ''} onClick={() => setReorder(!reorder)}>
           <Icon name="reorder" size={16} /> {reorder ? 'Done' : 'Reorder'}
@@ -36,7 +39,7 @@ export function PlanView() {
         const depart = addDays(plan.start, s.arrive[id] + st.nights);
         const o = outs(plan, id);
         const aLeg = o.find((l) => s.activeLegs.has(l.id));
-        const hotelNights = Math.max(0, st.nights - (aLeg && legOvernight(aLeg) ? 1 : 0));
+        const hn = hotelNights(plan, s, id);
         const isFork = o.length > 1;
         const branches = isFork ? branchesOf(plan, s, id) : [];
         const inCount = Object.values(plan.legs).filter((l) => !l.deleted && l.to === id).length;
@@ -70,14 +73,20 @@ export function PlanView() {
                   </h3>
                   <div className="sub">
                     {fmtDate(arrive)} → {fmtDate(depart)}
-                    {hotelNights !== st.nights && <span> · {hotelNights} hotel</span>}
+                    {hn !== st.nights && <span> · {hn} hotel</span>}
                   </div>
                 </div>
               </div>
               <div className="stop-foot">
                 <Stepper value={st.nights} onChange={(n) => update((d) => { d.stops[id].nights = n; d.stops[id].updatedAt = Date.now(); })} />
-                {st.notes && <span className="note-peek">{st.notes.split('\n')[0]}</span>}
+                <span className="grow" />
+                {hn > 0 && (
+                  <button className={`bk ${st.accomBooked ? 'on' : ''}`} onClick={() => update((d) => toggleStay(d, id))}>
+                    <Icon name="bed" size={13} /> {st.accomBooked ? 'booked' : 'to book'}
+                  </button>
+                )}
               </div>
+              {st.notes && <div className="note-peek">{st.notes.split('\n')[0]}</div>}
               {isFork && (
                 <div className="forkbox">
                   <div className="label">Route options after {st.name}</div>
@@ -106,7 +115,11 @@ export function PlanView() {
                 <span className="go" onClick={() => go({ view: 'place', id })}>
                   <span className="pill"><LegSummary leg={aLeg} /></span>
                   {aLeg.options.length > 1 && <span className="pill alt">{aLeg.options.length} options</span>}
-                  {chosenOption(aLeg)?.cost && <span className="pill alt">{chosenOption(aLeg)!.cost}</span>}
+                  {chosenOption(aLeg) && (
+                    <button className={`bk ${chosenOption(aLeg)!.booked ? 'on' : ''}`} onClick={(e) => { e.stopPropagation(); update((d) => toggleLegBooked(d, aLeg.id)); }}>
+                      <Icon name="check" size={12} /> {chosenOption(aLeg)!.booked ? 'booked' : 'to book'}
+                    </button>
+                  )}
                 </span>
                 <button className="ins" aria-label="insert stop between" title="Insert stop between" onClick={() => update((d) => openNew(insertOnLeg(d, aLeg.id)))}>
                   <Icon name="plus" size={16} />

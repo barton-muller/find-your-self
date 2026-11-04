@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { get, set } from 'idb-keyval';
+import { applyEntry, diffEntry, sameTargets, type Entry } from './history';
 import { now } from './model';
+import { prefetchOverview } from './tiles';
 import { seedPlan } from './seed';
 import { configured, mergePlans, samePlan, syncPlan } from './sync';
 import type { Plan, SyncConfig } from './types';
@@ -17,6 +19,10 @@ interface Ctx {
   saveCfg: (c: SyncConfig | null) => void;
   sync: SyncState;
   syncNow: () => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 const StoreCtx = createContext<Ctx>(null as unknown as Ctx);
@@ -32,6 +38,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const planRef = useRef<Plan | null>(null);
   const cfgRef = useRef<SyncConfig | null>(null);
   const busy = useRef(false);
+  const undoStack = useRef<Entry[]>([]);
+  const redoStack = useRef<Entry[]>([]);
+  const [, setHv] = useState(0);
   const saveT = useRef<number>(0);
   const syncT = useRef<number>(0);
 
@@ -80,6 +89,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setSync({ status: 'idle' });
         runSync();
       }
+      setTimeout(() => prefetchOverview().catch(() => {}), 4000);
     })();
     const onVis = () => {
       if (document.visibilityState === 'visible') runSync();
@@ -104,10 +114,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [persist]);
 
   const update = useCallback((fn: (d: Plan) => void) => {
-    const d = structuredClone(planRef.current!);
+    const prev = planRef.current!;
+    const d = structuredClone(prev);
     fn(d);
+    const e = diffEntry(prev, d);
+    if (e) {
+      const top = undoStack.current[undoStack.current.length - 1];
+      if (top && e.t - top.t < 1200 && sameTargets(top, e)) top.t = e.t;
+      else undoStack.current.push(e);
+      if (undoStack.current.length > 80) undoStack.current.shift();
+      redoStack.current = [];
+      setHv((v) => v + 1);
+    }
     replacePlan(d);
   }, [replacePlan]);
+
+  const step = useCallback((from: Entry[], to: Entry[]) => {
+    const e = from.pop();
+    if (!e) return;
+    const r = applyEntry(planRef.current!, e);
+    to.push(r.inverse);
+    setHv((v) => v + 1);
+    replacePlan(r.plan);
+  }, [replacePlan]);
+  const undo = useCallback(() => step(undoStack.current, redoStack.current), [step]);
+  const redo = useCallback(() => step(redoStack.current, undoStack.current), [step]);
 
   const setMeta = useCallback((patch: Partial<Pick<Plan, 'start' | 'end'>>) => {
     update((d) => {
@@ -146,8 +177,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [runSync]);
 
   const value = useMemo<Ctx | null>(
-    () => plan && { plan, update, setMeta, replacePlan, resetSeed, cfg, saveCfg, sync, syncNow: runSync },
-    [plan, update, setMeta, replacePlan, resetSeed, cfg, saveCfg, sync, runSync],
+    () => plan && {
+      plan, update, setMeta, replacePlan, resetSeed, cfg, saveCfg, sync, syncNow: runSync, undo, redo,
+      canUndo: undoStack.current.length > 0, canRedo: redoStack.current.length > 0,
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [plan, update, setMeta, replacePlan, resetSeed, cfg, saveCfg, sync, runSync, undo, redo, undoStack.current.length, redoStack.current.length],
   );
   if (!value) return <div className="boot">Loading…</div>;
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;

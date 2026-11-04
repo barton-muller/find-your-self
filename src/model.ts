@@ -1,5 +1,5 @@
-import { addDays, diffDays } from './dates';
-import type { Leg, Plan, Stop, TransportOption } from './types';
+import { addDays, diffDays, parseDate } from './dates';
+import type { Leg, Plan, Stop, Todo, TransportOption } from './types';
 
 export const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
 export const now = () => Date.now();
@@ -290,4 +290,87 @@ export const colorIndex = (p: Plan, s: Schedule): Record<string, number> => {
   }
   liveStops(p).forEach((x) => (idx[x.id] ??= 0));
   return idx;
+};
+
+export const hotelNights = (p: Plan, s: Schedule, id: string): number => {
+  const st = p.stops[id];
+  const l = activeOutLeg(p, id);
+  return Math.max(0, st.nights - (l && legOvernight(l) && s.activeLegs.has(l.id) ? 1 : 0));
+};
+
+export interface CheckItem {
+  key: string;
+  kind: 'stay' | 'transport' | 'todo';
+  title: string;
+  sub: string;
+  due: number | null;
+  done: boolean;
+  stopId?: string;
+  legId?: string;
+  todoId?: string;
+}
+
+export const liveTodos = (p: Plan): Todo[] => Object.values(p.todos ?? {}).filter((t) => !t.deleted);
+
+export const checklist = (p: Plan, s: Schedule, today = -1e9): CheckItem[] => {
+  const out: CheckItem[] = [];
+  for (const id of s.path) {
+    const st = p.stops[id];
+    const hn = hotelNights(p, s, id);
+    if (hn > 0 && s.arrive[id] + st.nights > today) {
+      out.push({
+        key: `stay-${id}`, kind: 'stay', title: `Book stay · ${st.name || 'Unnamed'}`,
+        sub: st.accom || `${hn} ${hn === 1 ? 'night' : 'nights'}`, due: s.arrive[id], done: !!st.accomBooked, stopId: id,
+      });
+    }
+    const l = activeOutLeg(p, id);
+    if (l && s.activeLegs.has(l.id) && s.arrive[id] + st.nights >= today) {
+      const o = chosenOption(l);
+      if (o) {
+        out.push({
+          key: `leg-${l.id}`, kind: 'transport',
+          title: `Book ${o.mode || 'transport'} · ${st.name} → ${p.stops[l.to].name}`,
+          sub: [o.duration, o.overnight ? 'overnight' : ''].filter(Boolean).join(' · '),
+          due: s.arrive[id] + st.nights, done: !!o.booked, stopId: id, legId: l.id,
+        });
+      }
+    }
+  }
+  for (const t of liveTodos(p)) {
+    out.push({
+      key: `todo-${t.id}`, kind: 'todo', title: t.text, sub: '',
+      due: t.due ? parseDate(t.due) - parseDate(p.start) : null, done: t.done, todoId: t.id,
+    });
+  }
+  return out;
+};
+
+export const sortCheck = (a: CheckItem, b: CheckItem) =>
+  (a.due ?? 1e9) - (b.due ?? 1e9) || a.title.localeCompare(b.title);
+
+export const toggleStay = (p: Plan, id: string) => {
+  p.stops[id].accomBooked = !p.stops[id].accomBooked;
+  touchStop(p, id);
+};
+
+export const toggleLegBooked = (p: Plan, legId: string) => {
+  const l = p.legs[legId];
+  const o = l.options.find((x) => x.id === l.chosen) ?? l.options[0];
+  if (!o) return;
+  o.booked = !o.booked;
+  touchLeg(p, legId);
+};
+
+export const upsertTodo = (p: Plan, t: Partial<Todo> & { id?: string }): string => {
+  p.todos ??= {};
+  const id = t.id ?? uid();
+  const cur = p.todos[id] ?? { id, text: '', done: false, due: null, updatedAt: 0 };
+  p.todos[id] = { ...cur, ...t, id, updatedAt: now() };
+  return id;
+};
+
+export const deleteTodo = (p: Plan, id: string) => {
+  if (!p.todos?.[id]) return;
+  p.todos[id].deleted = true;
+  p.todos[id].updatedAt = now();
 };

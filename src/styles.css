@@ -162,3 +162,11 @@ html.lock, html.lock body { overflow: hidden; height: 100%; min-height: 0; overs
 .ttext { border: 0; background: none; padding: 0; font-weight: 600; }
 .dateinline { width: auto; display: inline-block; padding: 2px 6px; margin-left: 8px; font-size: 13px; }
 .due.over { color: var(--danger); font-weight: 600; } .due.soon { color: var(--warn); font-weight: 600; }
+.citysearch { position: relative; }
+.citysearch .title { width: 100%; }
+.suggest { position: absolute; z-index: 1500; left: 0; right: 0; top: 100%; margin: 4px 0 0; padding: 4px; list-style: none; background: var(--card); border: 1px solid var(--line2); border-radius: 12px; box-shadow: 0 6px 20px #0003; max-height: 55vh; overflow: auto; }
+.suggest li { padding: 10px 10px; border-radius: 8px; cursor: pointer; }
+.suggest li:active, .suggest li:hover { background: var(--bg2); }
+.suggest li span { color: var(--muted); font-size: 14px; }
+.nopin { color: var(--warn); font-size: 13px; align-self: center; }
+.coordbox { margin-top: 10px; } .coordbox summary { color: var(--muted); font-size: 13px; cursor: pointer; margin-bottom: 6px; }

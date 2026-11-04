@@ -4,7 +4,8 @@ import {
   addBranch, appendStop, colorIndex, deleteLeg, deleteStop, insertOnLeg, ins, legOvernight, liveStops, linkStops, newOption, outs,
   hotelNights, reachable, schedule, setActiveOut, touchLeg, touchStop,
 } from '../model';
-import { CITIES, findCity } from '../cities';
+import { findCity } from '../cities';
+import { CitySearch } from './CitySearch';
 import { go } from '../nav';
 import { useStore } from '../store';
 import { Icon } from '../icons';
@@ -72,13 +73,9 @@ export function Place({ id }: { id: string }) {
       </div>
 
       <section className="card cbar" style={{ '--cc': `var(--c${ci[id] ?? 0})` } as React.CSSProperties}>
-        <input
-          className="title"
-          list="cities"
+        <CitySearch
           value={st.name}
-          placeholder="Place name"
-          onChange={(e) => {
-            const v = e.target.value;
+          onType={(v) => {
             const c = findCity(v);
             edit((x) => {
               x.name = v;
@@ -88,31 +85,32 @@ export function Place({ id }: { id: string }) {
               }
             });
           }}
+          onPick={(h) => edit((x) => { x.name = h.name; x.lat = h.lat; x.lng = h.lng; })}
         />
-        <datalist id="cities">{CITIES.map((c) => <option key={c[0]} value={c[0]} />)}</datalist>
         <div className="sub">
           {arrive ? `${fmtDate(arrive)} → ${fmtDate(addDays(plan.start, arr + st.nights))}` : 'Not on a scheduled path'}
           {!s.onPath.has(id) && arrive && <span className="chip alt">alternative</span>}
         </div>
         <div className="rowflex">
           <Stepper value={st.nights} onChange={(n) => edit((x) => { x.nights = n; })} />
-          <label className="coord">
-            <small>lat, lng</small>
-            <input
-              inputMode="decimal"
-              value={ownCoord}
-              placeholder="paste from maps"
-              onChange={(e) => {
-                const v = e.target.value;
-                setCoordDraft({ id, v });
-                const c = parseCoords(v);
-                if (c) edit((x) => { x.lat = c[0]; x.lng = c[1]; });
-                else if (v.trim() === '') edit((x) => { x.lat = null; x.lng = null; });
-              }}
-              onBlur={() => setCoordDraft(null)}
-            />
-          </label>
+          {st.lat === null && <span className="nopin">No map location. Pick a suggestion above.</span>}
         </div>
+        <details className="coordbox">
+          <summary>Coordinates</summary>
+          <input
+            inputMode="decimal"
+            value={ownCoord}
+            placeholder="lat, lng (paste from maps)"
+            onChange={(e) => {
+              const v = e.target.value;
+              setCoordDraft({ id, v });
+              const c = parseCoords(v);
+              if (c) edit((x) => { x.lat = c[0]; x.lng = c[1]; });
+              else if (v.trim() === '') edit((x) => { x.lat = null; x.lng = null; });
+            }}
+            onBlur={() => setCoordDraft(null)}
+          />
+        </details>
         <AutoTextarea value={st.notes} placeholder="Notes: accommodation, ideas, bookings…" onChange={(e) => edit((x) => { x.notes = e.target.value; })} />
       </section>
 

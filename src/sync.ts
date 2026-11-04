@@ -31,18 +31,19 @@ async function fetchRemote(c: SyncConfig): Promise<{ plan: Plan; sha: string } |
   return { plan: JSON.parse(b64dec(j.content)) as Plan, sha: j.sha };
 }
 
-async function putRemote(c: SyncConfig, plan: Plan, sha?: string) {
+async function putRemote(c: SyncConfig, plan: Plan, sha?: string, withBranch = true): Promise<boolean | null> {
   const r = await fetch(url(c), {
     method: 'PUT',
     headers: { ...headers(c), 'Content-Type': 'application/json' },
     body: JSON.stringify({
       message: 'Update trip plan',
       content: b64enc(JSON.stringify(plan, null, 1)),
-      branch: c.branch,
+      ...(withBranch ? { branch: c.branch } : {}),
       ...(sha ? { sha } : {}),
     }),
   });
   if (r.status === 409 || r.status === 422) return false;
+  if (r.status === 404 && !sha) return null;
   if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.text()).slice(0, 160)}`);
   return true;
 }
@@ -74,12 +75,24 @@ export function mergePlans(local: Plan, remote: Plan): Plan {
   };
 }
 
+async function diagnose(c: SyncConfig): Promise<string> {
+  const r = await fetch(`https://api.github.com/repos/${c.repo}`, { headers: headers(c), cache: 'no-store' });
+  if (r.status === 404) return `Repo ${c.repo} not found for this token. Check the name, and that the token's repository access includes it.`;
+  if (r.status === 401) return 'Token rejected (expired or wrong).';
+  const j = await r.json();
+  if (j.permissions && !j.permissions.push) return 'Token can read but not write: set Contents to Read and write.';
+  return `Could not create ${c.path} on branch ${c.branch}. Add an initial commit (README) on that branch, or check the branch name.`;
+}
+
 export const samePlan = (a: Plan, b: Plan) => JSON.stringify(a) === JSON.stringify(b);
 
 export async function syncPlan(c: SyncConfig, local: Plan, attempt = 0): Promise<Plan> {
   const remote = await fetchRemote(c);
   if (!remote) {
-    if (!(await putRemote(c, local))) throw new Error('Could not create file');
+    let r = await putRemote(c, local);
+    if (r === null) r = await putRemote(c, local, undefined, false);
+    if (r === null) throw new Error(await diagnose(c));
+    if (!r) throw new Error('Could not create file');
     return local;
   }
   const merged = mergePlans(local, remote.plan);

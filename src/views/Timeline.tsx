@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { addDays, diffDays, fmtMonthName } from '../dates';
-import { chosenOption, lanes, legOvernight, liveLegs, liveStops, schedule } from '../model';
+import { activeOutLeg, chosenOption, colorIndex, lanes, legOvernight, liveLegs, liveStops, schedule } from '../model';
 import { iconPath } from '../icons';
 import { go } from '../nav';
 import { useStore } from '../store';
@@ -17,6 +17,7 @@ export function Timeline() {
   const { plan } = useStore();
   const s = useMemo(() => schedule(plan), [plan]);
   const lane = useMemo(() => lanes(plan, s), [plan, s]);
+  const ci = useMemo(() => colorIndex(plan, s), [plan, s]);
   const days = Math.max(diffDays(plan.start, plan.end), 1);
   const stops = liveStops(plan).filter((x) => s.arrive[x.id] !== undefined);
   const maxDay = Math.max(days, ...stops.map((x) => s.arrive[x.id] + x.nights));
@@ -53,19 +54,22 @@ export function Timeline() {
           const fa = plan.stops[l.from];
           const x1 = X(lane[l.from]) + BAR / 2;
           const x2 = X(lane[l.to]) + BAR / 2;
-          const y1 = Y(s.arrive[l.from] + fa.nights);
+          const ov = legOvernight(l) && fa.nights > 0;
+          const y1 = Y(s.arrive[l.from] + fa.nights - (ov ? 1 : 0));
           const y2 = Y(s.arrive[l.to]);
           const my = (y1 + y2) / 2;
           const active = s.activeLegs.has(l.id);
           const o = chosenOption(l);
-          const ix = Math.min(x1, x2) - BAR / 2 - 11;
+          const right = ov && fa.nights >= 2;
+          const ix = right ? Math.max(x1, x2) + BAR / 2 + 16 : Math.min(x1, x2) - BAR / 2 - 11;
+          const iy = ov ? my : Math.max(my, y1 + 8);
           return (
             <g key={l.id} className={active ? 'edge on' : 'edge'}>
-              <path d={`M${x1},${y1} C${x1},${my + 10} ${x2},${my - 10} ${x2},${y2}`} fill="none" />
+              <path stroke={`var(--c${ci[l.from]})`} d={`M${x1},${y1} C${x1},${my + 10} ${x2},${my - 10} ${x2},${y2}`} fill="none" />
               {active && o && (
-                <g transform={`translate(${ix - 8},${Math.max(my, y1 + 8) - 8}) scale(0.67)`} className="eic">
+                <g transform={`translate(${ix - 8},${iy - 8}) scale(0.67)`} className="eic">
                   <path d={iconPath(modeIcon(o.mode))} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
-                  {legOvernight(l) && <path transform="translate(0,20)" d={iconPath('moon')} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinejoin="round" />}
+                  {ov && <path transform={right ? 'translate(22,0)' : 'translate(0,20)'} d={iconPath('moon')} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinejoin="round" />}
                 </g>
               )}
             </g>
@@ -75,10 +79,12 @@ export function Timeline() {
         {stops.map((x) => {
           const l = lane[x.id];
           const on = s.onPath.has(x.id);
-          const h = Math.max(x.nights * PPD, 6);
+          const al = activeOutLeg(plan, x.id);
+          const hotel = x.nights - (al && legOvernight(al) && x.nights > 0 ? 1 : 0);
+          const h = Math.max(hotel * PPD, 6);
           return (
             <g key={x.id} className={`node ${on ? 'on' : 'alt'}`} onClick={() => go({ view: 'place', id: x.id })} style={{ cursor: 'pointer' }}>
-              <rect x={X(l)} y={Y(s.arrive[x.id])} width={BAR} height={h} rx={BAR / 2} />
+              <rect x={X(l)} y={Y(s.arrive[x.id])} width={BAR} height={h} rx={BAR / 2} fill={`var(--c${ci[x.id]})`} />
               <text x={X(l) + BAR + 8} y={Y(s.arrive[x.id]) + 14} className="lbl">{x.name || '…'}</text>
               <text x={X(l) + BAR + 8} y={Y(s.arrive[x.id]) + 28} className="n">{x.nights} {x.nights === 1 ? 'night' : 'nights'}</text>
             </g>

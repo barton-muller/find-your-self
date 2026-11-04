@@ -1,18 +1,35 @@
-import { Fragment, useMemo } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { addDays, fmtDate } from '../dates';
-import { appendStop, branchesOf, chosenOption, legOvernight, outs, schedule, setActiveOut } from '../model';
+import { Icon } from '../icons';
+import {
+  appendStop, branchesOf, canSwapNext, chosenOption, colorIndex, insertOnLeg, legOvernight, outs, schedule, setActiveOut, swapWithNext,
+} from '../model';
 import { go } from '../nav';
 import { useStore } from '../store';
-import { Icon } from '../icons';
 import { LegSummary, Stepper } from '../ui';
+
+const col = (i: number) => ({ '--cc': `var(--c${i})` }) as React.CSSProperties;
 
 export function PlanView() {
   const { plan, update } = useStore();
+  const [reorder, setReorder] = useState(false);
   const s = useMemo(() => schedule(plan), [plan]);
+  const ci = useMemo(() => colorIndex(plan, s), [plan, s]);
   const orphans = Object.values(plan.stops).filter((x) => !x.deleted && !s.onPath.has(x.id) && s.arrive[x.id] === undefined);
+  const openNew = (n: string) => setTimeout(() => go({ view: 'place', id: n }), 0);
 
   return (
     <div className="page">
+      <div className="toolbar">
+        <button className={reorder ? 'on' : ''} onClick={() => setReorder(!reorder)}>
+          <Icon name="reorder" size={16} /> {reorder ? 'Done' : 'Reorder'}
+        </button>
+      </div>
+      {reorder && (
+        <p className="muted">
+          Move stops with the arrows. Each connection keeps its position in the route, so check transport after reordering. Stops at forks and merges can't move.
+        </p>
+      )}
       {s.path.map((id, i) => {
         const st = plan.stops[id];
         const arrive = addDays(plan.start, s.arrive[id]);
@@ -23,9 +40,26 @@ export function PlanView() {
         const isFork = o.length > 1;
         const branches = isFork ? branchesOf(plan, s, id) : [];
         const inCount = Object.values(plan.legs).filter((l) => !l.deleted && l.to === id).length;
+
+        if (reorder) {
+          const canUp = i > 0 && canSwapNext(plan, s.path[i - 1]);
+          const canDown = canSwapNext(plan, id);
+          return (
+            <div key={id} className="card rrow cbar" style={col(ci[id])}>
+              <span className="idx">{i + 1}</span>
+              <div className="grow">
+                <b>{st.name || 'Unnamed'}</b>
+                <small>{st.nights} nights · {fmtDate(arrive)}</small>
+              </div>
+              <button className="mv" aria-label="move up" disabled={!canUp} onClick={() => update((d) => swapWithNext(d, s.path[i - 1]))}><Icon name="up" size={22} /></button>
+              <button className="mv" aria-label="move down" disabled={!canDown} onClick={() => update((d) => swapWithNext(d, id))}><Icon name="down" size={22} /></button>
+            </div>
+          );
+        }
+
         return (
           <Fragment key={id}>
-            <section className="card stop">
+            <section className="card stop cbar" style={col(ci[id])}>
               <div className="stop-head" onClick={() => go({ view: 'place', id })}>
                 <span className="idx">{i + 1}</span>
                 <div className="grow">
@@ -67,19 +101,26 @@ export function PlanView() {
               )}
             </section>
             {aLeg && (
-              <div className="legrow" onClick={() => go({ view: 'place', id })}>
+              <div className="legrow" style={col(ci[id])}>
                 <span className="line" />
-                <span className="pill"><LegSummary leg={aLeg} /></span>
-                {aLeg.options.length > 1 && <span className="pill alt">{aLeg.options.length} options</span>}
-                {chosenOption(aLeg)?.cost && <span className="pill alt">{chosenOption(aLeg)!.cost}</span>}
+                <span className="go" onClick={() => go({ view: 'place', id })}>
+                  <span className="pill"><LegSummary leg={aLeg} /></span>
+                  {aLeg.options.length > 1 && <span className="pill alt">{aLeg.options.length} options</span>}
+                  {chosenOption(aLeg)?.cost && <span className="pill alt">{chosenOption(aLeg)!.cost}</span>}
+                </span>
+                <button className="link ins" onClick={() => update((d) => openNew(insertOnLeg(d, aLeg.id)))}>
+                  <Icon name="plus" size={14} /> stop between
+                </button>
               </div>
             )}
           </Fragment>
         );
       })}
-      <button className="big" onClick={() => update((d) => { const last = s.path[s.path.length - 1]; const n = appendStop(d, last); setTimeout(() => go({ view: 'place', id: n }), 0); })}>
-        <Icon name="plus" size={16} /> Add stop
-      </button>
+      {!reorder && (
+        <button className="big" onClick={() => update((d) => openNew(appendStop(d, s.path[s.path.length - 1])))}>
+          <Icon name="plus" size={16} /> Add stop
+        </button>
+      )}
       {orphans.length > 0 && (
         <section className="card">
           <div className="label">Unlinked stops</div>

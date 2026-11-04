@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { addDays, fmtDate } from '../dates';
 import {
-  addBranch, appendStop, deleteLeg, deleteStop, ins, legOvernight, liveStops, linkStops, newOption, outs,
+  addBranch, appendStop, colorIndex, deleteLeg, deleteStop, insertOnLeg, ins, legOvernight, liveStops, linkStops, newOption, outs,
   reachable, schedule, setActiveOut, touchLeg, touchStop,
 } from '../model';
 import { CITIES, findCity } from '../cities';
@@ -23,6 +23,7 @@ export function Place({ id }: { id: string }) {
   const { plan, update } = useStore();
   const st = plan.stops[id];
   const s = useMemo(() => schedule(plan), [plan]);
+  const ci = useMemo(() => colorIndex(plan, s), [plan, s]);
   const [coordDraft, setCoordDraft] = useState<{ id: string; v: string } | null>(null);
   const [linkTo, setLinkTo] = useState('');
 
@@ -70,7 +71,7 @@ export function Place({ id }: { id: string }) {
         </div>
       </div>
 
-      <section className="card">
+      <section className="card cbar" style={{ '--cc': `var(--c${ci[id] ?? 0})` } as React.CSSProperties}>
         <input
           className="title"
           list="cities"
@@ -228,6 +229,9 @@ function LegEditor({ leg, fork, active }: { leg: Leg; fork: boolean; active: boo
           </div>
         );
       })}
+      <button className="link" onClick={() => update((d) => { const n = insertOnLeg(d, leg.id); setTimeout(() => go({ view: 'place', id: n }), 0); })}>
+        <Icon name="plus" size={14} /> Insert stop on this connection
+      </button>
       <button className="link" onClick={() => edit((l) => { const o = newOption(''); l.options.push(o); if (!l.chosen) l.chosen = o.id; })}><Icon name="plus" size={14} /> Add option</button>
       <datalist id="modes">{MODES.map((m) => <option key={m} value={m} />)}</datalist>
     </div>

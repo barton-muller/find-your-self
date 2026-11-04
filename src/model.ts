@@ -229,3 +229,65 @@ export const setActiveOut = (p: Plan, from: string, legId: string) => {
   p.stops[from].activeOut = legId;
   touchStop(p, from);
 };
+
+export const insertOnLeg = (p: Plan, legId: string): string => {
+  const leg = p.legs[legId];
+  const x = addStop(p);
+  const oldTo = leg.to;
+  leg.to = x.id;
+  touchLeg(p, legId);
+  addLeg(p, x.id, oldTo);
+  return x.id;
+};
+
+export const canSwapNext = (p: Plan, b: string): boolean => {
+  const o = outs(p, b);
+  if (o.length !== 1 || ins(p, b).length > 1) return false;
+  const c = o[0].to;
+  return ins(p, c).length === 1 && outs(p, c).length <= 1;
+};
+
+export const swapWithNext = (p: Plan, b: string) => {
+  if (!canSwapNext(p, b)) return;
+  const l1 = ins(p, b)[0];
+  const l2 = outs(p, b)[0];
+  const c = l2.to;
+  const l3 = outs(p, c)[0];
+  if (l1) {
+    p.legs[l1.id].to = c;
+    touchLeg(p, l1.id);
+  } else if (p.startId === b) {
+    p.startId = c;
+    p.metaUpdatedAt = now();
+  }
+  p.legs[l2.id].from = c;
+  p.legs[l2.id].to = b;
+  touchLeg(p, l2.id);
+  if (l3) {
+    p.legs[l3.id].from = b;
+    touchLeg(p, l3.id);
+  }
+  p.stops[b].activeOut = l3?.id ?? null;
+  p.stops[c].activeOut = l2.id;
+  touchStop(p, b);
+  touchStop(p, c);
+};
+
+export const PALETTE = 8;
+
+export const colorIndex = (p: Plan, s: Schedule): Record<string, number> => {
+  const idx: Record<string, number> = {};
+  s.path.forEach((id, i) => (idx[id] = i % PALETTE));
+  const q = [...s.path];
+  while (q.length) {
+    const id = q.shift()!;
+    for (const l of outs(p, id)) {
+      if (idx[l.to] === undefined) {
+        idx[l.to] = (idx[id] + 1) % PALETTE;
+        q.push(l.to);
+      }
+    }
+  }
+  liveStops(p).forEach((x) => (idx[x.id] ??= 0));
+  return idx;
+};

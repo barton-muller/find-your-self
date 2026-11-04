@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import type { Plan, SyncConfig } from '../types';
 
 export function Settings() {
-  const { cfg, saveCfg, sync, syncNow, plan, replacePlan, resetSeed } = useStore();
+  const { setMeta, cfg, saveCfg, sync, syncNow, plan, replacePlan, resetSeed } = useStore();
   const [c, setC] = useState<SyncConfig>(cfg ?? { token: '', repo: '', path: 'plan.json', branch: 'main' });
   const file = useRef<HTMLInputElement>(null);
   const set = (k: keyof SyncConfig) => (e: React.ChangeEvent<HTMLInputElement>) => setC({ ...c, [k]: e.target.value.trim() });
@@ -27,6 +27,13 @@ export function Settings() {
 
   return (
     <div className="page">
+      <section className="card">
+        <h2>Trip dates</h2>
+        <div className="grid2">
+          <label>Start<input type="date" value={plan.start} onChange={(e) => e.target.value && setMeta({ start: e.target.value })} /></label>
+          <label>End<input type="date" value={plan.end} onChange={(e) => e.target.value && setMeta({ end: e.target.value })} /></label>
+        </div>
+      </section>
       <section className="card">
         <h2>GitHub sync</h2>
         <p className="muted">

@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { addDays, diffDays, fmtShortDate } from './dates';
-import { schedule, totals } from './model';
 import { Icon } from './icons';
-import { go, useRoute, href } from './nav';
+import { schedule, totals } from './model';
+import { go, href, useRoute } from './nav';
 import { useStore } from './store';
 import { MapView } from './views/MapView';
 import { Place } from './views/Place';
@@ -14,30 +14,28 @@ const syncIcon = { off: null, idle: 'cloud', syncing: 'sync', ok: 'check', error
 const tabIcon = { plan: 'list', map: 'map', timeline: 'timeline' } as const;
 
 export function App() {
-  const { plan, sync, setMeta } = useStore();
+  const { plan, sync } = useStore();
   const route = useRoute();
   const sched = useMemo(() => schedule(plan), [plan]);
   const t = useMemo(() => totals(plan, sched), [plan, sched]);
   const tab = route.view === 'place' ? 'plan' : route.view;
   const total = diffDays(plan.start, plan.end);
+  const si = syncIcon[sync.status];
 
   return (
-    <div className={`app v-${route.view}`}>
+    <>
       <header className="top">
-        <div className="dates">
-          <input type="date" aria-label="start date" value={plan.start} onChange={(e) => e.target.value && setMeta({ start: e.target.value })} />
-          <span>→</span>
-          <input type="date" aria-label="end date" value={plan.end} onChange={(e) => e.target.value && setMeta({ end: e.target.value })} />
-        </div>
-        <div className={`budget ${t.over > 0 ? 'over' : t.over < 0 ? 'under' : 'ok'}`} title={`${t.nights} nights planned`}>
+        <div className={`budget ${t.over > 0 ? 'over' : t.over < 0 ? 'under' : 'ok'}`}>
           <b>{t.endDay}</b>/{total} nights
           <small>
-            {t.over > 0 ? `${t.over} over` : t.over < 0 ? `${-t.over} free` : 'exact'} · ends {fmtShortDate(addDays(plan.start, t.endDay))}
+            {fmtShortDate(plan.start)} → {fmtShortDate(addDays(plan.start, t.endDay))}
+            {t.over > 0 ? ` · ${t.over} over` : t.over < 0 ? ` · ${-t.over} free` : ''}
           </small>
         </div>
-        <a className={`sync s-${sync.status}`} href={href({ view: 'settings' })} title={sync.error ?? sync.status}>
-          {syncIcon[sync.status] && <Icon name={syncIcon[sync.status]!} size={16} className={sync.status === 'syncing' ? 'spin' : ''} />}
-          <Icon name="settings" size={20} />
+        <span className="spacer" />
+        <a className={`sync s-${sync.status} ${route.view === 'settings' ? 'on' : ''}`} href={href({ view: 'settings' })} title={sync.error ?? sync.status} aria-label="settings">
+          {si && <Icon name={si} size={17} className={sync.status === 'syncing' ? 'spin' : ''} />}
+          <Icon name="settings" size={22} />
         </a>
       </header>
       <main>
@@ -55,6 +53,6 @@ export function App() {
           </button>
         ))}
       </nav>
-    </div>
+    </>
   );
 }

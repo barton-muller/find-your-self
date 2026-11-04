@@ -1,7 +1,7 @@
 import L from 'leaflet';
 import { useEffect, useMemo, useRef } from 'react';
 import { fmtShortDate, addDays } from '../dates';
-import { chosenOption, liveLegs, liveStops, schedule } from '../model';
+import { chosenOption, colorIndex, liveLegs, liveStops, schedule } from '../model';
 import { go } from '../nav';
 import { useStore } from '../store';
 import { iconSvgString } from '../icons';
@@ -14,6 +14,7 @@ export function MapView() {
   const layer = useRef<L.LayerGroup | null>(null);
   const fitted = useRef(false);
   const s = useMemo(() => schedule(plan), [plan]);
+  const ci = useMemo(() => colorIndex(plan, s), [plan, s]);
 
   useEffect(() => {
     const m = L.map(el.current!, { zoomControl: true, attributionControl: true }).setView([15, 103], 5);
@@ -49,10 +50,10 @@ export function MapView() {
       const active = s.activeLegs.has(l.id);
       const o = chosenOption(l);
       const line = L.polyline([a, b], {
-        color: active ? '#0f766e' : '#9ca3af',
-        weight: active ? 4 : 3,
+        className: `lc${ci[l.from]}`,
+        weight: active ? 5 : 3,
         dashArray: active ? undefined : '6 8',
-        opacity: active ? 0.9 : 0.8,
+        opacity: active ? 0.95 : 0.6,
       }).addTo(g);
       if (o) line.bindTooltip(`${iconSvgString(modeIcon(o.mode))} ${o.mode}${o.duration ? ' · ' + o.duration : ''}${o.overnight ? ' ' + iconSvgString('moon') : ''}`, { sticky: true });
     }
@@ -61,7 +62,7 @@ export function MapView() {
       if (!p) continue;
       pts.push(p);
       const idx = s.path.indexOf(x.id);
-      const html = `<div class="pin ${idx >= 0 ? 'on' : 'alt'}">${idx >= 0 ? idx + 1 : '·'}</div>`;
+      const html = `<div class="pin ${idx >= 0 ? 'on' : 'alt'}" style="background:var(--c${ci[x.id]})">${idx >= 0 ? idx + 1 : '·'}</div>`;
       const mk = L.marker(p, { icon: L.divIcon({ html, className: '', iconSize: [26, 26], iconAnchor: [13, 13] }) }).addTo(g);
       const d = s.arrive[x.id] !== undefined ? `${fmtShortDate(addDays(plan.start, s.arrive[x.id]))} · ` : '';
       mk.bindTooltip(idx >= 0 ? x.name : `${x.name} (${d}${x.nights}n)`, { permanent: idx >= 0, direction: 'right', offset: [10, 0], className: 'maplabel' });
@@ -71,7 +72,7 @@ export function MapView() {
       m.fitBounds(L.latLngBounds(pts), { padding: [30, 30] });
       fitted.current = true;
     }
-  }, [plan, s]);
+  }, [plan, s, ci]);
 
   const missing = liveStops(plan).filter((x) => x.lat === null);
   return (

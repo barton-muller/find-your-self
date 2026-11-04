@@ -132,3 +132,5 @@ button.big { width: 100%; padding: 14px; border-style: dashed; color: var(--acce
 .lc5 { stroke: var(--c5); }
 .lc6 { stroke: var(--c6); }
 .lc7 { stroke: var(--c7); }
+html.lock, html.lock body { overflow: hidden; height: 100%; min-height: 0; overscroll-behavior: none; position: fixed; width: 100%; }
+.map { overscroll-behavior: contain; touch-action: none; }

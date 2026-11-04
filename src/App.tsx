@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { addDays, diffDays, fmtShortDate } from './dates';
 import { Icon } from './icons';
 import { schedule, totals } from './model';
@@ -21,6 +21,10 @@ export function App() {
   const tab = route.view === 'place' ? 'plan' : route.view;
   const total = diffDays(plan.start, plan.end);
   const si = syncIcon[sync.status];
+  useEffect(() => {
+    document.documentElement.classList.toggle('lock', route.view === 'map');
+    return () => document.documentElement.classList.remove('lock');
+  }, [route.view]);
 
   return (
     <>

@@ -241,7 +241,7 @@ export function Timeline() {
           const ix = (branchOut ? x2 : x1) + side * (6 + sz / 2);
           const room = v1 - v0;
           return (
-            <g key={l.id} opacity={active ? 1 : 0.7} onClick={() => go({ view: 'place', id: l.from })} className="g-badge">
+            <g key={l.id} opacity={(active ? 1 : 0.7) * (s.arrive[l.from] + g.st.nights < today ? 0.5 : 1)} onClick={() => go({ view: 'place', id: l.from })} className="g-badge">
               <path d={connector(x1, y1, x2, y2, branchOut)} fill="none" stroke="var(--ink)" strokeWidth={3} strokeLinecap="round" />
               {o && ppd >= 12 && room >= sz - 2 && (
                 <g color="var(--ink)">

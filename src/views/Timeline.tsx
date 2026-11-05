@@ -39,7 +39,7 @@ const save = (k: string, v: unknown) => {
 function connector(x1: number, y1: number, x2: number, y2: number, branchOut: boolean): string {
   if (x1 === x2) return `M${x1},${y1} L${x2},${y2}`;
   const dy = Math.max(y2 - y1, 2);
-  const R = Math.max(1, Math.min(10, dy / 2, Math.abs(x2 - x1) / 2));
+  const R = Math.max(1, Math.min(6, dy / 2, Math.abs(x2 - x1) / 2));
   const sg = Math.sign(x2 - x1);
   const yb = branchOut ? y1 : y1 + dy - 2 * R;
   const s1 = sg > 0 ? 0 : 1;
@@ -228,24 +228,29 @@ export function Timeline() {
           const y1 = Y(g.lastDay);
           const y2 = Y(s.arrive[l.to]);
           const active = s.activeLegs.has(l.id);
-          const branchOut = lane[l.from] === 0 && lane[l.to] !== 0;
           const o = chosenOption(l);
           const ov = legOvernight(l) && g.st.nights > 0;
-          const bx = x1 === x2 ? x1 : branchOut ? x2 : x1;
-          const by = (y1 + y2) / 2;
-          const br = clamp(ppd * 0.32, 6, 10);
+          const branchOut = lane[l.from] === 0 && lane[l.to] !== 0;
+          const R = x1 === x2 ? 0 : Math.max(1, Math.min(6, Math.max(y2 - y1, 2) / 2, Math.abs(x2 - x1) / 2));
+          const v0 = branchOut ? y1 + 2 * R : y1;
+          const v1 = branchOut ? y2 : y2 - 2 * R;
+          const iy = (v0 + v1) / 2;
+          const sz = ppd >= 18 ? 16 : 13;
+          const iLane = branchOut ? lane[l.to] : lane[l.from];
+          const side = iLane === 0 ? -1 : laneSide(iLane);
+          const ix = (branchOut ? x2 : x1) + side * (6 + sz / 2);
+          const room = v1 - v0;
           return (
-            <g key={l.id} opacity={active ? 1 : 0.8}>
-              <path d={connector(x1, y1, x2, y2, branchOut)} fill="none" stroke={colorOf(l.from)} strokeWidth={3} strokeLinecap="round" />
-              {o && ppd >= 14 && y2 - y1 >= br * 1.6 && (
-                <g onClick={() => go({ view: 'place', id: l.from })} className="g-badge">
-                  <circle cx={bx} cy={by} r={br} fill="var(--bg)" stroke={colorOf(l.from)} strokeWidth={1.8} />
-                  <g transform={`translate(${bx - br * 0.62},${by - br * 0.62}) scale(${(br * 1.24) / 24})`} color="var(--ink)">
-                    <path d={iconPath(modeIcon(o.mode))} fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+            <g key={l.id} opacity={active ? 1 : 0.7} onClick={() => go({ view: 'place', id: l.from })} className="g-badge">
+              <path d={connector(x1, y1, x2, y2, branchOut)} fill="none" stroke="var(--ink)" strokeWidth={3} strokeLinecap="round" />
+              {o && ppd >= 12 && room >= sz - 2 && (
+                <g color="var(--ink)">
+                  <g transform={`translate(${ix - sz / 2},${iy - sz / 2 - (ov ? sz * 0.6 : 0)}) scale(${sz / 24})`}>
+                    <path d={iconPath(modeIcon(o.mode))} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
                   </g>
                   {ov && (
-                    <g transform={`translate(${bx + br + 1},${by - 5}) scale(0.42)`} className="g-moon">
-                      <path d={iconPath('moon')} fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinejoin="round" />
+                    <g transform={`translate(${ix - sz / 2},${iy - sz / 2 + sz * 0.7}) scale(${sz / 24})`} className="g-moon">
+                      <path d={iconPath('moon')} fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinejoin="round" />
                     </g>
                   )}
                 </g>
@@ -277,7 +282,7 @@ export function Timeline() {
           const x = plan.stops[id];
           const on = s.onPath.has(id);
           const px = laneX(l);
-          const edge = px + side * 16;
+          const edge = px + side * 30;
           const room = side === 1 ? W - edge - 6 : edge - AXIS - 10;
           const past = s.arrive[id] + x.nights < today;
           const il = inLeg(id);

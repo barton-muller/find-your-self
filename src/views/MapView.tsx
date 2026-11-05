@@ -68,7 +68,7 @@ export function MapView() {
       if (!p) continue;
       pts.push(p);
       const idx = s.path.indexOf(x.id);
-      const html = `<div class="pin ${idx >= 0 ? 'on' : 'alt'}${x.id === nowId ? ' now' : ''}" style="background:var(--c${ci[x.id]})">${idx >= 0 ? idx + 1 : '·'}</div>`;
+      const html = `<div class="pin ${idx >= 0 ? 'on' : 'alt'}${x.id === nowId ? ' now' : ''}${idx >= 0 && s.arrive[x.id] + x.nights < today ? ' past' : ''}" style="background:var(--c${ci[x.id]})">${idx >= 0 ? idx + 1 : '·'}</div>`;
       const mk = L.marker(p, { icon: L.divIcon({ html, className: '', iconSize: [26, 26], iconAnchor: [13, 13] }) }).addTo(g);
       const d = s.arrive[x.id] !== undefined ? `${fmtShortDate(addDays(plan.start, s.arrive[x.id]))} · ` : '';
       mk.bindTooltip(idx >= 0 ? x.name : `${x.name} (${d}${x.nights}n)`, { permanent: idx >= 0, direction: 'right', offset: [10, 0], className: 'maplabel' });

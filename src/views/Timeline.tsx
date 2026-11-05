@@ -1,5 +1,4 @@
-import { useMemo } from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { addDays, diffDays, fmtMonthName, todayStr } from '../dates';
 import { activeOutLeg, chosenOption, colorIndex, lanes, legOvernight, liveLegs, liveStops, schedule } from '../model';
 import { iconPath } from '../icons';
@@ -8,6 +7,7 @@ import { useStore } from '../store';
 import { modeIcon } from '../ui';
 
 const PPD = 34;
+const PP = 14;
 const AXIS = 60;
 const TOP = 12;
 const BAR = 16;
@@ -30,8 +30,9 @@ export function Timeline() {
   const nLanes = Math.max(1, ...stops.map((x) => lane[x.id] + 1));
   const laneW = Math.max(150, Math.min(210, Math.floor((window.innerWidth - AXIS - 20) / nLanes)));
   const W = AXIS + nLanes * laneW + 24;
-  const H = TOP + (maxDay + 1) * PPD + 20;
-  const Y = (d: number) => TOP + d * PPD;
+  const t = Math.min(Math.max(today, 0), maxDay + 1);
+  const Y = (d: number) => TOP + (d <= t ? d * PP : t * PP + (d - t) * PPD);
+  const H = Y(maxDay + 1) + 20;
   const X = (l: number) => AXIS + 14 + l * laneW;
 
   return (
@@ -42,13 +43,17 @@ export function Timeline() {
           const dayNum = Number(d.slice(8));
           const first = dayNum === 1 || i === 0;
           const weekStart = new Date(d + 'T00:00:00Z').getUTCDay() === 1;
+          const past = i < t;
+          const h = past ? PP : PPD;
           return (
-            <g key={i}>
+            <g key={i} className={past ? 'pastday' : ''}>
               <line x1={AXIS - 4} x2={W} y1={Y(i)} y2={Y(i)} className={first ? 'grid month' : weekStart ? 'grid week' : 'grid'} />
-              <text x={AXIS - 8} y={Y(i) + PPD - 9} textAnchor="end" className="tick">
-                {dayNum} <tspan className="wd">{WEEKDAY.format(new Date(d + 'T00:00:00Z'))}</tspan>
-              </text>
-              {first && <text x={AXIS - 8} y={Y(i) + 12} textAnchor="end" className="mon">{fmtMonthName(d)}</text>}
+              {(!past || weekStart || first) && (
+                <text x={AXIS - 8} y={past ? Y(i) + h - 3 : Y(i) + PPD - 9} textAnchor="end" className="tick">
+                  {dayNum} {!past && <tspan className="wd">{WEEKDAY.format(new Date(d + 'T00:00:00Z'))}</tspan>}
+                </text>
+              )}
+              {first && !past && <text x={AXIS - 8} y={Y(i) + 12} textAnchor="end" className="mon">{fmtMonthName(d)}</text>}
             </g>
           );
         })}
@@ -93,12 +98,19 @@ export function Timeline() {
           const on = s.onPath.has(x.id);
           const al = activeOutLeg(plan, x.id);
           const hotel = x.nights - (al && legOvernight(al) && x.nights > 0 ? 1 : 0);
-          const h = Math.max(hotel * PPD, 6);
+          const h = Math.max(Y(s.arrive[x.id] + hotel) - Y(s.arrive[x.id]), 6);
+          const past = s.arrive[x.id] + x.nights < today;
           return (
-            <g key={x.id} className={`node ${on ? 'on' : 'alt'}`} onClick={() => go({ view: 'place', id: x.id })} style={{ cursor: 'pointer' }}>
+            <g key={x.id} className={`node ${on ? 'on' : 'alt'}${past ? ' past' : ''}`} onClick={() => go({ view: 'place', id: x.id })} style={{ cursor: 'pointer' }}>
               <rect x={X(l)} y={Y(s.arrive[x.id])} width={BAR} height={h} rx={BAR / 2} fill={`var(--c${ci[x.id]})`} />
-              <text x={X(l) + BAR + 8} y={Y(s.arrive[x.id]) + 14} className="lbl">{x.name || '…'}</text>
-              <text x={X(l) + BAR + 8} y={Y(s.arrive[x.id]) + 28} className="n">{x.nights} {x.nights === 1 ? 'night' : 'nights'}</text>
+              {past ? (
+                <text x={X(l) + BAR + 8} y={Y(s.arrive[x.id]) + 11} className="n">{x.name || '…'} · {x.nights}n</text>
+              ) : (
+                <>
+                  <text x={X(l) + BAR + 8} y={Y(s.arrive[x.id]) + 14} className="lbl">{x.name || '…'}</text>
+                  <text x={X(l) + BAR + 8} y={Y(s.arrive[x.id]) + 28} className="n">{x.nights} {x.nights === 1 ? 'night' : 'nights'}</text>
+                </>
+              )}
             </g>
           );
         })}

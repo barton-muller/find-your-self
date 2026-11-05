@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { addDays, diffDays, fmtDate, todayStr } from '../dates';
+import { addDays, diffDays, fmtDate, fmtShortDate, todayStr } from '../dates';
 import { Icon } from '../icons';
 import {
   appendStop, branchesOf, canSwapNext, chosenOption, colorIndex, hotelNights, insertOnLeg, outs, schedule, setActiveOut, swapWithNext,
@@ -15,6 +15,7 @@ const col = (i: number) => ({ '--cc': `var(--c${i})` }) as React.CSSProperties;
 export function PlanView() {
   const { plan, update } = useStore();
   const [reorder, setReorder] = useState(false);
+  const [showPast, setShowPast] = useState(false);
   const s = useMemo(() => schedule(plan), [plan]);
   const ci = useMemo(() => colorIndex(plan, s), [plan, s]);
   const orphans = Object.values(plan.stops).filter((x) => !x.deleted && !s.onPath.has(x.id) && s.arrive[x.id] === undefined);
@@ -35,6 +36,9 @@ export function PlanView() {
     return () => { cancelAnimationFrame(raf); window.removeEventListener('scroll', onScroll); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const todayIdx = diffDays(plan.start, todayStr());
+  const isPast = (id: string) => !reorder && todayIdx >= 0 && s.arrive[id] + plan.stops[id].nights < todayIdx;
+  const pastIds = s.path.filter(isPast);
   const openNew = (n: string) => setTimeout(() => go({ view: 'place', id: n }), 0);
 
   return (
@@ -50,7 +54,22 @@ export function PlanView() {
           Move stops with the arrows. Each connection keeps its position in the route, so check transport after reordering. Stops at forks and merges can't move.
         </p>
       )}
+      {pastIds.length > 0 && (
+        <div className="pastgroup">
+          <button className="pastsum" onClick={() => setShowPast(!showPast)}>
+            <Icon name={showPast ? 'up' : 'down'} size={16} />
+            {pastIds.length} past {pastIds.length === 1 ? 'stop' : 'stops'} · {fmtShortDate(plan.start)} → {fmtShortDate(addDays(plan.start, s.arrive[pastIds[pastIds.length - 1]] + plan.stops[pastIds[pastIds.length - 1]].nights))}
+          </button>
+          {showPast && pastIds.map((id) => (
+            <div key={id} className="pastrow cbar" style={col(ci[id])} onClick={() => go({ view: 'place', id })}>
+              <b>{plan.stops[id].name || 'Unnamed'}</b>
+              <span>{fmtShortDate(addDays(plan.start, s.arrive[id]))} → {fmtShortDate(addDays(plan.start, s.arrive[id] + plan.stops[id].nights))} · {plan.stops[id].nights}n</span>
+            </div>
+          ))}
+        </div>
+      )}
       {s.path.map((id, i) => {
+        if (isPast(id)) return null;
         const st = plan.stops[id];
         const arrive = addDays(plan.start, s.arrive[id]);
         const depart = addDays(plan.start, s.arrive[id] + st.nights);

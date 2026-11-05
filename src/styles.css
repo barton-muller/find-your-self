@@ -178,3 +178,4 @@ html.lock, html.lock body { overflow: hidden; height: 100%; min-height: 0; overs
 .tl-scroll .node.past { opacity: .5; }
 .tl-scroll .pastday { opacity: .6; }
 .pin.past { opacity: .5; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }

@@ -1,4 +1,4 @@
-import { addDays, diffDays, fmtDate, todayStr } from '../dates';
+import { diffDays, fmtDate, todayStr } from '../dates';
 import { Icon } from '../icons';
 import { activeOutLeg, chosenOption, hotelNights, schedule, toggleLegBooked, toggleStay } from '../model';
 import { go } from '../nav';
@@ -39,17 +39,20 @@ export function Today({ s }: { s: ReturnType<typeof schedule> }) {
           <span className="muted">{leaving ? 'Heading to' : `Next in ${st.nights - i}d:`}</span>
           <b>{plan.stops[leg.to].name}</b>
           <span className="pill"><LegSummary leg={leg} /></span>
-          {o && (
-            <button className={`bk ${o.booked ? 'on' : ''}`} onClick={() => update((p) => toggleLegBooked(p, leg.id))}>
-              <Icon name="check" size={12} /> {o.booked ? 'booked' : 'not booked'}
-            </button>
-          )}
         </div>
       )}
-      {hn > 0 && !st.accomBooked && (
-        <button className="bk" onClick={() => update((p) => toggleStay(p, id))}><Icon name="bed" size={12} /> stay not booked</button>
-      )}
-      {leaving && i === 0 && <span className="muted">{addDays(plan.start, d)}</span>}
+      <div className="chips">
+        {o && leg && (
+          <button className={`bk ${o.booked ? 'on' : ''}`} onClick={() => update((p) => toggleLegBooked(p, leg.id))}>
+            <Icon name="check" size={12} /> transport {o.booked ? 'booked' : 'not booked'}
+          </button>
+        )}
+        {hn > 0 && (
+          <button className={`bk ${st.accomBooked ? 'on' : ''}`} onClick={() => update((p) => toggleStay(p, id))}>
+            <Icon name="bed" size={12} /> stay {st.accomBooked ? 'booked' : 'not booked'}
+          </button>
+        )}
+      </div>
     </section>
   );
 }

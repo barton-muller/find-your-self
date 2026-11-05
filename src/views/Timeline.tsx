@@ -7,24 +7,23 @@ import {
 } from '../model';
 import { go } from '../nav';
 import { useStore } from '../store';
+import { modeIcon } from '../ui';
 
-const DATE_W = 44;
-const STRIP = 14;
-const TOP = 16;
-const MIN_PPD = 4;
-const MAX_PPD = 56;
+const HH = 46;
+const TH = 54;
+const AXIS = 30;
+const TOP = 26;
+const MAX_PPD = 60;
 
 type ColorMode = 'auto' | 'country' | 'stop';
 const NEXT_MODE: Record<ColorMode, ColorMode> = { auto: 'country', country: 'stop', stop: 'auto' };
 const MODE_LABEL: Record<ColorMode, string> = { auto: 'Auto colour', country: 'By country', stop: 'By stop' };
 
-const WEEKDAY = new Intl.DateTimeFormat('en-GB', { weekday: 'narrow', timeZone: 'UTC' });
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 const trunc = (t: string, px: number, cw: number) => {
   const max = Math.max(3, Math.floor(px / cw));
   return t.length > max ? `${t.slice(0, max - 1)}…` : t;
 };
-
 const load = <T,>(k: string, d: T): T => {
   try {
     const v = localStorage.getItem(k);
@@ -37,6 +36,17 @@ const save = (k: string, v: unknown) => {
   try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ }
 };
 
+function connector(x1: number, y1: number, x2: number, y2: number, branchOut: boolean): string {
+  if (x1 === x2) return `M${x1},${y1} L${x2},${y2}`;
+  const dy = Math.max(y2 - y1, 2);
+  const R = Math.max(1, Math.min(10, dy / 2, Math.abs(x2 - x1) / 2));
+  const sg = Math.sign(x2 - x1);
+  const yb = branchOut ? y1 : y1 + dy - 2 * R;
+  const s1 = sg > 0 ? 0 : 1;
+  const s2 = sg > 0 ? 1 : 0;
+  return `M${x1},${y1} L${x1},${yb} A${R},${R} 0 0 ${s1} ${x1 + sg * R},${yb + R} L${x2 - sg * R},${yb + R} A${R},${R} 0 0 ${s2} ${x2},${yb + 2 * R} L${x2},${y2}`;
+}
+
 export function Timeline() {
   const { plan } = useStore();
   const s = useMemo(() => schedule(plan), [plan]);
@@ -44,7 +54,7 @@ export function Timeline() {
   const ci = useMemo(() => colorIndex(plan, s), [plan, s]);
   const wrap = useRef<HTMLDivElement>(null);
   const [W, setW] = useState(() => Math.min(window.innerWidth, 820));
-  const [ppd, setPpd] = useState<number>(() => clamp(load('tl-ppd', 28), MIN_PPD, MAX_PPD));
+  const [ppdState, setPpd] = useState<number>(() => load('tl-ppd2', 26));
   const [mode, setMode] = useState<ColorMode>(() => load<ColorMode>('tl-mode', 'auto'));
   const anchor = useRef<{ day: number; screenY: number } | null>(null);
   const pts = useRef(new Map<number, { x: number; y: number }>());
@@ -54,17 +64,16 @@ export function Timeline() {
   const today = diffDays(plan.start, todayStr());
   const stops = useMemo(() => liveStops(plan).filter((x) => s.arrive[x.id] !== undefined), [plan, s]);
   const maxDay = Math.max(days, ...stops.map((x) => s.arrive[x.id] + x.nights));
-  const nLanes = Math.max(1, ...stops.map((x) => lane[x.id] + 1));
 
-  const LW = W > 600 ? 26 : 20;
-  const lane0 = DATE_W + STRIP + 18;
-  const labelX0 = lane0 + (nLanes - 1) * LW + 22;
-  const labelW = W - labelX0 - 8;
-  const colW = labelW / nLanes;
+  const fitPpd = clamp((window.innerHeight - HH - TH - TOP - 50) / (maxDay + 1), 5, 30);
+  const ppd = clamp(ppdState, fitPpd, MAX_PPD);
   const Y = (d: number) => TOP + d * ppd;
-  const X = (l: number) => lane0 + l * LW;
   const H = Y(maxDay + 1) + 40;
-  const rw = clamp(ppd * 0.4, 4, 9);
+
+  const LW = W > 600 ? 32 : 24;
+  const cx = W / 2;
+  const laneX = (k: number) => (k === 0 ? cx : cx + (k % 2 === 1 ? 1 : -1) * Math.ceil(k / 2) * LW);
+  const laneSide = (k: number) => (k === 0 ? 0 : k % 2 === 1 ? 1 : -1);
 
   useEffect(() => {
     const el = wrap.current;
@@ -74,21 +83,15 @@ export function Timeline() {
     setW(el.clientWidth);
     return () => ro.disconnect();
   }, []);
-
-  useEffect(() => save('tl-ppd', ppd), [ppd]);
+  useEffect(() => save('tl-ppd2', ppdState), [ppdState]);
   useEffect(() => save('tl-mode', mode), [mode]);
 
   const svgTop = () => (wrap.current?.getBoundingClientRect().top ?? 0) + window.scrollY;
   const applyAnchor = useCallback(() => {
     const a = anchor.current;
-    if (!a) return;
-    window.scrollTo(0, svgTop() + TOP + a.day * ppd - a.screenY);
+    if (a) window.scrollTo(0, svgTop() + TOP + a.day * ppd - a.screenY);
   }, [ppd]);
-
-  useLayoutEffect(() => {
-    applyAnchor();
-  }, [ppd, applyAnchor]);
-
+  useLayoutEffect(() => { applyAnchor(); }, [ppd, applyAnchor]);
   useEffect(() => {
     if (today >= 0 && today <= maxDay) {
       anchor.current = { day: today, screenY: window.innerHeight * 0.35 };
@@ -98,17 +101,15 @@ export function Timeline() {
   }, []);
 
   const zoomTo = (next: number, screenY: number) => {
-    const n = clamp(next, MIN_PPD, MAX_PPD);
-    if (n === ppd) return;
+    const n = clamp(next, fitPpd, MAX_PPD);
+    if (Math.abs(n - ppd) < 0.01) return;
     anchor.current = { day: (window.scrollY + screenY - svgTop() - TOP) / ppd, screenY };
     setPpd(n);
   };
   const fit = () => {
-    const avail = window.innerHeight - 46 - 54 - TOP - 70;
-    anchor.current = { day: 0, screenY: 46 + TOP };
-    setPpd(clamp(avail / (maxDay + 1), MIN_PPD, MAX_PPD));
+    anchor.current = { day: 0, screenY: HH + TOP };
+    setPpd(fitPpd);
   };
-
   const onDown = (e: React.PointerEvent) => {
     pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.current.size === 2) {
@@ -121,13 +122,7 @@ export function Timeline() {
     pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pinch.current && pts.current.size === 2) {
       const [a, b] = [...pts.current.values()];
-      const d = Math.hypot(a.x - b.x, a.y - b.y);
-      const next = clamp(pinch.current.ppd * (d / pinch.current.d), MIN_PPD, MAX_PPD);
-      const midY = (a.y + b.y) / 2;
-      if (Math.abs(next - ppd) > 0.4) {
-        anchor.current = { day: (window.scrollY + midY - svgTop() - TOP) / ppd, screenY: midY };
-        setPpd(next);
-      }
+      zoomTo(pinch.current.ppd * (Math.hypot(a.x - b.x, a.y - b.y) / pinch.current.d), (a.y + b.y) / 2);
     }
   };
   const onUp = (e: React.PointerEvent) => {
@@ -135,7 +130,7 @@ export function Timeline() {
     if (pts.current.size < 2) pinch.current = null;
   };
 
-  const useCountry = mode === 'country' || (mode === 'auto' && ppd < 14);
+  const useCountry = mode === 'country' || (mode === 'auto' && ppd <= fitPpd * 1.2);
   const countries = useMemo(() => {
     const order: string[] = [];
     const seq = [...s.path.map((id) => plan.stops[id]), ...stops.filter((x) => !s.onPath.has(x.id))];
@@ -145,117 +140,114 @@ export function Timeline() {
     }
     return order;
   }, [plan, s, stops]);
-  const cIdx = (c: string) => (c ? countries.indexOf(c) % 8 : -1);
   const colorOf = (id: string) => {
-    const i = useCountry ? cIdx(countryOf(plan.stops[id])) : ci[id];
+    const i = useCountry ? (() => { const c = countryOf(plan.stops[id]); return c ? countries.indexOf(c) % 8 : -1; })() : ci[id];
     return i < 0 ? 'var(--alt)' : `var(--c${i})`;
   };
 
-  // country bands along the active route
-  const bands: { c: string; y0: number; y1: number }[] = [];
-  for (const id of s.path) {
-    const c = countryOf(plan.stops[id]);
-    const y0 = Y(s.arrive[id]);
-    const y1 = Y(s.arrive[id] + plan.stops[id].nights);
-    const last = bands[bands.length - 1];
-    if (last && last.c === c) last.y1 = y1;
-    else bands.push({ c, y0, y1 });
-  }
+  // geometry per stop
+  const geo = (id: string) => {
+    const st = plan.stops[id];
+    const al = activeOutLeg(plan, id);
+    const ov = !!al && legOvernight(al) && st.nights > 0;
+    const hotel = st.nights - (ov ? 1 : 0);
+    const dots = Math.max(hotel, 1);
+    const a = s.arrive[id];
+    return { st, hotel, dots, a, lastDay: a + dots - 1, hollow: hotel === 0 };
+  };
 
   // date ticks
-  const step = [1, 2, 7, 14, 30].find((n) => n * ppd >= 26) ?? 30;
+  const step = [1, 2, 7, 14, 30].find((n) => n * ppd >= 22) ?? 30;
   const ticks = Array.from({ length: maxDay + 1 }, (_, i) => {
     const d = addDays(plan.start, i);
     const dow = new Date(`${d}T00:00:00Z`).getUTCDay();
     const dayNum = Number(d.slice(8));
     const month = dayNum === 1 || i === 0;
-    const label = step === 1 || (step === 2 && i % 2 === 0) || (step === 7 && dow === 1) || month || (step > 7 && dow === 1 && i % 14 === 1);
-    return { i, d, dow, dayNum, month, label: label && (step < 14 || month) };
+    const label = month || step === 1 || (step === 2 && i % 2 === 0) || (step === 7 && dow === 1) || (step > 7 && dow === 1 && i % 14 === 1);
+    return { i, d, dow, dayNum, month, label };
   });
 
-  // labels per lane
-  const byLane: Record<number, typeof stops> = {};
-  stops.forEach((x) => (byLane[lane[x.id]] ??= []).push(x));
-  const labels = Object.entries(byLane).flatMap(([l, list]) => {
-    const sorted = [...list].sort((a, b) => s.arrive[a.id] - s.arrive[b.id]);
-    return sorted.map((x, k) => {
-      const y = Y(s.arrive[x.id]);
-      const next = sorted[k + 1];
-      const avail = next ? Y(s.arrive[next.id]) - y : 999;
-      const lines = avail >= 31 && ppd >= 16 ? 2 : avail >= 14 ? 1 : 0;
-      return { x, y, lines, lane: Number(l) };
-    }).filter((t) => t.lines > 0);
+  // labels
+  type L = { id: string; y: number; side: -1 | 1; lane: number };
+  const raw: L[] = [];
+  const altOnSide = (side: number, d0: number, d1: number) =>
+    stops.some((x) => lane[x.id] !== 0 && laneSide(lane[x.id]) === side && s.arrive[x.id] < d1 && s.arrive[x.id] + Math.max(x.nights, 1) > d0);
+  s.path.forEach((id, i) => {
+    const g = geo(id);
+    const pref: -1 | 1 = i % 2 === 0 ? 1 : -1;
+    let side = pref;
+    if (altOnSide(pref, g.a, g.a + Math.max(g.st.nights, 1))) side = (-pref) as -1 | 1;
+    raw.push({ id, y: Y(g.a), side, lane: 0 });
+  });
+  stops.filter((x) => !s.onPath.has(x.id)).forEach((x) => {
+    raw.push({ id: x.id, y: Y(s.arrive[x.id]), side: (laneSide(lane[x.id]) || 1) as -1 | 1, lane: lane[x.id] });
+  });
+  const labels = ([-1, 1] as const).flatMap((side) => {
+    const list = raw.filter((r) => r.side === side).sort((a, b) => a.y - b.y);
+    return list.map((r, k) => {
+      const avail = list[k + 1] ? list[k + 1].y - r.y : 999;
+      const lines = avail >= 32 && ppd >= 15 ? 2 : avail >= 15 ? 1 : 0;
+      return { ...r, lines };
+    }).filter((r) => r.lines > 0);
   });
 
-  const overnightOut = (id: string) => {
-    const l = activeOutLeg(plan, id);
-    return !!l && legOvernight(l) && plan.stops[id].nights > 0;
-  };
   const inLeg = (id: string) => {
     const i = ins(plan, id);
     return i.find((l) => s.activeLegs.has(l.id)) ?? i[0];
   };
 
+  const rd = clamp(ppd * 0.26, 2.2, 5);
+  const showDots = ppd >= 9;
+
   return (
     <div className="tl-wrap" ref={wrap} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
       <svg width={W} height={H} role="img" aria-label="Trip timeline">
-        {ticks.map((t) => (
-          <g key={t.i}>
-            {(ppd >= 12 || t.month || t.dow === 1) && (
-              <line x1={DATE_W - 2} x2={W - 4} y1={Y(t.i)} y2={Y(t.i)} className={t.month ? 'g-line month' : t.dow === 1 ? 'g-line week' : 'g-line'} />
-            )}
-            {t.label && (
-              <text x={DATE_W - 6} y={Y(t.i) + 11} textAnchor="end" className={t.month ? 'g-mon' : 'g-tick'}>
-                {t.month ? (ppd >= 12 || t.dayNum === 1 ? `${t.dayNum === 1 ? '' : `${t.dayNum} `}${fmtMonthName(t.d)}` : t.dayNum) : t.dayNum}
-                {step === 1 && !t.month && <tspan className="wd"> {WEEKDAY.format(new Date(`${t.d}T00:00:00Z`))}</tspan>}
-              </text>
-            )}
-          </g>
-        ))}
-
-        {today >= 0 && today <= maxDay && (
-          <g>
-            <rect x={0} y={Y(today)} width={W} height={Math.max(ppd, 5)} className="g-today" />
-            <text x={DATE_W - 6} y={Y(today) - 3} textAnchor="end" className="g-todaylbl">today</text>
-          </g>
-        )}
-        <line x1={DATE_W - 2} x2={W - 4} y1={Y(days)} y2={Y(days)} className="g-end" />
-
-        {bands.map((b, k) => {
-          const idx = cIdx(b.c);
-          const h = b.y1 - b.y0;
+        {ticks.map((t) => {
+          const isToday = t.i === today;
           return (
-            <g key={k}>
-              <rect x={DATE_W} y={b.y0 + 1} width={STRIP} height={Math.max(h - 2, 2)} rx={4} fill={idx < 0 ? 'var(--alt)' : `var(--c${idx})`} opacity={useCountry ? 1 : 0.85} />
-              {b.c && h >= 34 && (
-                <text transform={`translate(${DATE_W + STRIP / 2 + 3.5},${b.y0 + h / 2}) rotate(-90)`} textAnchor="middle" className="g-country">
-                  {trunc(b.c, h - 10, 5.6)}
+            <g key={t.i}>
+              {(ppd >= 14 || t.month || t.dow === 1) && (
+                <line x1={AXIS} x2={W - 4} y1={Y(t.i)} y2={Y(t.i)} className={t.month ? 'g-line month' : t.dow === 1 ? 'g-line week' : 'g-line'} />
+              )}
+              {(t.label || isToday) && (
+                <text x={4} y={Y(t.i) + 3.5} className={isToday ? 'g-todaylbl' : t.month ? 'g-mon' : 'g-tick'}>
+                  {isToday ? 'today' : t.month ? (t.dayNum === 1 ? fmtMonthName(t.d) : `${t.dayNum} ${fmtMonthName(t.d)}`) : t.dayNum}
                 </text>
               )}
             </g>
           );
         })}
+        {today >= 0 && today <= maxDay && <rect x={0} y={Y(today) - Math.max(ppd, 8) / 2} width={W} height={Math.max(ppd, 8)} className="g-today" />}
+        <line x1={AXIS} x2={W - 4} y1={Y(days)} y2={Y(days)} className="g-end" />
 
         {liveLegs(plan).map((l) => {
           if (s.arrive[l.from] === undefined || s.arrive[l.to] === undefined) return null;
-          const fa = plan.stops[l.from];
-          const ov = legOvernight(l) && fa.nights > 0;
-          const x1 = X(lane[l.from]);
-          const x2 = X(lane[l.to]);
-          const y1 = Y(s.arrive[l.from] + fa.nights - (ov ? 1 : 0));
+          const g = geo(l.from);
+          const x1 = laneX(lane[l.from]);
+          const x2 = laneX(lane[l.to]);
+          const y1 = Y(g.lastDay);
           const y2 = Y(s.arrive[l.to]);
           const active = s.activeLegs.has(l.id);
-          const R = Math.max(2, Math.min(16, Math.abs(y2 - y1) / 2));
-          let d: string;
-          if (x1 === x2) d = `M${x1},${y1} L${x2},${y2}`;
-          else if (x2 > x1) d = `M${x1},${y1} C${x1},${y1 + R} ${x2},${y1 + R} ${x2},${y1 + 2 * R} L${x2},${y2}`;
-          else d = `M${x1},${y1} L${x1},${y2 - 2 * R} C${x1},${y2 - R} ${x2},${y2 - R} ${x2},${y2}`;
+          const branchOut = lane[l.from] === 0 && lane[l.to] !== 0;
+          const o = chosenOption(l);
+          const ov = legOvernight(l) && g.st.nights > 0;
+          const bx = x1 === x2 ? x1 : branchOut ? x2 : x1;
+          const by = (y1 + y2) / 2;
+          const br = clamp(ppd * 0.32, 6, 10);
           return (
-            <g key={l.id}>
-              <path d={d} fill="none" stroke={colorOf(l.from)} strokeWidth={active ? 2.5 : 2} strokeDasharray={active ? undefined : '4 4'} opacity={active ? 1 : 0.6} />
-              {ov && ppd >= 14 && (
-                <g transform={`translate(${x1 + 6},${(y1 + y2) / 2 - 6}) scale(0.5)`} className="g-moon">
-                  <path d={iconPath('moon')} fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinejoin="round" />
+            <g key={l.id} opacity={active ? 1 : 0.8}>
+              <path d={connector(x1, y1, x2, y2, branchOut)} fill="none" stroke={colorOf(l.from)} strokeWidth={3} strokeLinecap="round" />
+              {o && ppd >= 14 && y2 - y1 >= br * 1.6 && (
+                <g onClick={() => go({ view: 'place', id: l.from })} className="g-badge">
+                  <circle cx={bx} cy={by} r={br} fill="var(--bg)" stroke={colorOf(l.from)} strokeWidth={1.8} />
+                  <g transform={`translate(${bx - br * 0.62},${by - br * 0.62}) scale(${(br * 1.24) / 24})`} color="var(--ink)">
+                    <path d={iconPath(modeIcon(o.mode))} fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+                  </g>
+                  {ov && (
+                    <g transform={`translate(${bx + br + 1},${by - 5}) scale(0.42)`} className="g-moon">
+                      <path d={iconPath('moon')} fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinejoin="round" />
+                    </g>
+                  )}
                 </g>
               )}
             </g>
@@ -263,56 +255,46 @@ export function Timeline() {
         })}
 
         {stops.map((x) => {
-          const l = lane[x.id];
+          const g = geo(x.id);
+          const px = laneX(lane[x.id]);
           const on = s.onPath.has(x.id);
-          const al = activeOutLeg(plan, x.id);
-          const hotel = x.nights - (al && legOvernight(al) && x.nights > 0 ? 1 : 0);
-          const y0 = Y(s.arrive[x.id]);
-          const y1 = Y(s.arrive[x.id] + hotel);
-          const past = s.arrive[x.id] + x.nights < today;
+          const past = g.a + x.nights < today;
           const col = colorOf(x.id);
+          const y0 = Y(g.a);
           return (
-            <g key={x.id} className="g-node" opacity={past ? 0.55 : on ? 1 : 0.7} onClick={() => go({ view: 'place', id: x.id })}>
-              {y1 > y0 && <line x1={X(l)} x2={X(l)} y1={y0} y2={y1} stroke={col} strokeWidth={rw} strokeLinecap="round" />}
-              <circle cx={X(l)} cy={y0} r={rw / 2 + 2} fill={col} stroke="var(--bg)" strokeWidth={2} />
-              <rect x={X(l) - LW / 2} y={y0 - 4} width={LW} height={Math.max(y1 - y0, 0) + 8} fill="transparent" />
+            <g key={x.id} className="g-node" opacity={past ? 0.5 : on ? 1 : 0.8} onClick={() => go({ view: 'place', id: x.id })}>
+              {g.dots > 1 && <line x1={px} x2={px} y1={y0} y2={Y(g.lastDay)} stroke={col} strokeWidth={showDots ? 3 : clamp(ppd * 0.5, 3, 6)} strokeLinecap="round" />}
+              {showDots && Array.from({ length: g.dots - 1 }, (_, k) => (
+                <circle key={k} cx={px} cy={Y(g.a + k + 1)} r={rd} fill={col} stroke="var(--bg)" strokeWidth={1.5} />
+              ))}
+              <circle cx={px} cy={y0} r={rd + 2.5} fill={g.hollow ? 'var(--bg)' : col} stroke={g.hollow ? col : 'var(--bg)'} strokeWidth={g.hollow ? 2.5 : 2} />
+              <rect x={px - LW / 2} y={y0 - 8} width={LW} height={Math.max(Y(g.lastDay) - y0, 0) + 16} fill="transparent" />
             </g>
           );
         })}
 
-        {labels.map(({ x, y, lines, lane: l }) => {
-          const on = s.onPath.has(x.id);
-          const px = labelX0 + l * colW;
-          const crowded = nLanes > 1 && labels.some((o) => o.lane !== l && Math.abs(o.y - y) < 36);
-          const w = (crowded || l > 0 ? colW : labelW) - 6;
-          const past = s.arrive[x.id] + x.nights < today;
-          const il = inLeg(x.id);
+        {labels.map(({ id, y, side, lane: l, lines }) => {
+          const x = plan.stops[id];
+          const on = s.onPath.has(id);
+          const px = laneX(l);
+          const edge = px + side * 16;
+          const room = side === 1 ? W - edge - 6 : edge - AXIS - 10;
+          const past = s.arrive[id] + x.nights < today;
+          const il = inLeg(id);
           const o = il ? chosenOption(il) : null;
-          const arr = addDays(plan.start, s.arrive[x.id]);
-          const dep = addDays(plan.start, s.arrive[x.id] + x.nights);
-          const country = countryOf(x);
-          const hn = x.nights - (overnightOut(x.id) ? 1 : 0);
           const sub = [
-            `${fmtShortDate(arr)}–${fmtShortDate(dep)}`,
+            `${fmtShortDate(addDays(plan.start, s.arrive[id]))}–${fmtShortDate(addDays(plan.start, s.arrive[id] + x.nights))}`,
             o ? `${o.mode}${o.duration ? ` ${o.duration}` : ''}` : '',
           ].filter(Boolean).join(' · ');
+          const anchorT = side === 1 ? 'start' : 'end';
           return (
-            <g key={`t-${x.id}`} className="g-label" opacity={past ? 0.55 : on ? 1 : 0.75} onClick={() => go({ view: 'place', id: x.id })}>
-              <text x={px} y={y + 5} className="g-name">
-                {trunc(x.name || '…', w - 34, 7.2)}
+            <g key={`t-${id}`} className="g-label" opacity={past ? 0.5 : on ? 1 : 0.85} onClick={() => go({ view: 'place', id })}>
+              <text x={edge} y={y + 4.5} textAnchor={anchorT} className="g-name">
+                {trunc(x.name || '…', room - 26, 7.2)}
                 <tspan className="g-n"> {x.nights}n</tspan>
                 {!on && <tspan className="g-n"> alt</tspan>}
               </text>
-              {lines === 2 && (
-                <>
-                  <text x={px} y={y + 20} className="g-sub">{trunc(sub + (country && ppd >= 24 ? ` · ${country}` : ''), w - (hn > 0 ? 20 : 0), 5.6)}</text>
-                  {hn > 0 && (
-                    <g transform={`translate(${px + w - 14},${y - 5}) scale(0.58)`} className={x.accomBooked ? 'g-ok' : 'g-warn'}>
-                      <path d={iconPath('bed')} fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
-                    </g>
-                  )}
-                </>
-              )}
+              {lines === 2 && <text x={edge} y={y + 19} textAnchor={anchorT} className="g-sub">{trunc(sub, room, 5.5)}</text>}
             </g>
           );
         })}
@@ -326,5 +308,4 @@ export function Timeline() {
       <button className="tl-mode" onClick={() => setMode(NEXT_MODE[mode])}>{MODE_LABEL[mode]}</button>
     </div>
   );
-
 }

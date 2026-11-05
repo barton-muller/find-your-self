@@ -6,6 +6,7 @@ export interface CityHit {
   sub: string;
   lat: number;
   lng: number;
+  country: string;
 }
 
 const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
@@ -15,9 +16,9 @@ const localHits = (q: string): CityHit[] => {
   if (!f) return [];
   const starts: CityHit[] = [];
   const has: CityHit[] = [];
-  for (const [name, lat, lng] of CITIES) {
+  for (const [name, lat, lng, country] of CITIES) {
     const n = fold(name);
-    const hit = { name, sub: '', lat, lng };
+    const hit = { name, sub: country, lat, lng, country };
     if (n.startsWith(f)) starts.push(hit);
     else if (n.includes(f)) has.push(hit);
   }
@@ -38,6 +39,7 @@ async function onlineHits(q: string, signal: AbortSignal): Promise<CityHit[]> {
     sub: [x.admin1, x.country].filter(Boolean).join(', '),
     lat: x.latitude,
     lng: x.longitude,
+    country: x.country ?? '',
   }));
 }
 

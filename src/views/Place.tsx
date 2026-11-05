@@ -97,10 +97,11 @@ export function Place({ id }: { id: string }) {
               if (c && x.lat === null) {
                 x.lat = c[1];
                 x.lng = c[2];
+                x.country = c[3];
               }
             });
           }}
-          onPick={(h) => edit((x) => { x.name = h.name; x.lat = h.lat; x.lng = h.lng; })}
+          onPick={(h) => edit((x) => { x.name = h.name; x.lat = h.lat; x.lng = h.lng; x.country = h.country; })}
         />
         <div className="sub">
           {arrive ? `${fmtDate(arrive)} → ${fmtDate(addDays(plan.start, arr + st.nights))}` : 'Not on a scheduled path'}

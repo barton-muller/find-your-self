@@ -18,6 +18,7 @@ export interface Stop {
   notes: string;
   days: string[];
   activeOut: string | null;
+  country?: string;
   accom?: string;
   accomBooked?: boolean;
   updatedAt: number;

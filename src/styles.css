@@ -170,3 +170,4 @@ html.lock, html.lock body { overflow: hidden; height: 100%; min-height: 0; overs
 .suggest li span { color: var(--muted); font-size: 14px; }
 .nopin { color: var(--warn); font-size: 13px; align-self: center; }
 .coordbox { margin-top: 10px; } .coordbox summary { color: var(--muted); font-size: 13px; cursor: pointer; margin-bottom: 6px; }
+.stop { scroll-margin-top: calc(var(--hh) + var(--sat) + 8px); }

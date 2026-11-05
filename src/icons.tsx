@@ -1,6 +1,6 @@
 export type IconName =
   | 'plane' | 'train' | 'bus' | 'boat' | 'car' | 'bike' | 'walk' | 'arrow' | 'moon'
-  | 'list' | 'map' | 'timeline' | 'settings' | 'check' | 'sync' | 'alert' | 'fork' | 'plus' | 'x' | 'cloud' | 'minus' | 'up' | 'down' | 'reorder' | 'undo' | 'redo' | 'locate' | 'todo' | 'bed' | 'download';
+  | 'list' | 'map' | 'timeline' | 'settings' | 'check' | 'sync' | 'alert' | 'fork' | 'plus' | 'x' | 'cloud' | 'minus' | 'up' | 'down' | 'reorder' | 'undo' | 'redo' | 'locate' | 'todo' | 'bed' | 'download' | 'bolt';
 
 const P: Record<IconName, string> = {
   plane: 'M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z',
@@ -21,6 +21,7 @@ const P: Record<IconName, string> = {
   locate: 'M12 2v3M12 19v3M2 12h3M19 12h3M8 12a4 4 0 1 0 8 0 4 4 0 0 0-8 0',
   todo: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
   bed: 'M3 19V6M3 13h18v6M21 13v-2a3 3 0 0 0-3-3h-7v5M7 10.5h.01',
+  bolt: 'M13 2 3 14h9l-1 8 10-12h-9z',
   download: 'M12 4v11M7 11l5 5 5-5M5 20h14',
   up: 'M6 15l6-6 6 6',
   down: 'M6 9l6 6 6-6',

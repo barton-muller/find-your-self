@@ -1,5 +1,5 @@
-import { Fragment, useMemo, useState } from 'react';
-import { addDays, fmtDate } from '../dates';
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import { addDays, diffDays, fmtDate, todayStr } from '../dates';
 import { Icon } from '../icons';
 import {
   appendStop, branchesOf, canSwapNext, chosenOption, colorIndex, hotelNights, insertOnLeg, outs, schedule, setActiveOut, swapWithNext,
@@ -18,6 +18,23 @@ export function PlanView() {
   const s = useMemo(() => schedule(plan), [plan]);
   const ci = useMemo(() => colorIndex(plan, s), [plan, s]);
   const orphans = Object.values(plan.stops).filter((x) => !x.deleted && !s.onPath.has(x.id) && s.arrive[x.id] === undefined);
+  const nowId = useMemo(() => {
+    const d = diffDays(plan.start, todayStr());
+    return s.path.find((x) => s.arrive[x] <= d && d <= s.arrive[x] + plan.stops[x].nights);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan.start, s]);
+  useEffect(() => {
+    let saved: string | null = null;
+    try { saved = sessionStorage.getItem('plan-scroll'); } catch { /* ignore */ }
+    const raf = requestAnimationFrame(() => {
+      if (saved !== null) window.scrollTo(0, Number(saved));
+      else if (nowId) document.getElementById(`stop-${nowId}`)?.scrollIntoView({ block: 'start' });
+    });
+    const onScroll = () => { try { sessionStorage.setItem('plan-scroll', String(window.scrollY)); } catch { /* ignore */ } };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('scroll', onScroll); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const openNew = (n: string) => setTimeout(() => go({ view: 'place', id: n }), 0);
 
   return (
@@ -62,7 +79,7 @@ export function PlanView() {
 
         return (
           <Fragment key={id}>
-            <section className="card stop cbar" style={col(ci[id])}>
+            <section id={`stop-${id}`} className="card stop cbar" style={col(ci[id])}>
               <div className="stop-head" onClick={() => go({ view: 'place', id })}>
                 <span className="idx">{i + 1}</span>
                 <div className="grow">

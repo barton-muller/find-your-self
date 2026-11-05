@@ -8,6 +8,7 @@ import { findCity } from '../cities';
 import { CitySearch } from './CitySearch';
 import { go } from '../nav';
 import { useStore } from '../store';
+import { suggest } from '../estimate';
 import { Icon } from '../icons';
 import { AutoTextarea, LegSummary, modeIcon, Stepper } from '../ui';
 import type { Leg } from '../types';
@@ -204,6 +205,31 @@ export function Place({ id }: { id: string }) {
 function LegEditor({ leg, fork, active }: { leg: Leg; fork: boolean; active: boolean }) {
   const { plan, update } = useStore();
   const to = plan.stops[leg.to];
+  const from = plan.stops[leg.from];
+  const [busy, setBusy] = useState(false);
+  const runSuggest = async () => {
+    if (from.lat === null || from.lng === null || to.lat === null || to.lng === null) {
+      alert('Both stops need a map location first. Pick them from the search suggestions.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const sug = await suggest({ lat: from.lat, lng: from.lng }, { lat: to.lat, lng: to.lng });
+      edit((l) => {
+        const have = new Set(l.options.map((o) => o.mode.toLowerCase()));
+        for (const s of sug) {
+          if (have.has(s.mode.toLowerCase())) continue;
+          const o = newOption(s.mode);
+          Object.assign(o, { duration: s.duration, notes: s.notes, overnight: s.overnight });
+          l.options.push(o);
+          if (!l.chosen) l.chosen = o.id;
+        }
+        l.options = l.options.filter((o) => o.mode || o.duration || o.notes || o.cost);
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
   const edit = (fn: (l: Leg) => void) =>
     update((d) => {
       fn(d.legs[leg.id]);
@@ -256,6 +282,9 @@ function LegEditor({ leg, fork, active }: { leg: Leg; fork: boolean; active: boo
           </div>
         );
       })}
+      <button className="link" disabled={busy} onClick={runSuggest}>
+        <Icon name="bolt" size={14} /> {busy ? 'Estimating…' : 'Suggest options (rough)'}
+      </button>
       <button className="link" onClick={() => update((d) => { const n = insertOnLeg(d, leg.id); setTimeout(() => go({ view: 'place', id: n }), 0); })}>
         <Icon name="plus" size={14} /> Insert stop on this connection
       </button>

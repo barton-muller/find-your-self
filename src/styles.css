@@ -197,3 +197,5 @@ html.lock, html.lock body { overflow: hidden; height: 100%; min-height: 0; overs
 .tl-ctl { position: fixed; z-index: 1500; right: 12px; bottom: calc(var(--th) + var(--sab) + 12px); display: flex; flex-direction: column; gap: 8px; }
 .tl-ctl button { width: 44px; height: 44px; padding: 0; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 1px 6px #0004; }
 .tl-mode { position: fixed; z-index: 1500; left: 12px; bottom: calc(var(--th) + var(--sab) + 12px); border-radius: 99px; font-size: 13px; padding: 8px 14px; box-shadow: 0 1px 6px #0004; }
+.leaflet-interactive:focus { outline: none; }
+.linkbtn { background: none; border: 0; padding: 0; font: inherit; color: var(--c0, inherit); text-decoration: underline; }

@@ -37,27 +37,47 @@ export const diag: { rail?: string; road?: string } = {};
 
 type Res = { json: any | null; err: string };
 
+const hostFails: Record<string, number> = {};
+const failedAt = new Map<string, number>();
+const inflight = new Map<string, Promise<Line | null>>();
+const FAIL_TTL = 10 * 60 * 1000;
+
+export const retryFailed = () => {
+  for (const k of Object.keys(hostFails)) delete hostFails[k];
+  failedAt.clear();
+  for (const k of Object.keys(diag)) delete diag[k as keyof typeof diag];
+};
+
 async function getJson(url: string): Promise<Res> {
+  const host = new URL(url).hostname;
+  if ((hostFails[host] ?? 0) >= 2) return { json: null, err: `${host}: skipped after 2 failures` };
   const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), 15000);
+  const t = setTimeout(() => ctl.abort(), 12000);
   try {
     const r = await fetch(url, { signal: ctl.signal });
-    if (r.ok) return { json: await r.json(), err: '' };
+    if (r.ok) {
+      hostFails[host] = 0;
+      return { json: await r.json(), err: '' };
+    }
     let msg = '';
     try {
       msg = (await r.json()).message ?? '';
     } catch {
       /* no body */
     }
-    return { json: null, err: `HTTP ${r.status} ${msg}`.trim().slice(0, 140) };
+    if (r.status >= 500 || r.status === 429) hostFails[host] = (hostFails[host] ?? 0) + 1;
+    return { json: null, err: `${host}: HTTP ${r.status} ${msg}`.trim().slice(0, 140) };
   } catch (e) {
-    if ((e as Error).name === 'AbortError') return { json: null, err: 'timed out' };
+    hostFails[host] = (hostFails[host] ?? 0) + 1;
+    if ((e as Error).name === 'AbortError') return { json: null, err: `${host}: timed out` };
+    let why = 'network error';
     try {
-      await fetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(8000) });
-      return { json: null, err: 'blocked (CORS)' };
+      await fetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(6000) });
+      why = 'blocked by CORS';
     } catch {
-      return { json: null, err: 'unreachable' };
+      /* keep */
     }
+    return { json: null, err: `${host}: ${why} (${(e as Error).message})` };
   } finally {
     clearTimeout(t);
   }
@@ -88,7 +108,7 @@ async function nearestStation(p: Pt, errs: string[]): Promise<Pt | null> {
   for (const ep of OVERPASS) {
     const { json, err } = await getJson(`${ep}?data=${q}`);
     if (!json) {
-      errs.push(`stations: ${err}`);
+      errs.push(err);
       continue;
     }
     let best: Pt | null = null;
@@ -126,7 +146,7 @@ async function fetchRail(a: Pt, b: Pt): Promise<Line | null> {
     }
     errs.push(`${p}: ${err || 'no path'}`);
   }
-  diag.rail = errs.join('; ').slice(0, 300);
+  diag.rail = [...new Set(errs.filter((e) => !e.includes('skipped')))].join('; ').slice(0, 260) || 'skipped after repeated failures';
   return null;
 }
 
@@ -150,11 +170,22 @@ export async function cached(kind: Kind, a: Pt, b: Pt): Promise<Line | null> {
 export async function route(kind: Kind, a: Pt, b: Pt): Promise<Line | null> {
   const hit = await cached(kind, a, b);
   if (hit || kind === 'air' || kind === 'straight') return hit;
-  const line = await queued(() => (kind === 'rail' ? fetchRail(a, b) : fetchRoad(a, b)));
-  if (line) {
-    const c = await loadCache();
-    c[routeKey(kind, a, b)] = line;
-    set(KEY, c).catch(() => {});
+  const key = routeKey(kind, a, b);
+  if (Date.now() - (failedAt.get(key) ?? 0) < FAIL_TTL) return null;
+  let p = inflight.get(key);
+  if (!p) {
+    p = queued(() => (kind === 'rail' ? fetchRail(a, b) : fetchRoad(a, b))).then(async (line) => {
+      inflight.delete(key);
+      if (line) {
+        const c = await loadCache();
+        c[key] = line;
+        set(KEY, c).catch(() => {});
+      } else {
+        failedAt.set(key, Date.now());
+      }
+      return line;
+    });
+    inflight.set(key, p);
   }
-  return line;
+  return p;
 }

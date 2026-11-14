@@ -8,7 +8,7 @@ import { go } from '../nav';
 import { useStore } from '../store';
 import { iconSvgString } from '../icons';
 import { modeIcon } from '../ui';
-import { arc, cached, kindOf, diag, route, routeKey, type Line } from '../routes';
+import { arc, cached, kindOf, diag, retryFailed, route, routeKey, type Line } from '../routes';
 
 export function MapView() {
   const { plan } = useStore();
@@ -18,6 +18,7 @@ export function MapView() {
   const fitted = useRef(false);
   const [lines, setLines] = useState<Record<string, Line>>({});
   const [err, setErr] = useState('');
+  const [retry, setRetry] = useState(0);
   const me = useRef<L.LayerGroup | null>(null);
   const s = useMemo(() => schedule(plan), [plan]);
   const ci = useMemo(() => colorIndex(plan, s), [plan, s]);
@@ -41,22 +42,28 @@ export function MapView() {
     };
   }, []);
 
+  const jobs = useMemo(
+    () =>
+      liveLegs(plan)
+        .map((l) => {
+          const f = plan.stops[l.from];
+          const t = plan.stops[l.to];
+          const o = chosenOption(l);
+          if (!o || f.lat === null || f.lng === null || t.lat === null || t.lng === null) return null;
+          const kind = kindOf(o.mode);
+          if (kind === 'straight') return null;
+          const a = { lat: f.lat, lng: f.lng };
+          const b = { lat: t.lat, lng: t.lng };
+          return { key: routeKey(kind, a, b), kind, a, b, active: s.activeLegs.has(l.id) };
+        })
+        .filter((j): j is NonNullable<typeof j> => !!j)
+        .sort((x, y) => Number(y.active) - Number(x.active)),
+    [plan, s],
+  );
+  const jobsKey = jobs.map((j) => j.key).join('|');
+
   useEffect(() => {
     let dead = false;
-    const jobs = liveLegs(plan)
-      .map((l) => {
-        const f = plan.stops[l.from];
-        const t = plan.stops[l.to];
-        const o = chosenOption(l);
-        if (!o || f.lat === null || f.lng === null || t.lat === null || t.lng === null) return null;
-        const kind = kindOf(o.mode);
-        if (kind === 'straight') return null;
-        const a = { lat: f.lat, lng: f.lng };
-        const b = { lat: t.lat, lng: t.lng };
-        return { key: routeKey(kind, a, b), kind, a, b, active: s.activeLegs.has(l.id) };
-      })
-      .filter((j): j is NonNullable<typeof j> => !!j)
-      .sort((x, y) => Number(y.active) - Number(x.active));
     (async () => {
       for (const j of jobs) {
         if (dead) return;
@@ -69,7 +76,7 @@ export function MapView() {
     return () => {
       dead = true;
     };
-  }, [plan, s]);
+  }, [jobsKey, retry]);
 
   useEffect(() => {
     const m = map.current;
@@ -139,7 +146,12 @@ export function MapView() {
     <div className="mapwrap">
       <div ref={el} className="map" />
       <button className="locate" aria-label="my location" onClick={locate}><Icon name="locate" size={22} /></button>
-      {err && <div className="maphint">Routing failed ({err})</div>}
+      {err && (
+        <div className="maphint">
+          Routing failed ({err}){' '}
+          <button type="button" className="linkbtn" onClick={() => { retryFailed(); setErr(''); setRetry((n) => n + 1); }}>Retry</button>
+        </div>
+      )}
       {missing.length > 0 && (
         <div className="maphint">
           No coordinates: {missing.map((x, i) => (

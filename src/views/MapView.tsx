@@ -37,6 +37,7 @@ export function MapView() {
       crossOrigin: true,
       attribution: '© OpenStreetMap',
     }).addTo(m);
+    m.attributionControl.setPrefix(`build ${__BUILD__} | Leaflet`);
     layer.current = L.layerGroup().addTo(m);
     map.current = m;
     setTimeout(() => m.invalidateSize(), 50);

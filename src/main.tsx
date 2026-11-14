@@ -6,7 +6,15 @@ import { App } from './App';
 import { StoreProvider } from './store';
 import { registerSW } from 'virtual:pwa-register';
 
-registerSW({ immediate: true });
+registerSW({
+  immediate: true,
+  onRegisteredSW(_url, reg) {
+    if (!reg) return;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') reg.update().catch(() => {});
+    });
+  },
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -1,11 +1,10 @@
 import { get, set } from 'idb-keyval';
-import { haversineKm, type Pt } from './estimate';
+import type { Pt } from './estimate';
 
 export type Line = [number, number][];
 export type Kind = 'air' | 'rail' | 'road' | 'straight';
 
 const KEY = 'route-cache-v1';
-const RAIL_PROFILES = ['all_tracks', 'non_tgv'];
 
 export const kindOf = (mode: string): Kind => {
   const m = mode.toLowerCase();
@@ -33,7 +32,7 @@ export function arc(a: Pt, b: Pt, n = 32): Line {
   return out;
 }
 
-export const diag: { rail?: string; road?: string } = {};
+export const diag: { road?: string } = {};
 
 type Res = { json: any | null; err: string };
 
@@ -104,63 +103,6 @@ async function fetchRoad(a: Pt, b: Pt): Promise<Line | null> {
   return null;
 }
 
-const OVERPASS = [
-  'https://overpass-api.de/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
-  'https://overpass.private.coffee/api/interpreter',
-];
-
-async function nearestStation(p: Pt, errs: string[]): Promise<Pt | null> {
-  const c = await loadCache();
-  const key = `st:${p.lat.toFixed(3)},${p.lng.toFixed(3)}`;
-  if (c[key]) return c[key][0] ? { lat: c[key][0][0], lng: c[key][0][1] } : null;
-  const q = encodeURIComponent(`[out:json][timeout:15];node(around:60000,${p.lat},${p.lng})[railway~"^(station|halt)$"];out 60;`);
-  for (const ep of OVERPASS) {
-    const { json, err } = await getJson(`${ep}?data=${q}`);
-    if (!json) {
-      errs.push(err);
-      continue;
-    }
-    let best: Pt | null = null;
-    let bd = Infinity;
-    for (const e of json.elements ?? []) {
-      const d = haversineKm(p, { lat: e.lat, lng: e.lon });
-      if (d < bd) {
-        bd = d;
-        best = { lat: e.lat, lng: e.lon };
-      }
-    }
-    c[key] = best ? [[best.lat, best.lng]] : [];
-    set(KEY, c).catch(() => {});
-    if (!best) errs.push('no station within 60 km');
-    return best;
-  }
-  return null;
-}
-
-let railProfile: string | null = null;
-
-async function fetchRail(a: Pt, b: Pt): Promise<Line | null> {
-  const label = `[${a.lat.toFixed(2)},${a.lng.toFixed(2)}>${b.lat.toFixed(2)},${b.lng.toFixed(2)}]`;
-  const errs: string[] = [label];
-  const sa = (await nearestStation(a, errs)) ?? a;
-  const sb = (await nearestStation(b, errs)) ?? b;
-  for (const p of railProfile ? [railProfile] : RAIL_PROFILES) {
-    const { json, err } = await getJson(
-      `https://routing.openrailrouting.org/route?point=${sa.lat},${sa.lng}&point=${sb.lat},${sb.lng}&profile=${p}&points_encoded=false&instructions=false`,
-    );
-    const c = json?.paths?.[0]?.points?.coordinates;
-    if (c?.length) {
-      railProfile = p;
-      delete diag.rail;
-      return [[a.lat, a.lng], ...flip(c), [b.lat, b.lng]];
-    }
-    errs.push(`${p}: ${err || 'no path'}`);
-  }
-  diag.rail = errs.join('; ');
-  return null;
-}
-
 let cache: Promise<Record<string, Line>> | null = null;
 const loadCache = (): Promise<Record<string, Line>> =>
   (cache ??= get<Record<string, Line>>(KEY).then((c): Record<string, Line> => c ?? {}).catch((): Record<string, Line> => ({})));
@@ -174,18 +116,18 @@ const queued = <T,>(kind: string, fn: () => Promise<T>): Promise<T> => {
 
 export async function cached(kind: Kind, a: Pt, b: Pt): Promise<Line | null> {
   if (kind === 'air') return arc(a, b);
-  if (kind === 'straight') return null;
+  if (kind === 'straight' || kind === 'rail') return null;
   return (await loadCache())[routeKey(kind, a, b)] ?? null;
 }
 
 export async function route(kind: Kind, a: Pt, b: Pt): Promise<Line | null> {
   const hit = await cached(kind, a, b);
-  if (hit || kind === 'air' || kind === 'straight') return hit;
+  if (hit || kind === 'air' || kind === 'straight' || kind === 'rail') return hit;
   const key = routeKey(kind, a, b);
   if (Date.now() - (failedAt.get(key) ?? 0) < FAIL_TTL) return null;
   let p = inflight.get(key);
   if (!p) {
-    p = queued(kind, () => (kind === 'rail' ? fetchRail(a, b) : fetchRoad(a, b))).then(async (line) => {
+    p = queued(kind, () => fetchRoad(a, b)).then(async (line) => {
       inflight.delete(key);
       if (line) {
         const c = await loadCache();

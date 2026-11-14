@@ -9,7 +9,11 @@ import { useStore } from '../store';
 import { iconSvgString } from '../icons';
 import { modeIcon } from '../ui';
 import { bundledRail } from '../rail';
+import { neRail } from '../ne';
 import { arc, cached, kindOf, diag, retryFailed, route, routeKey, type Line } from '../routes';
+
+const railLine = async (a: { lat: number; lng: number }, b: { lat: number; lng: number }) =>
+  (await neRail(a, b).catch(() => null)) ?? bundledRail(a, b);
 
 export function MapView() {
   const { plan } = useStore();
@@ -19,7 +23,6 @@ export function MapView() {
   const fitted = useRef(false);
   const [lines, setLines] = useState<Record<string, Line>>({});
   const [err, setErr] = useState('');
-  const [fallback, setFallback] = useState<Record<string, Line>>({});
   const [retry, setRetry] = useState(0);
   const me = useRef<L.LayerGroup | null>(null);
   const s = useMemo(() => schedule(plan), [plan]);
@@ -67,16 +70,8 @@ export function MapView() {
   useEffect(() => {
     let dead = false;
     (async () => {
-      const hit = await Promise.all(jobs.map((j) => cached(j.kind, j.a, j.b)));
+      const hit = await Promise.all(jobs.map((j) => (j.kind === 'rail' ? railLine(j.a, j.b) : cached(j.kind, j.a, j.b))));
       if (dead) return;
-      const fb: Record<string, Line> = {};
-      jobs.forEach((j, i) => {
-        if (j.kind === 'rail' && !hit[i]) {
-          const l = bundledRail(j.a, j.b);
-          if (l) fb[j.key] = l;
-        }
-      });
-      setFallback((p) => ({ ...p, ...fb }));
       setLines((p) => {
         const n = { ...p };
         jobs.forEach((j, i) => {
@@ -89,11 +84,12 @@ export function MapView() {
         if (dead) return;
         const j = jobs[i];
         if (hit[i]) continue;
+        if (j.kind === 'rail') continue;
         const line = await route(j.kind, j.a, j.b);
         if (dead || !line) continue;
         setLines((p) => (p[j.key] ? p : { ...p, [j.key]: line }));
       }
-      if (!dead) setErr([diag.rail && `rail: ${diag.rail}`, diag.road && `road: ${diag.road}`].filter(Boolean).join(' | '));
+      if (!dead) setErr([diag.road && `road: ${diag.road}`].filter(Boolean).join(' | '));
     })();
     return () => {
       dead = true;
@@ -120,7 +116,7 @@ export function MapView() {
       const kind = o ? kindOf(o.mode) : 'straight';
       const pts2: L.LatLngTuple[] = kind === 'air' ? arc({ lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] }) : (() => {
         const k = routeKey(kind, { lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] });
-        return lines[k] ?? fallback[k] ?? [a, b];
+        return lines[k] ?? [a, b];
       })();
       const line = L.polyline(pts2, {
         className: `lc${ci[l.from]}`,
@@ -145,7 +141,7 @@ export function MapView() {
       m.fitBounds(L.latLngBounds(pts), { padding: [30, 30] });
       fitted.current = true;
     }
-  }, [plan, s, ci, nowId, lines, fallback]);
+  }, [plan, s, ci, nowId, lines]);
 
   const locate = () => {
     const m = map.current;
@@ -173,7 +169,7 @@ export function MapView() {
       <button className="locate" aria-label="my location" onClick={locate}><Icon name="locate" size={22} /></button>
       {err && (
         <div className="maphint">
-          Routing failed ({err}){err.includes('rail') ? ' Using built-in rail table.' : ''}{' '}
+          Routing failed ({err}){' '}
           <button type="button" className="linkbtn" onClick={() => { retryFailed(); setErr(''); setRetry((n) => n + 1); }}>Retry</button>
         </div>
       )}

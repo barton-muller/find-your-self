@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { fmtShortDate, addDays, diffDays, todayStr } from '../dates';
 import { Icon } from '../icons';
 import { TILE_URL } from '../tiles';
@@ -8,6 +8,7 @@ import { go } from '../nav';
 import { useStore } from '../store';
 import { iconSvgString } from '../icons';
 import { modeIcon } from '../ui';
+import { arc, cached, kindOf, route, routeKey, type Line } from '../routes';
 
 export function MapView() {
   const { plan } = useStore();
@@ -15,6 +16,7 @@ export function MapView() {
   const map = useRef<L.Map | null>(null);
   const layer = useRef<L.LayerGroup | null>(null);
   const fitted = useRef(false);
+  const [lines, setLines] = useState<Record<string, Line>>({});
   const me = useRef<L.LayerGroup | null>(null);
   const s = useMemo(() => schedule(plan), [plan]);
   const ci = useMemo(() => colorIndex(plan, s), [plan, s]);
@@ -39,6 +41,35 @@ export function MapView() {
   }, []);
 
   useEffect(() => {
+    let dead = false;
+    const jobs = liveLegs(plan)
+      .map((l) => {
+        const f = plan.stops[l.from];
+        const t = plan.stops[l.to];
+        const o = chosenOption(l);
+        if (!o || f.lat === null || f.lng === null || t.lat === null || t.lng === null) return null;
+        const kind = kindOf(o.mode);
+        if (kind === 'straight') return null;
+        const a = { lat: f.lat, lng: f.lng };
+        const b = { lat: t.lat, lng: t.lng };
+        return { key: routeKey(kind, a, b), kind, a, b, active: s.activeLegs.has(l.id) };
+      })
+      .filter((j): j is NonNullable<typeof j> => !!j)
+      .sort((x, y) => Number(y.active) - Number(x.active));
+    (async () => {
+      for (const j of jobs) {
+        if (dead) return;
+        const line = (await cached(j.kind, j.a, j.b)) ?? (await route(j.kind, j.a, j.b));
+        if (dead || !line) continue;
+        setLines((p) => (p[j.key] ? p : { ...p, [j.key]: line }));
+      }
+    })();
+    return () => {
+      dead = true;
+    };
+  }, [plan, s]);
+
+  useEffect(() => {
     const m = map.current;
     const g = layer.current;
     if (!m || !g) return;
@@ -55,7 +86,9 @@ export function MapView() {
       if (!a || !b) continue;
       const active = s.activeLegs.has(l.id);
       const o = chosenOption(l);
-      const line = L.polyline([a, b], {
+      const kind = o ? kindOf(o.mode) : 'straight';
+      const pts2: L.LatLngTuple[] = kind === 'air' ? arc({ lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] }) : lines[routeKey(kind, { lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] })] ?? [a, b];
+      const line = L.polyline(pts2, {
         className: `lc${ci[l.from]}`,
         weight: active ? 5 : 3,
         dashArray: active ? undefined : '6 8',
@@ -78,7 +111,7 @@ export function MapView() {
       m.fitBounds(L.latLngBounds(pts), { padding: [30, 30] });
       fitted.current = true;
     }
-  }, [plan, s, ci, nowId]);
+  }, [plan, s, ci, nowId, lines]);
 
   const locate = () => {
     const m = map.current;

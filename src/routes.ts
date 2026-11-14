@@ -1,11 +1,11 @@
 import { get, set } from 'idb-keyval';
-import type { Pt } from './estimate';
+import { haversineKm, type Pt } from './estimate';
 
 export type Line = [number, number][];
 export type Kind = 'air' | 'rail' | 'road' | 'straight';
 
 const KEY = 'route-cache-v1';
-const RAIL_PROFILES = ['all_tracks', 'rail'];
+const RAIL_PROFILES = ['all_tracks', 'non_tgv'];
 
 export const kindOf = (mode: string): Kind => {
   const m = mode.toLowerCase();
@@ -35,36 +35,29 @@ export function arc(a: Pt, b: Pt, n = 32): Line {
 
 export const diag: { rail?: string; road?: string } = {};
 
-async function getJson(url: string, tag: 'rail' | 'road'): Promise<any | null> {
+type Res = { json: any | null; err: string };
+
+async function getJson(url: string): Promise<Res> {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), 15000);
   try {
     const r = await fetch(url, { signal: ctl.signal });
-    if (r.ok) {
-      delete diag[tag];
-      return await r.json();
-    }
+    if (r.ok) return { json: await r.json(), err: '' };
     let msg = '';
     try {
       msg = (await r.json()).message ?? '';
     } catch {
       /* no body */
     }
-    diag[tag] = `HTTP ${r.status} ${msg}`.trim().slice(0, 120);
-    return null;
+    return { json: null, err: `HTTP ${r.status} ${msg}`.trim().slice(0, 140) };
   } catch (e) {
-    const timeout = (e as Error).name === 'AbortError';
-    let reach = 'unreachable';
-    if (!timeout) {
-      try {
-        await fetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(8000) });
-        reach = 'server reachable but blocked (CORS)';
-      } catch {
-        /* keep unreachable */
-      }
+    if ((e as Error).name === 'AbortError') return { json: null, err: 'timed out' };
+    try {
+      await fetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(8000) });
+      return { json: null, err: 'blocked (CORS)' };
+    } catch {
+      return { json: null, err: 'unreachable' };
     }
-    diag[tag] = timeout ? 'timed out' : reach;
-    return null;
   } finally {
     clearTimeout(t);
   }
@@ -73,28 +66,67 @@ async function getJson(url: string, tag: 'rail' | 'road'): Promise<any | null> {
 const flip = (c: number[][]): Line => c.map(([x, y]) => [y, x]);
 
 async function fetchRoad(a: Pt, b: Pt): Promise<Line | null> {
-  const j = await getJson(
+  const { json, err } = await getJson(
     `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=simplified&geometries=geojson`,
-    'road',
   );
-  const c = j?.routes?.[0]?.geometry?.coordinates;
-  return c?.length ? flip(c) : null;
+  const c = json?.routes?.[0]?.geometry?.coordinates;
+  if (c?.length) {
+    delete diag.road;
+    return flip(c);
+  }
+  diag.road = err || 'no route';
+  return null;
+}
+
+const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+
+async function nearestStation(p: Pt, errs: string[]): Promise<Pt | null> {
+  const c = await loadCache();
+  const key = `st:${p.lat.toFixed(3)},${p.lng.toFixed(3)}`;
+  if (c[key]) return c[key][0] ? { lat: c[key][0][0], lng: c[key][0][1] } : null;
+  const q = encodeURIComponent(`[out:json][timeout:15];node(around:60000,${p.lat},${p.lng})[railway~"^(station|halt)$"];out 60;`);
+  for (const ep of OVERPASS) {
+    const { json, err } = await getJson(`${ep}?data=${q}`);
+    if (!json) {
+      errs.push(`stations: ${err}`);
+      continue;
+    }
+    let best: Pt | null = null;
+    let bd = Infinity;
+    for (const e of json.elements ?? []) {
+      const d = haversineKm(p, { lat: e.lat, lng: e.lon });
+      if (d < bd) {
+        bd = d;
+        best = { lat: e.lat, lng: e.lon };
+      }
+    }
+    c[key] = best ? [[best.lat, best.lng]] : [];
+    set(KEY, c).catch(() => {});
+    if (!best) errs.push('no station within 60 km');
+    return best;
+  }
+  return null;
 }
 
 let railProfile: string | null = null;
 
 async function fetchRail(a: Pt, b: Pt): Promise<Line | null> {
+  const errs: string[] = [];
+  const sa = (await nearestStation(a, errs)) ?? a;
+  const sb = (await nearestStation(b, errs)) ?? b;
   for (const p of railProfile ? [railProfile] : RAIL_PROFILES) {
-    const j = await getJson(
-      `https://routing.openrailrouting.org/route?point=${a.lat},${a.lng}&point=${b.lat},${b.lng}&profile=${p}&points_encoded=false&instructions=false`,
-      'rail',
+    const { json, err } = await getJson(
+      `https://routing.openrailrouting.org/route?point=${sa.lat},${sa.lng}&point=${sb.lat},${sb.lng}&profile=${p}&points_encoded=false&instructions=false`,
     );
-    const c = j?.paths?.[0]?.points?.coordinates;
+    const c = json?.paths?.[0]?.points?.coordinates;
     if (c?.length) {
       railProfile = p;
-      return flip(c);
+      delete diag.rail;
+      return [[a.lat, a.lng], ...flip(c), [b.lat, b.lng]];
     }
+    errs.push(`${p}: ${err || 'no path'}`);
   }
+  diag.rail = errs.join('; ').slice(0, 300);
   return null;
 }
 

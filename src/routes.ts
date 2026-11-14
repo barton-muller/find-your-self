@@ -146,7 +146,7 @@ async function fetchRail(a: Pt, b: Pt): Promise<Line | null> {
     }
     errs.push(`${p}: ${err || 'no path'}`);
   }
-  diag.rail = [...new Set(errs.filter((e) => !e.includes('skipped')))].join('; ').slice(0, 260) || 'skipped after repeated failures';
+  diag.rail = errs.join('; ');
   return null;
 }
 

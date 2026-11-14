@@ -8,6 +8,7 @@ import { go } from '../nav';
 import { useStore } from '../store';
 import { iconSvgString } from '../icons';
 import { modeIcon } from '../ui';
+import { bundledRail } from '../rail';
 import { arc, cached, kindOf, diag, retryFailed, route, routeKey, type Line } from '../routes';
 
 export function MapView() {
@@ -18,6 +19,7 @@ export function MapView() {
   const fitted = useRef(false);
   const [lines, setLines] = useState<Record<string, Line>>({});
   const [err, setErr] = useState('');
+  const [fallback, setFallback] = useState<Record<string, Line>>({});
   const [retry, setRetry] = useState(0);
   const me = useRef<L.LayerGroup | null>(null);
   const s = useMemo(() => schedule(plan), [plan]);
@@ -67,6 +69,14 @@ export function MapView() {
     (async () => {
       const hit = await Promise.all(jobs.map((j) => cached(j.kind, j.a, j.b)));
       if (dead) return;
+      const fb: Record<string, Line> = {};
+      jobs.forEach((j, i) => {
+        if (j.kind === 'rail' && !hit[i]) {
+          const l = bundledRail(j.a, j.b);
+          if (l) fb[j.key] = l;
+        }
+      });
+      setFallback((p) => ({ ...p, ...fb }));
       setLines((p) => {
         const n = { ...p };
         jobs.forEach((j, i) => {
@@ -108,7 +118,10 @@ export function MapView() {
       const active = s.activeLegs.has(l.id);
       const o = chosenOption(l);
       const kind = o ? kindOf(o.mode) : 'straight';
-      const pts2: L.LatLngTuple[] = kind === 'air' ? arc({ lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] }) : lines[routeKey(kind, { lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] })] ?? [a, b];
+      const pts2: L.LatLngTuple[] = kind === 'air' ? arc({ lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] }) : (() => {
+        const k = routeKey(kind, { lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] });
+        return lines[k] ?? fallback[k] ?? [a, b];
+      })();
       const line = L.polyline(pts2, {
         className: `lc${ci[l.from]}`,
         weight: active ? 5 : 3,
@@ -132,7 +145,7 @@ export function MapView() {
       m.fitBounds(L.latLngBounds(pts), { padding: [30, 30] });
       fitted.current = true;
     }
-  }, [plan, s, ci, nowId, lines]);
+  }, [plan, s, ci, nowId, lines, fallback]);
 
   const locate = () => {
     const m = map.current;
@@ -160,7 +173,7 @@ export function MapView() {
       <button className="locate" aria-label="my location" onClick={locate}><Icon name="locate" size={22} /></button>
       {err && (
         <div className="maphint">
-          Routing failed ({err}){' '}
+          Routing failed ({err}){err.includes('rail') ? ' Using built-in rail table.' : ''}{' '}
           <button type="button" className="linkbtn" onClick={() => { retryFailed(); setErr(''); setRetry((n) => n + 1); }}>Retry</button>
         </div>
       )}

@@ -17,7 +17,9 @@ export const kindOf = (mode: string): Kind => {
 export const routeKey = (kind: Kind, a: Pt, b: Pt) =>
   `${kind}:${a.lat.toFixed(3)},${a.lng.toFixed(3)}>${b.lat.toFixed(3)},${b.lng.toFixed(3)}`;
 
-export function arc(a: Pt, b: Pt, n = 32): Line {
+export function arc(a: Pt, b0: Pt, n = 32): Line {
+  const dl = ((((b0.lng - a.lng) % 360) + 540) % 360) - 180;
+  const b = { lat: b0.lat, lng: a.lng + dl };
   const dx = b.lng - a.lng;
   const dy = b.lat - a.lat;
   const k = 0.18;

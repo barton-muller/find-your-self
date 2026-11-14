@@ -25,6 +25,7 @@ Tabs: Map, Timeline, Plan, To-do; Place (stop detail) and Settings via hash rout
 - `PlanView` (+`Today`): list, nights steppers, fork picker, reorder mode (swap with neighbour, `swapWithNext`), insert stop between, past stops collapsed.
 - `Timeline`: git-graph style SVG. Time runs down; one dot per night; black line + icon = travel day; lanes for alternatives; pinch/buttons zoom; Auto colour switches to by-country only when fully zoomed out.
 - `MapView`: Leaflet + OSM; `tiles.ts` prefetches overview tiles (zoom 3-6) into the `osm-tiles` cache.
+  Leg lines (`routes.ts`): flights = curved arc; road modes = OSRM geometry, cached in IndexedDB (`route-cache-v1`); rail = bundled Natural Earth network (`src/data/rail/*.json`, 10 degree tiles, global, loaded per leg via `ne.ts`) then the hand-made station table `rail.ts` (add lines there where Natural Earth has gaps, e.g. Laos-China); otherwise straight. Regenerate tiles from `ne_10m_railroads.geojson` if needed.
 - `Place`: city search (`CitySearch`: bundled `cities.ts` + Open-Meteo geocoding), notes, accommodation, per-day text, transport editor, rough estimator (`estimate.ts`: OSRM + straight-line fallback).
 - `Todo`: auto items from unbooked stays/transport on the active route plus custom to-dos, soonest first, past-due hidden.
 

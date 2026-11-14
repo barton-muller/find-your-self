@@ -6,10 +6,24 @@ interface Net {
   adj: [number, number][][];
 }
 
-let net: Promise<Net> | null = null;
+const tileLoaders = import.meta.glob('./data/rail/*.json');
+const tileCache = new Map<string, Promise<Line[]>>();
+const nets = new Map<string, Net>();
+const PAD = 1.5;
+const MAX_TILES = 36;
 
-const build = async (): Promise<Net> => {
-  const segs: Line[] = (await import('./data/rail-ne.json')).default as Line[];
+const loadTile = (cx: number, cy: number): Promise<Line[]> => {
+  const k = `${cx}_${cy}`;
+  let p = tileCache.get(k);
+  if (!p) {
+    const ld = tileLoaders[`./data/rail/${k}.json`];
+    p = ld ? ld().then((m) => (m as { default: Line[] }).default) : Promise.resolve([]);
+    tileCache.set(k, p);
+  }
+  return p;
+};
+
+const build = (segs: Line[]): Net => {
   const idx = new Map<string, number>();
   const pts: [number, number][] = [];
   const adj: [number, number][][] = [];
@@ -24,11 +38,15 @@ const build = async (): Promise<Net> => {
     }
     return i;
   };
+  const seen = new Set<string>();
   for (const s of segs)
     for (let i = 0; i + 1 < s.length; i++) {
       const a = id(s[i]);
       const b = id(s[i + 1]);
       if (a === b) continue;
+      const ek = a < b ? `${a}-${b}` : `${b}-${a}`;
+      if (seen.has(ek)) continue;
+      seen.add(ek);
       const w = haversineKm({ lat: pts[a][0], lng: pts[a][1] }, { lat: pts[b][0], lng: pts[b][1] });
       adj[a].push([b, w]);
       adj[b].push([a, w]);
@@ -36,10 +54,29 @@ const build = async (): Promise<Net> => {
   return { pts, adj };
 };
 
+const netFor = async (a: Pt, b: Pt): Promise<Net | null> => {
+  const x0 = Math.floor((Math.min(a.lng, b.lng) - PAD) / 10);
+  const x1 = Math.floor((Math.max(a.lng, b.lng) + PAD) / 10);
+  const y0 = Math.floor((Math.min(a.lat, b.lat) - PAD) / 10);
+  const y1 = Math.floor((Math.max(a.lat, b.lat) + PAD) / 10);
+  if ((x1 - x0 + 1) * (y1 - y0 + 1) > MAX_TILES) return null;
+  const key = `${x0},${x1},${y0},${y1}`;
+  let n = nets.get(key);
+  if (!n) {
+    const jobs: Promise<Line[]>[] = [];
+    for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) jobs.push(loadTile(x, y));
+    n = build((await Promise.all(jobs)).flat());
+    nets.set(key, n);
+  }
+  return n;
+};
+
 const SNAP_KM = 40;
 
 export async function neRail(a: Pt, b: Pt): Promise<Line | null> {
-  const { pts, adj } = await (net ??= build());
+  const n = await netFor(a, b);
+  if (!n) return null;
+  const { pts, adj } = n;
   const snap = (p: Pt) => {
     let best = -1;
     let bd = SNAP_KM;

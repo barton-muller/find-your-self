@@ -33,13 +33,37 @@ export function arc(a: Pt, b: Pt, n = 32): Line {
   return out;
 }
 
-async function getJson(url: string): Promise<any | null> {
+export const diag: { rail?: string; road?: string } = {};
+
+async function getJson(url: string, tag: 'rail' | 'road'): Promise<any | null> {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), 15000);
   try {
     const r = await fetch(url, { signal: ctl.signal });
-    return r.ok ? await r.json() : null;
-  } catch {
+    if (r.ok) {
+      delete diag[tag];
+      return await r.json();
+    }
+    let msg = '';
+    try {
+      msg = (await r.json()).message ?? '';
+    } catch {
+      /* no body */
+    }
+    diag[tag] = `HTTP ${r.status} ${msg}`.trim().slice(0, 120);
+    return null;
+  } catch (e) {
+    const timeout = (e as Error).name === 'AbortError';
+    let reach = 'unreachable';
+    if (!timeout) {
+      try {
+        await fetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(8000) });
+        reach = 'server reachable but blocked (CORS)';
+      } catch {
+        /* keep unreachable */
+      }
+    }
+    diag[tag] = timeout ? 'timed out' : reach;
     return null;
   } finally {
     clearTimeout(t);
@@ -51,6 +75,7 @@ const flip = (c: number[][]): Line => c.map(([x, y]) => [y, x]);
 async function fetchRoad(a: Pt, b: Pt): Promise<Line | null> {
   const j = await getJson(
     `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=simplified&geometries=geojson`,
+    'road',
   );
   const c = j?.routes?.[0]?.geometry?.coordinates;
   return c?.length ? flip(c) : null;
@@ -62,6 +87,7 @@ async function fetchRail(a: Pt, b: Pt): Promise<Line | null> {
   for (const p of railProfile ? [railProfile] : RAIL_PROFILES) {
     const j = await getJson(
       `https://routing.openrailrouting.org/route?point=${a.lat},${a.lng}&point=${b.lat},${b.lng}&profile=${p}&points_encoded=false&instructions=false`,
+      'rail',
     );
     const c = j?.paths?.[0]?.points?.coordinates;
     if (c?.length) {

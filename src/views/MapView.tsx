@@ -8,7 +8,7 @@ import { go } from '../nav';
 import { useStore } from '../store';
 import { iconSvgString } from '../icons';
 import { modeIcon } from '../ui';
-import { arc, cached, kindOf, route, routeKey, type Line } from '../routes';
+import { arc, cached, kindOf, diag, route, routeKey, type Line } from '../routes';
 
 export function MapView() {
   const { plan } = useStore();
@@ -17,6 +17,7 @@ export function MapView() {
   const layer = useRef<L.LayerGroup | null>(null);
   const fitted = useRef(false);
   const [lines, setLines] = useState<Record<string, Line>>({});
+  const [err, setErr] = useState('');
   const me = useRef<L.LayerGroup | null>(null);
   const s = useMemo(() => schedule(plan), [plan]);
   const ci = useMemo(() => colorIndex(plan, s), [plan, s]);
@@ -63,6 +64,7 @@ export function MapView() {
         if (dead || !line) continue;
         setLines((p) => (p[j.key] ? p : { ...p, [j.key]: line }));
       }
+      if (!dead) setErr([diag.rail && `rail: ${diag.rail}`, diag.road && `road: ${diag.road}`].filter(Boolean).join(' | '));
     })();
     return () => {
       dead = true;
@@ -137,6 +139,7 @@ export function MapView() {
     <div className="mapwrap">
       <div ref={el} className="map" />
       <button className="locate" aria-label="my location" onClick={locate}><Icon name="locate" size={22} /></button>
+      {err && <div className="maphint">Routing failed ({err})</div>}
       {missing.length > 0 && (
         <div className="maphint">
           No coordinates: {missing.map((x, i) => (

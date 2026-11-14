@@ -38,19 +38,21 @@ export const diag: { rail?: string; road?: string } = {};
 type Res = { json: any | null; err: string };
 
 const hostFails: Record<string, number> = {};
+const hostLast: Record<string, string> = {};
 const failedAt = new Map<string, number>();
 const inflight = new Map<string, Promise<Line | null>>();
 const FAIL_TTL = 10 * 60 * 1000;
 
 export const retryFailed = () => {
   for (const k of Object.keys(hostFails)) delete hostFails[k];
+  for (const k of Object.keys(hostLast)) delete hostLast[k];
   failedAt.clear();
   for (const k of Object.keys(diag)) delete diag[k as keyof typeof diag];
 };
 
 async function getJson(url: string): Promise<Res> {
   const host = new URL(url).hostname;
-  if ((hostFails[host] ?? 0) >= 2) return { json: null, err: `${host}: skipped after 2 failures` };
+  if ((hostFails[host] ?? 0) >= 2) return { json: null, err: `${host}: skipped after 2 failures, last: ${hostLast[host] ?? '?'}` };
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), 12000);
   try {
@@ -65,7 +67,10 @@ async function getJson(url: string): Promise<Res> {
     } catch {
       /* no body */
     }
-    if (r.status >= 500 || r.status === 429) hostFails[host] = (hostFails[host] ?? 0) + 1;
+    if (r.status >= 500 || r.status === 429) {
+      hostFails[host] = (hostFails[host] ?? 0) + 1;
+      hostLast[host] = `HTTP ${r.status}`;
+    }
     return { json: null, err: `${host}: HTTP ${r.status} ${msg}`.trim().slice(0, 140) };
   } catch (e) {
     hostFails[host] = (hostFails[host] ?? 0) + 1;
@@ -77,7 +82,8 @@ async function getJson(url: string): Promise<Res> {
     } catch {
       /* keep */
     }
-    return { json: null, err: `${host}: ${why} (${(e as Error).message})` };
+    hostLast[host] = `${why} (${(e as Error).message})`;
+    return { json: null, err: `${host}: ${hostLast[host]}` };
   } finally {
     clearTimeout(t);
   }
@@ -98,7 +104,11 @@ async function fetchRoad(a: Pt, b: Pt): Promise<Line | null> {
   return null;
 }
 
-const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+const OVERPASS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+];
 
 async function nearestStation(p: Pt, errs: string[]): Promise<Pt | null> {
   const c = await loadCache();
@@ -131,7 +141,8 @@ async function nearestStation(p: Pt, errs: string[]): Promise<Pt | null> {
 let railProfile: string | null = null;
 
 async function fetchRail(a: Pt, b: Pt): Promise<Line | null> {
-  const errs: string[] = [];
+  const label = `[${a.lat.toFixed(2)},${a.lng.toFixed(2)}>${b.lat.toFixed(2)},${b.lng.toFixed(2)}]`;
+  const errs: string[] = [label];
   const sa = (await nearestStation(a, errs)) ?? a;
   const sb = (await nearestStation(b, errs)) ?? b;
   for (const p of railProfile ? [railProfile] : RAIL_PROFILES) {
@@ -154,10 +165,10 @@ let cache: Promise<Record<string, Line>> | null = null;
 const loadCache = (): Promise<Record<string, Line>> =>
   (cache ??= get<Record<string, Line>>(KEY).then((c): Record<string, Line> => c ?? {}).catch((): Record<string, Line> => ({})));
 
-let chain: Promise<unknown> = Promise.resolve();
-const queued = <T,>(fn: () => Promise<T>): Promise<T> => {
-  const r = chain.then(fn, fn);
-  chain = r.then(() => new Promise((res) => setTimeout(res, 400)), () => undefined);
+const chains: Record<string, Promise<unknown>> = {};
+const queued = <T,>(kind: string, fn: () => Promise<T>): Promise<T> => {
+  const r = (chains[kind] ?? Promise.resolve()).then(fn, fn);
+  chains[kind] = r.then(() => new Promise((res) => setTimeout(res, 400)), () => undefined);
   return r;
 };
 
@@ -174,7 +185,7 @@ export async function route(kind: Kind, a: Pt, b: Pt): Promise<Line | null> {
   if (Date.now() - (failedAt.get(key) ?? 0) < FAIL_TTL) return null;
   let p = inflight.get(key);
   if (!p) {
-    p = queued(() => (kind === 'rail' ? fetchRail(a, b) : fetchRoad(a, b))).then(async (line) => {
+    p = queued(kind, () => (kind === 'rail' ? fetchRail(a, b) : fetchRoad(a, b))).then(async (line) => {
       inflight.delete(key);
       if (line) {
         const c = await loadCache();

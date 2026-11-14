@@ -65,9 +65,21 @@ export function MapView() {
   useEffect(() => {
     let dead = false;
     (async () => {
-      for (const j of jobs) {
+      const hit = await Promise.all(jobs.map((j) => cached(j.kind, j.a, j.b)));
+      if (dead) return;
+      setLines((p) => {
+        const n = { ...p };
+        jobs.forEach((j, i) => {
+          const l = hit[i];
+          if (l && !n[j.key]) n[j.key] = l;
+        });
+        return n;
+      });
+      for (let i = 0; i < jobs.length; i++) {
         if (dead) return;
-        const line = (await cached(j.kind, j.a, j.b)) ?? (await route(j.kind, j.a, j.b));
+        const j = jobs[i];
+        if (hit[i]) continue;
+        const line = await route(j.kind, j.a, j.b);
         if (dead || !line) continue;
         setLines((p) => (p[j.key] ? p : { ...p, [j.key]: line }));
       }

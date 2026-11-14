@@ -8,6 +8,7 @@ import { go } from '../nav';
 import { useStore } from '../store';
 import { iconSvgString } from '../icons';
 import { modeIcon } from '../ui';
+import { laneIndex, offsetLine } from '../lanes';
 import { bundledRail } from '../rail';
 import { neRail } from '../ne';
 import { arc, cached, kindOf, diag, retryFailed, route, routeKey, type Line } from '../routes';
@@ -23,6 +24,7 @@ export function MapView() {
   const fitted = useRef(false);
   const [lines, setLines] = useState<Record<string, Line>>({});
   const [err, setErr] = useState('');
+  const [zoom, setZoom] = useState(5);
   const [retry, setRetry] = useState(0);
   const me = useRef<L.LayerGroup | null>(null);
   const s = useMemo(() => schedule(plan), [plan]);
@@ -40,6 +42,7 @@ export function MapView() {
     m.attributionControl.setPrefix(`build ${__BUILD__} | Leaflet`);
     layer.current = L.layerGroup().addTo(m);
     map.current = m;
+    m.on('zoomend', () => setZoom(m.getZoom()));
     setTimeout(() => m.invalidateSize(), 50);
     return () => {
       m.remove();
@@ -97,6 +100,23 @@ export function MapView() {
     };
   }, [jobsKey, retry]);
 
+  const geoms = useMemo(() => {
+    const out: { id: string; from: string; o: ReturnType<typeof chosenOption>; active: boolean; pts: L.LatLngTuple[] }[] = [];
+    for (const l of liveLegs(plan)) {
+      const f = plan.stops[l.from];
+      const t = plan.stops[l.to];
+      if (f.lat === null || f.lng === null || t.lat === null || t.lng === null) continue;
+      const a: L.LatLngTuple = [f.lat, f.lng];
+      const b: L.LatLngTuple = [t.lat, t.lng];
+      const o = chosenOption(l);
+      const kind = o ? kindOf(o.mode) : 'straight';
+      const pts: L.LatLngTuple[] = kind === 'air' ? arc({ lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] }) : lines[routeKey(kind, { lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] })] ?? [a, b];
+      out.push({ id: l.id, from: l.from, o, active: s.activeLegs.has(l.id), pts });
+    }
+    return out;
+  }, [plan, s, lines]);
+  const lanes = useMemo(() => laneIndex(geoms), [geoms]);
+
   useEffect(() => {
     const m = map.current;
     const g = layer.current;
@@ -108,22 +128,16 @@ export function MapView() {
       const x = plan.stops[id];
       return x.lat === null || x.lng === null ? null : [x.lat, x.lng];
     };
-    for (const l of liveLegs(plan)) {
-      const a = at(l.from);
-      const b = at(l.to);
-      if (!a || !b) continue;
-      const active = s.activeLegs.has(l.id);
-      const o = chosenOption(l);
-      const kind = o ? kindOf(o.mode) : 'straight';
-      const pts2: L.LatLngTuple[] = kind === 'air' ? arc({ lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] }) : (() => {
-        const k = routeKey(kind, { lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] });
-        return lines[k] ?? [a, b];
-      })();
+    const LANE_PX = 7;
+    for (const gm of geoms) {
+      const k = lanes[gm.id] ?? 0;
+      const pts2 = k ? offsetLine(gm.pts, k * LANE_PX, (p) => m.project(p, m.getZoom()), (x, y) => { const q = m.unproject([x, y], m.getZoom()); return [q.lat, q.lng]; }) : gm.pts;
+      const o = gm.o;
       const line = L.polyline(pts2, {
-        className: `lc${ci[l.from]}`,
-        weight: active ? 5 : 3,
-        dashArray: active ? undefined : '6 8',
-        opacity: active ? 0.95 : 0.6,
+        className: `lc${ci[gm.from]}`,
+        weight: gm.active ? 5 : 3,
+        dashArray: gm.active ? undefined : '6 8',
+        opacity: gm.active ? 0.95 : 0.6,
       }).addTo(g);
       if (o) line.bindTooltip(`${iconSvgString(modeIcon(o.mode))} ${o.mode}${o.duration ? ' · ' + o.duration : ''}${o.overnight ? ' ' + iconSvgString('moon') : ''}`, { sticky: true });
     }
@@ -142,7 +156,7 @@ export function MapView() {
       m.fitBounds(L.latLngBounds(pts), { padding: [30, 30] });
       fitted.current = true;
     }
-  }, [plan, s, ci, nowId, lines]);
+  }, [plan, s, ci, nowId, geoms, lanes, zoom]);
 
   const locate = () => {
     const m = map.current;

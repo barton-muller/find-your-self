@@ -3,6 +3,7 @@ import { overviewCount, overviewUrls, prefetchOverview } from '../tiles';
 import { configured } from '../sync';
 import { useStore } from '../store';
 import { Icon } from '../icons';
+import { copyText, weatherReport } from '../weather';
 import type { Plan, SyncConfig } from '../types';
 
 export function Settings() {
@@ -10,6 +11,22 @@ export function Settings() {
   const [c, setC] = useState<SyncConfig>(cfg ?? { token: '', repo: '', path: 'plan.json', branch: 'main' });
   const file = useRef<HTMLInputElement>(null);
   const [tiles, setTiles] = useState<string>('');
+  const [wx, setWx] = useState('');
+  const [wxText, setWxText] = useState('');
+  const copyWeather = async () => {
+    setWx('Fetching…');
+    setWxText('');
+    try {
+      const t = await weatherReport(plan);
+      if (await copyText(t)) setWx(`Copied (${t.split('\n').length} lines). Paste it to Claude.`);
+      else {
+        setWx('Could not copy. Select the text below and copy it manually.');
+        setWxText(t);
+      }
+    } catch (e) {
+      setWx(`Failed: ${(e as Error).message}`);
+    }
+  };
   const refreshTiles = () => overviewCount().then((n) => setTiles(`${n}/${overviewUrls().length} overview tiles saved offline`)).catch(() => setTiles('Offline cache unavailable'));
   useEffect(() => { refreshTiles(); }, []);
   const set = (k: keyof SyncConfig) => (e: React.ChangeEvent<HTMLInputElement>) => setC({ ...c, [k]: e.target.value.trim() });
@@ -72,6 +89,15 @@ export function Settings() {
           </button>
         </div>
         <p className="muted">{tiles}</p>
+      </section>
+      <section className="card">
+        <h2>Weather for Claude</h2>
+        <p className="muted">Fetches the forecast for each upcoming stop at its planned dates and copies it as text.</p>
+        <div className="rowflex">
+          <button onClick={copyWeather}>Copy forecast</button>
+        </div>
+        <p className="muted">{wx}</p>
+        {wxText && <textarea readOnly value={wxText} rows={10} onFocus={(e) => e.currentTarget.select()} />}
       </section>
       <section className="card">
         <h2>Backup</h2>

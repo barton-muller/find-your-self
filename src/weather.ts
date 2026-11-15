@@ -10,16 +10,16 @@ const CODES: [number, string][] = [
   [80, 'showers'], [81, 'showers'], [82, 'heavy showers'], [85, 'snow showers'], [86, 'snow showers'],
   [95, 'thunderstorm'], [96, 'thunderstorm, hail'], [99, 'thunderstorm, hail'],
 ];
-const desc = (c: number) => CODES.find(([k]) => k === c)?.[1] ?? `code ${c}`;
+const desc = (c: number | null) => c === null ? '?' : CODES.find(([k]) => k === c)?.[1] ?? `code ${c}`;
 const day = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 const key = (lat: number, lng: number) => `${lat.toFixed(2)},${lng.toFixed(2)}`;
 
 interface Daily {
   time: string[];
-  weather_code: number[];
-  temperature_2m_max: number[];
-  temperature_2m_min: number[];
-  precipitation_sum: number[];
+  weather_code: (number | null)[];
+  temperature_2m_max: (number | null)[];
+  temperature_2m_min: (number | null)[];
+  precipitation_sum: (number | null)[];
   precipitation_probability_max: (number | null)[];
 }
 
@@ -47,18 +47,17 @@ export async function weatherReport(plan: Plan): Promise<string> {
     `Plan ${plan.start} to ${plan.end}. "alt" marks stops on an inactive branch (dates are their earliest possible arrival).`,
     '',
   ];
-  const lastDay = by.values().next().value?.time.at(-1) ?? today;
   for (const r2 of live) {
     const d = by.get(key(r2.x.lat!, r2.x.lng!))!;
     out.push(`${r2.x.name || 'Unnamed'}${r2.on ? '' : ' (alt)'}, ${r2.x.nights}n, ${day(r2.from)} to ${day(r2.to)}`);
-    const idx = d.time.map((t, i) => [t, i] as const).filter(([t]) => t >= r2.from && t <= r2.to);
+    const idx = d.time.map((t, i) => [t, i] as const).filter(([t, i]) => t >= r2.from && t <= r2.to && d.temperature_2m_max[i] !== null && d.temperature_2m_min[i] !== null);
     if (!idx.length) {
-      out.push(r2.from > lastDay ? '  beyond the 16-day forecast window' : '  no data');
+      out.push('  no forecast available yet (beyond the ~15-day window)');
       continue;
     }
     for (const [t, i] of idx) {
       const p = d.precipitation_probability_max[i];
-      out.push(`  ${day(t)}: ${Math.round(d.temperature_2m_max[i])}/${Math.round(d.temperature_2m_min[i])}, ${d.precipitation_sum[i]}mm, ${p === null || p === undefined ? '?' : p + '%'}, ${desc(d.weather_code[i])}`);
+      out.push(`  ${day(t)}: ${Math.round(d.temperature_2m_max[i]!)}/${Math.round(d.temperature_2m_min[i]!)}, ${d.precipitation_sum[i] ?? '?'}mm, ${p === null || p === undefined ? '?' : p + '%'}, ${desc(d.weather_code[i])}`);
     }
   }
   return out.join('\n');

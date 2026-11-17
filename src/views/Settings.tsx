@@ -5,7 +5,7 @@ import { configured, listRemoteTrips, type RemoteTrip } from '../sync';
 import { prettyName, slug, uniquePath } from '../trips';
 import { inviteCode, makeInviteLink, parseInvite } from '../invite';
 import { aiBrief } from '../aiBrief';
-import { authAvailable, freshAccess, installUrl, listRepos, manageUrl, rememberReturn, type RepoChoice } from '../auth';
+import { authAvailable, installUrl, listRepos, manageUrl, rememberReturn, type RepoChoice } from '../auth';
 import { useStore } from '../store';
 import { Icon, type IconName } from '../icons';
 import { copyText, weatherReport } from '../weather';
@@ -76,7 +76,7 @@ export function Settings() {
   const [repoMsg, setRepoMsg] = useState('');
   const loadRepos = () => {
     setRepoMsg('Looking for your repos…');
-    freshAccess().then((t) => (t ? listRepos(t) : Promise.reject(new Error('Signed out. Sign in again.'))))
+    listRepos()
       .then((r) => { setRepos(r); setRepoMsg(''); }).catch((e) => setRepoMsg(String(e.message ?? e)));
   };
   useEffect(() => { if (auth && !configured(cfg)) loadRepos(); }, [auth, cfg]); // eslint-disable-line react-hooks/exhaustive-deps

@@ -97,9 +97,6 @@ async function shot(browser, html, w, h, file) {
       todo: async (p) => { await p.goto(`${BASE}#/todo`); },
       settings: async (p) => { await p.goto(`${BASE}#/settings`); await p.waitForTimeout(600); await p.evaluate(() => { const h = [...document.querySelectorAll('h2')].find((x) => /github sync/i.test(x.textContent)); window.scrollTo(0, h.getBoundingClientRect().top + window.scrollY - 70); }); },
     });
-    const dark = await raw(browser, 'dark', { ...phoneOpts, colorScheme: 'dark' }, {
-      timeline: async (p) => { await p.goto(`${BASE}#/timeline`); },
-    });
     const panels = [
       ['plan', '#D5E9E5', 'Plan the route,<br>not just the list', 'Stops, nights and transport in one place. Dates update as you change anything.', light.plan],
       ['fork', '#E3DCF0', 'Branch when you<br>cannot decide', 'Keep two routes side by side. Pick one and see how it moves the dates.', light.fork],
@@ -115,11 +112,11 @@ async function shot(browser, html, w, h, file) {
       .hero{width:1600px;height:800px;position:relative;overflow:hidden;background:#FFFCF0;padding:100px 110px}
       .hero h1{font-size:96px;line-height:1;letter-spacing:-3px;margin-top:34px;font-weight:800}
       .hero p{font-size:42px;margin-top:20px;max-width:640px;line-height:1.3;color:#3a3935}
-      .blob{position:absolute;right:-120px;top:-200px;width:1000px;height:1200px;background:#D5E9E5;border-radius:50% 0 0 50%}
-    </style><body><div class="hero"><div class="blob"></div>${logo}<h1>Go Find<br>Yourself</h1><p>A trip planner for routes that branch.</p>
-      ${phone(dark.timeline, 360, 'left:790px;top:110px;transform:rotate(-4deg)')}
-      ${phone(light.plan, 360, 'left:1020px;top:170px;transform:rotate(3deg)')}
-      ${phone(light.place, 360, 'left:1250px;top:90px;transform:rotate(-2deg)')}
+      .blob{position:absolute;right:-100px;top:-200px;width:1000px;height:1200px;background:#D5E9E5;border-radius:50% 0 0 50%}
+    </style><body><div class="hero"><div class="blob"></div>${logo}<h1>Go Find<br>Yourself</h1><p>A trip planner for<br>routes that branch.</p>
+      ${phone(light.timeline, 270, 'left:690px;top:130px;border-width:9px;border-radius:46px')}
+      ${phone(light.plan, 270, 'left:984px;top:70px;border-width:9px;border-radius:46px')}
+      ${phone(light.place, 270, 'left:1278px;top:130px;border-width:9px;border-radius:46px')}
     </div></body></html>`;
     await shot(browser, hero, 1600, 800, 'hero.png');
 

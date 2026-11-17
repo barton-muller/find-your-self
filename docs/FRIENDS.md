@@ -22,16 +22,16 @@ What the token cannot do: it only works on this one repo. It cannot touch your o
 
 1. Make a **private** repo for it, for example from the [data template](../data-template). See [step 1 of the sync guide](SYNC-AND-AI.md#1-make-a-private-repo-from-the-template). Use a repo that holds nothing else.
 2. [Make a fine-grained token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token) for that repo only, with *Contents: Read and write*. Set the expiry to a date after the last trip you expect. GitHub allows at most a year.
-3. In the app, open *Settings*. In step 3, enter the repo and token and press *Save and sync*.
-4. Still in step 3, open *Invite someone*. Type their name and tap the link button. Copy the link or share it.
+3. In the app, open *Settings*. In step 3, enter the repo and token and press *Save and sync*. Step 3 then shows which repo you are syncing with, and step 4 appears.
+4. Go to step 4, *Invite someone*. Type their name and tap the link button. Copy the link or share it. The link is long mostly because of the token, which cannot be shortened.
 5. Send it to them privately, in a message to that person.
 
 ## What your friend does
 
 - **Android:** tap the link and press *Join*. Then install the app from the browser menu.
-- **iPhone and iPad:** installed apps and Safari keep separate storage, and links open in Safari. The simplest way: add the app to the Home Screen first, copy the link, open the installed app, then paste the link into *Settings*, step 3, *Got an invite link?* and press *Join*.
+- **iPhone and iPad:** installed apps and Safari keep separate storage, and links open in Safari. The simplest way: add the app to the Home Screen first, copy the link, open the installed app, then paste the link into *Settings*, step 3, *Got an invite link?*. The app then asks to join.
 
-After that they make trips as usual. Their trips are saved to their branch.
+After that they make trips as usual. Their trips are saved to their branch. Their step 3 only says which repo they are syncing with. They can invite others from step 4 too, since the same link works for anyone who has it.
 
 ## Keep it safe
 

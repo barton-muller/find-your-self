@@ -255,3 +255,6 @@ code { font-size: .92em; background: var(--bg2); padding: 1px 5px; border-radius
 .joininfo { list-style: none; margin: 4px 0 10px; padding: 0; display: flex; flex-direction: column; gap: 6px; } .joininfo li { display: flex; gap: 8px; align-items: center; }
 .err { color: var(--danger); display: block; margin-top: 4px; }
 .invite summary { display: flex; align-items: center; gap: 6px; } .invite input { margin-top: 8px; }
+
+.syncsum { display: flex; gap: 12px; align-items: flex-start; margin: 2px 0 4px; } .syncsum .ico { color: var(--accent); margin-top: 2px; flex: none; }
+.linkout { margin-top: 10px; font-size: 13px; }

@@ -3,7 +3,7 @@ import { diffDays } from '../dates';
 import { overviewCount, planPts, prefetchOverview } from '../tiles';
 import { configured, listRemoteTrips, type RemoteTrip } from '../sync';
 import { prettyName, slug, uniquePath } from '../trips';
-import { makeInviteLink, parseInvite } from '../invite';
+import { inviteCode, makeInviteLink, parseInvite } from '../invite';
 import { useStore } from '../store';
 import { Icon, type IconName } from '../icons';
 import { copyText, weatherReport } from '../weather';
@@ -52,8 +52,8 @@ export function Settings() {
   };
   const joinFromPaste = (v: string) => {
     setPasted(v);
-    const inv = parseInvite(v);
-    if (inv) { setPasteErr(''); const code = v.match(/#\/join\/([A-Za-z0-9_-]+)/)?.[1] ?? v.trim(); location.hash = `#/join/${code}`; }
+    const code = inviteCode(v);
+    if (code && parseInvite(v)) { setPasteErr(''); location.hash = `#/join/${code}`; }
     else setPasteErr(v.trim() ? 'This is not a valid invite link.' : '');
   };
   const refreshRemote = () => {
@@ -179,65 +179,76 @@ export function Settings() {
       <Sec
         id="sync" num={3} icon="branch" title="Sync and AI agents"
         hint={<>
-          Your trip is saved to a <b>private</b> GitHub repo that you own, using a token limited to that one repo (permission: Contents, read and write). The token stays on this device.
+          Your trips are saved to a <b>private</b> GitHub repo, using a token limited to that one repo (permission: Contents, read and write). The token stays on this device.
           An AI coding agent such as Claude Code can edit the same repo, so you can ask it to change your plan.
         </>}
       >
-        <p className="lead">Keep your trip in a GitHub repo you own. Every device stays in step, and an AI agent can edit it for you.</p>
-        <div className="guidelinks">
-          <a className="ibtn" href={BRAND.syncGuide} target="_blank" rel="noreferrer"><Icon name="book" size={16} /> How to set up sync</a>
-          <a className="ibtn" href={BRAND.tokenGuide} target="_blank" rel="noreferrer"><Icon name="lock" size={16} /> How to create a token</a>
-        </div>
-        {!configured(cfg) && (
-          <label className="fld"><span className="fl"><Icon name="link" size={16} /> Got an invite link? Paste it here</span>
-            <input value={pasted} onChange={(e) => joinFromPaste(e.target.value)} placeholder="https://…#/join/…" autoCapitalize="none" autoCorrect="off" />
-            {pasteErr && <span className="small err">{pasteErr}</span>}
-          </label>
-        )}
-        <label className="fld"><span className="fl"><Icon name="repo" size={16} /> Repository</span>
-          <input value={c.repo} onChange={set('repo')} placeholder="owner/trip-data" autoCapitalize="none" autoCorrect="off" />
-        </label>
-        <label className="fld"><span className="fl"><Icon name="lock" size={16} /> Token</span>
-          <input type="password" value={c.token} onChange={set('token')} placeholder="github_pat_…" autoComplete="off" />
-        </label>
-        <details className="adv">
-          <summary>Advanced</summary>
-          <label className="fld"><span className="fl">Branch</span><input value={c.branch} onChange={set('branch')} autoCapitalize="none" /></label>
-        </details>
-        <div className="rowflex">
-          <button className="primary ibtn" disabled={!configured(c)} onClick={() => saveCfg(c)}><Icon name="sync" size={18} /> Save and sync</button>
-          <button className="iconbtn" aria-label="Sync now" title="Sync now" disabled={!configured(cfg)} onClick={syncNow}><Icon name="sync" size={20} /></button>
-          {cfg && <button className="iconbtn danger" aria-label="Disconnect" title="Disconnect" onClick={() => { saveCfg(null); setC({ ...c, token: '' }); }}><Icon name="x" size={20} /></button>}
-        </div>
-        {configured(cfg) && <p className="small">This trip is saved in your repo as <code>{tripPath}</code>.</p>}
-        {configured(cfg) && (
-          <details className="adv invite">
-            <summary><Icon name="link" size={15} /> Invite someone</summary>
-            <p className="small">Make a link that sets up sync on their device. They get their own branch in this repo. They need no GitHub account.</p>
-            <div className="newtrip">
-              <input value={inviteName} onChange={(e) => { setInviteName(e.target.value); setInviteLink(''); }} placeholder="Their name" />
-              <button className="iconbtn" aria-label="Create invite link" onClick={makeInvite}><Icon name="link" size={20} /></button>
+        {configured(cfg) ? (
+          <>
+            <div className="syncsum">
+              <Icon name="repo" size={22} className="ico" />
+              <div>
+                <div>Syncing with <b>{cfg.repo}</b></div>
+                <div className="small">Branch <code>{cfg.branch}</code>. This trip is saved as <code>{tripPath}</code>.</div>
+              </div>
             </div>
-            {inviteLink && (
-              <>
-                <input readOnly value={inviteLink} onFocus={(e) => e.currentTarget.select()} />
-                <div className="rowflex">
-                  <button className="ibtn" onClick={() => copyText(inviteLink)}><Icon name="copy" size={16} /> Copy</button>
-                  {typeof navigator.share === 'function' && <button className="ibtn" onClick={() => navigator.share({ title: 'Join my trips', url: inviteLink }).catch(() => {})}><Icon name="upload" size={16} /> Share</button>}
-                </div>
-                <p className="small">Send it privately. Anyone with this link can read and change everything in the repo.</p>
-              </>
-            )}
-          </details>
+            <p className={`status s-${sync.status}`}>
+              <Icon name={stIcon} size={16} className={sync.status === 'syncing' ? 'spin' : ''} />
+              {sync.status === 'idle' && 'Waiting…'}
+              {sync.status === 'syncing' && 'Syncing…'}
+              {sync.status === 'ok' && `Synced ${sync.at ? new Date(sync.at).toLocaleTimeString() : ''}`}
+              {sync.status === 'error' && `Error: ${sync.error}`}
+              {sync.status === 'off' && 'Not synced.'}
+            </p>
+            <div className="rowflex">
+              <button className="ibtn" onClick={syncNow}><Icon name="sync" size={18} /> Sync now</button>
+              <button className="iconbtn danger" aria-label="Disconnect" title="Disconnect" onClick={() => { saveCfg(null); setC({ ...c, token: '' }); }}><Icon name="x" size={20} /></button>
+            </div>
+            <p className="small">
+              Want a repo of your own? <a href={BRAND.syncGuide} target="_blank" rel="noreferrer">How to set one up</a>.
+            </p>
+            <details className="adv">
+              <summary>Change connection</summary>
+              <label className="fld"><span className="fl"><Icon name="repo" size={16} /> Repository</span>
+                <input value={c.repo} onChange={set('repo')} placeholder="owner/trip-data" autoCapitalize="none" autoCorrect="off" />
+              </label>
+              <label className="fld"><span className="fl"><Icon name="lock" size={16} /> Token</span>
+                <input type="password" value={c.token} onChange={set('token')} placeholder="github_pat_…" autoComplete="off" />
+              </label>
+              <label className="fld"><span className="fl">Branch</span><input value={c.branch} onChange={set('branch')} autoCapitalize="none" /></label>
+              <div className="rowflex"><button className="primary ibtn" disabled={!configured(c)} onClick={() => saveCfg(c)}><Icon name="sync" size={18} /> Save and sync</button></div>
+            </details>
+          </>
+        ) : (
+          <>
+            <p className="lead">Keep your trips in a GitHub repo you own. Every device stays in step, and an AI agent can edit them for you.</p>
+            <div className="guidelinks">
+              <a className="ibtn" href={BRAND.syncGuide} target="_blank" rel="noreferrer"><Icon name="book" size={16} /> How to set up sync</a>
+              <a className="ibtn" href={BRAND.tokenGuide} target="_blank" rel="noreferrer"><Icon name="lock" size={16} /> How to create a token</a>
+            </div>
+            <label className="fld"><span className="fl"><Icon name="link" size={16} /> Got an invite link? Paste it here</span>
+              <input value={pasted} onChange={(e) => joinFromPaste(e.target.value)} placeholder="https://…#/j/…" autoCapitalize="none" autoCorrect="off" />
+              {pasteErr && <span className="small err">{pasteErr}</span>}
+            </label>
+            <label className="fld"><span className="fl"><Icon name="repo" size={16} /> Repository</span>
+              <input value={c.repo} onChange={set('repo')} placeholder="owner/trip-data" autoCapitalize="none" autoCorrect="off" />
+            </label>
+            <label className="fld"><span className="fl"><Icon name="lock" size={16} /> Token</span>
+              <input type="password" value={c.token} onChange={set('token')} placeholder="github_pat_…" autoComplete="off" />
+            </label>
+            <details className="adv">
+              <summary>Advanced</summary>
+              <label className="fld"><span className="fl">Branch</span><input value={c.branch} onChange={set('branch')} autoCapitalize="none" /></label>
+            </details>
+            <div className="rowflex">
+              <button className="primary ibtn" disabled={!configured(c)} onClick={() => saveCfg(c)}><Icon name="sync" size={18} /> Save and sync</button>
+            </div>
+            <p className={`status s-${sync.status}`}>
+              <Icon name={stIcon} size={16} />
+              Not synced. Data is on this device only.
+            </p>
+          </>
         )}
-        <p className={`status s-${sync.status}`}>
-          <Icon name={stIcon} size={16} className={sync.status === 'syncing' ? 'spin' : ''} />
-          {sync.status === 'off' && 'Not synced. Data is on this device only.'}
-          {sync.status === 'idle' && 'Waiting…'}
-          {sync.status === 'syncing' && 'Syncing…'}
-          {sync.status === 'ok' && `Synced ${sync.at ? new Date(sync.at).toLocaleTimeString() : ''}`}
-          {sync.status === 'error' && `Error: ${sync.error}`}
-        </p>
         <div className="wxline">
           <Icon name="sun" size={20} className="ico" />
           <button className="ibtn" onClick={copyWeather}><Icon name="copy" size={16} /> Copy forecast for AI</button>
@@ -245,6 +256,28 @@ export function Settings() {
         </div>
         {wxText && <textarea readOnly value={wxText} rows={8} onFocus={(e) => e.currentTarget.select()} />}
       </Sec>
+
+      {configured(cfg) && (
+        <Sec
+          num={4} icon="link" title="Invite someone"
+          hint="Make a link that sets up sync on another person's device, using this repo. They get their own branch, so their trips are saved separately, and they need no GitHub account. Anyone with the link can read and change everything in the repo."
+        >
+          <div className="newtrip">
+            <input value={inviteName} onChange={(e) => { setInviteName(e.target.value); setInviteLink(''); }} placeholder="Their name" />
+            <button className="primary iconbtn" aria-label="Create invite link" onClick={makeInvite}><Icon name="link" size={20} /></button>
+          </div>
+          {inviteLink && (
+            <>
+              <input className="linkout" readOnly value={inviteLink} onFocus={(e) => e.currentTarget.select()} />
+              <div className="rowflex">
+                <button className="ibtn" onClick={() => copyText(inviteLink)}><Icon name="copy" size={16} /> Copy</button>
+                {typeof navigator.share === 'function' && <button className="ibtn" onClick={() => navigator.share({ title: 'Join my trips', url: inviteLink }).catch(() => {})}><Icon name="upload" size={16} /> Share</button>}
+              </div>
+              <p className="small">Send it privately.</p>
+            </>
+          )}
+        </Sec>
+      )}
 
       <Sec icon="map" title="Offline map" hint="Saves the whole world at low detail and the area around your stops in more detail, so the map still works without a connection. Other areas are saved as you browse them.">
         <div className="rowflex">

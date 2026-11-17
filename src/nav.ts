@@ -6,7 +6,7 @@ const parse = (): Route => {
   const h = location.hash.replace(/^#\/?/, '');
   const [v, id] = h.split('/');
   if (v === 'place' && id) return { view: 'place', id };
-  if (v === 'join' && id) return { view: 'join', data: id };
+  if ((v === 'join' || v === 'j') && id) return { view: 'join', data: id };
   if (v === 'map' || v === 'timeline' || v === 'todo' || v === 'settings') return { view: v };
   return { view: 'plan' };
 };

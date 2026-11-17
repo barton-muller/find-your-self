@@ -38,7 +38,7 @@ const save = (k: string, v: unknown) => {
   try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ }
 };
 
-function connector(x1: number, y1: number, x2: number, y2: number, step: number, branchOut: boolean, back: boolean): string {
+function connector(x1: number, y1: number, x2: number, y2: number, step: number, branchOut: boolean, back: boolean, endOff = 0): string {
   if (x1 === x2) return `M${x1},${y1} L${x2},${y2}`;
   const sg = Math.sign(x2 - x1);
   const s1 = sg > 0 ? 0 : 1;
@@ -46,9 +46,11 @@ function connector(x1: number, y1: number, x2: number, y2: number, step: number,
   if (back) {
     // The route arrives after the stop's scheduled day: leave the lane below its last night, cross over,
     // and curve back up to the earlier day.
-    const R = Math.max(1, Math.min(6, step / 2, Math.abs(x2 - x1) / 2));
+    // it runs up beside the main line (not on it) so the direction stays readable
+    const tx = x2 - sg * 6;
+    const R = Math.max(1, Math.min(6, step / 2, Math.abs(tx - x1) / 2));
     const yh = y1 + step / 2;
-    return `M${x1},${y1} L${x1},${yh - R} A${R},${R} 0 0 ${s1} ${x1 + sg * R},${yh} L${x2 - sg * R},${yh} A${R},${R} 0 0 ${s1} ${x2},${yh - R} L${x2},${y2}`;
+    return `M${x1},${y1} L${x1},${yh - R} A${R},${R} 0 0 ${s1} ${x1 + sg * R},${yh} L${tx - sg * R},${yh} A${R},${R} 0 0 ${s1} ${tx},${yh - R} L${tx},${y2 + endOff}`;
   }
   const half = Math.max(Math.min(step, y2 - y1), 2) / 2;
   const R = Math.max(1, Math.min(6, half, Math.abs(x2 - x1) / 2));
@@ -329,9 +331,18 @@ export function Timeline() {
               </g>,
             );
           }
+          const sgn = Math.sign(x2 - x1);
+          const tipY = y2 + rd + 2.5;
+          if (back) {
+            // arrowhead under the merge stop: this route runs back up in time to join it
+            const ax = x2 - sgn * 6;
+            icons.push(
+              <path key={`a-${l.id}`} opacity={op} d={`M${ax},${tipY} L${ax - 5},${tipY + 9} L${ax + 5},${tipY + 9} Z`} fill="var(--ink)" stroke="var(--bg)" strokeWidth={1.5} strokeLinejoin="round" pointerEvents="none" />,
+            );
+          }
           return (
             <g key={l.id} opacity={op} onClick={() => go({ view: 'place', id: l.from })} className="g-badge">
-              <path d={connector(x1, y1, x2, y2, ppd, branchOut, back)} fill="none" stroke="var(--ink)" strokeWidth={3} strokeLinecap="round" />
+              <path d={connector(x1, y1, x2, y2, ppd, branchOut, back, rd + 2.5 + 9)} fill="none" stroke="var(--ink)" strokeWidth={3} strokeLinecap={back ? 'butt' : 'round'} strokeDasharray={back ? '6 5' : undefined} />
               {back && <title>{`Arrives in ${plan.stops[l.to].name} ${eff - s.arrive[l.to]} ${eff - s.arrive[l.to] === 1 ? 'day' : 'days'} later than the chosen route`}</title>}
             </g>
           );

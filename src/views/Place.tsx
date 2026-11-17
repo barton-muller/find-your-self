@@ -10,6 +10,8 @@ import { go } from '../nav';
 import { useStore } from '../store';
 import { suggest } from '../estimate';
 import { Icon } from '../icons';
+import { locKey, useWeather, wxLabel, type WxReq } from '../dayWeather';
+import { WxIcon } from './WxIcon';
 import { AutoTextarea, LegSummary, modeIcon, Stepper } from '../ui';
 import type { Leg } from '../types';
 
@@ -29,9 +31,20 @@ export function Place({ id }: { id: string }) {
   const [coordDraft, setCoordDraft] = useState<{ id: string; v: string } | null>(null);
   const [linkTo, setLinkTo] = useState('');
   const nameRef = useRef<HTMLInputElement>(null);
+  const [openDays, setOpenDays] = useState<Set<number>>(() => new Set());
+  const dayStart = st && s.arrive[id] !== undefined ? addDays(plan.start, s.arrive[id]) : null;
+  const wxKey = st && st.lat !== null && st.lng !== null ? locKey(st.lat, st.lng) : '';
+  const wxReqs = useMemo<WxReq[]>(
+    () => (st && dayStart && wxKey && st.lat !== null && st.lng !== null
+      ? [{ key: wxKey, lat: Number(st.lat.toFixed(2)), lng: Number(st.lng.toFixed(2)), dates: Array.from({ length: st.nights + 1 }, (_, i) => addDays(dayStart, i)) }]
+      : []),
+    [st, dayStart, wxKey],
+  );
+  const wxDays = useWeather(wxReqs, true)[wxKey] ?? {};
   const isNew = st?.name === 'New stop';
   useEffect(() => {
     window.scrollTo(0, 0);
+    setOpenDays(new Set());
     if (isNew) {
       const t = setTimeout(() => {
         nameRef.current?.focus();
@@ -142,22 +155,50 @@ export function Place({ id }: { id: string }) {
         </section>
       )}
 
+      {Object.keys(wxDays).length > 0 && (
+        <section className="card wxcard">
+          <div className="label">Weather</div>
+          {Array.from({ length: st.nights + 1 }, (_, i) => {
+            const d = arrive ? addDays(arrive, i) : null;
+            const w = d ? wxDays[d] : undefined;
+            if (!d || !w) return null;
+            return (
+              <div key={d} className="wxrow">
+                <span className="wxd">{fmtDate(d)}</span>
+                <WxIcon w={w} size={22} />
+                <span className="wxs">{wxLabel(w.code)}</span>
+                <span className="wxt">{w.hi === null ? '' : `${Math.round(w.hi)}°`}{w.lo === null ? '' : <small> / {Math.round(w.lo)}°</small>}</span>
+                <span className="wxr">{w.mm >= 0.1 ? `${w.mm < 1 ? '<1' : Math.round(w.mm)} mm` : ''}{w.pop ? <small> {w.pop}%</small> : null}</span>
+                <span className="wxw">{w.wind === null ? '' : `${Math.round(w.wind)} km/h`}</span>
+              </div>
+            );
+          })}
+        </section>
+      )}
+
       <h2>Days</h2>
       {Array.from({ length: st.nights + 1 }, (_, i) => {
         const d = arrive ? addDays(arrive, i) : null;
         const lbl = i === 0 ? 'Arrive' : i === st.nights ? 'Depart' : `Day ${i + 1}`;
         const outLeg = next.find((l) => s.activeLegs.has(l.id)) ?? next[0];
+        const open = !!st.days[i]?.trim() || openDays.has(i);
+        const openIt = () => setOpenDays((o) => new Set(o).add(i));
         return (
-          <div key={i} className="card day">
+          <div key={i} className={`card day ${open ? '' : 'closed'}`}>
             <div className="label">
               {lbl}{d && ` · ${fmtDate(d)}`}
               {i === st.nights && outLeg && legOvernight(outLeg) && <> · <Icon name="moon" size={13} className="moon" /> overnight travel</>}
+              {!open && <button type="button" className="link dayadd" onClick={openIt}><Icon name="plus" size={14} /> Add</button>}
             </div>
-            <AutoTextarea
-              value={st.days[i] ?? ''}
-              placeholder="Activities, one per line"
-              onChange={(e) => edit((x) => { const a = [...x.days]; while (a.length <= i) a.push(''); a[i] = e.target.value; x.days = a; })}
-            />
+            {open && (
+              <AutoTextarea
+                autoFocus={openDays.has(i) && !st.days[i]}
+                value={st.days[i] ?? ''}
+                placeholder="Activities, one per line"
+                onFocus={openIt}
+                onChange={(e) => edit((x) => { const a = [...x.days]; while (a.length <= i) a.push(''); a[i] = e.target.value; x.days = a; })}
+              />
+            )}
           </div>
         );
       })}

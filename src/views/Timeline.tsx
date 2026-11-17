@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { countryOf } from '../cities';
 import { addDays, diffDays, fmtMonthName, fmtShortDate, todayStr } from '../dates';
-import { Icon, iconPath, rainDrops } from '../icons';
+import { Icon, iconPath } from '../icons';
 import {
   activeOutLeg, chosenOption, colorIndex, ins, lanes, legOvernight, liveLegs, liveStops, schedule,
 } from '../model';
 import { go } from '../nav';
 import { useStore } from '../store';
 import { modeIcon } from '../ui';
-import { locKey, rainLevel, useWeather, type Wx, type WxReq } from '../dayWeather';
+import { locKey, useWeather, type Wx, type WxReq } from '../dayWeather';
+import { WxBody } from './WxIcon';
 
 const HH = 46;
 const TH = 54;
@@ -56,8 +57,7 @@ function WxGlyph({ w, x, y, size }: { w: Wx; x: number; y: number; size: number 
   return (
     <g transform={`translate(${x - size / 2},${y - size / 2}) scale(${size / 24})`} className={`wx wx-${w.kind}`}> 
       <title>{tip}</title>
-      <path d={iconPath(w.kind === 'rain' ? 'rain' : w.kind === 'cloud' ? 'cloud' : 'sun')} fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
-      {w.kind === 'rain' && <path d={rainDrops[rainLevel(w.mm)]} fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" />}
+      <WxBody w={w} />
     </g>
   );
 }
@@ -218,7 +218,6 @@ export function Timeline() {
   stops.filter((x) => !s.onPath.has(x.id)).forEach((x) => {
     raw.push({ id: x.id, y: Y(s.arrive[x.id]), side: (laneSide(lane[x.id]) || 1) as -1 | 1, lane: lane[x.id] });
   });
-  const sideOf = new Map(raw.map((r) => [r.id, r.side]));
   const labels = ([-1, 1] as const).flatMap((side) => {
     const list = raw.filter((r) => r.side === side).sort((a, b) => a.y - b.y);
     return list.map((r, k) => {
@@ -318,14 +317,14 @@ export function Timeline() {
 
         {wxOn && ppd >= 12 && stops.map((x) => {
           const g = geo(x.id);
-          const side = sideOf.get(x.id) ?? 1;
+          const sideAt = (day: number) => (lane[x.id] !== 0 ? laneSide(lane[x.id]) : altOnSide(1, day, day + 1) && !altOnSide(-1, day, day + 1) ? -1 : 1);
           const sz = clamp(ppd * 0.5, 9, 12);
-          const gx = laneX(lane[x.id]) + side * (rd + 2.5 + 2 + sz / 2);
+          const gx = (day: number) => laneX(lane[x.id]) + sideAt(day) * (rd + 2.5 + 2 + sz / 2);
           return (
             <g key={`w-${x.id}`} opacity={g.a + x.nights < today ? 0.4 : 1} pointerEvents="none">
               {Array.from({ length: g.dots }, (_, k) => {
                 const w = wxOf(x.id, g.a + k);
-                return w ? <WxGlyph key={k} w={w} x={gx} y={Y(g.a + k)} size={sz} /> : null;
+                return w ? <WxGlyph key={k} w={w} x={gx(g.a + k)} y={Y(g.a + k)} size={sz} /> : null;
               })}
             </g>
           );

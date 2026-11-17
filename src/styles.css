@@ -200,3 +200,11 @@ html.lock, html.lock body { overflow: hidden; height: 100%; min-height: 0; overs
 .tl-mode { position: fixed; z-index: 1500; left: 12px; bottom: calc(var(--th) + var(--sab) + 12px); border-radius: 99px; font-size: 13px; padding: 8px 14px; box-shadow: 0 1px 6px #0004; }
 .leaflet-interactive:focus { outline: none; }
 .linkbtn { background: none; border: 0; padding: 0; font: inherit; color: var(--c0, inherit); text-decoration: underline; }
+
+.wxrow { display: grid; grid-template-columns: 6.6em 22px 1fr auto auto auto; gap: 8px; align-items: center; padding: 5px 0; font-size: 14px; border-top: 1px solid var(--line); }
+.label + .wxrow { border-top: 0; }
+.wxrow small { color: var(--muted); } .wxd { color: var(--muted); white-space: nowrap; } .wxs { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wxt, .wxr, .wxw { text-align: right; white-space: nowrap; } .wxw { color: var(--muted); font-size: 12px; min-width: 4.6em; }
+@media (max-width: 420px) { .wxw { display: none; } .wxrow { grid-template-columns: 6.2em 22px 1fr auto auto; } }
+.day.closed { padding: 6px 12px; } .day.closed .label { margin: 0; display: flex; align-items: center; justify-content: space-between; min-height: 32px; }
+.dayadd { display: inline-flex; align-items: center; gap: 4px; text-transform: none; letter-spacing: 0; }

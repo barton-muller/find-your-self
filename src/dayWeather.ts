@@ -7,6 +7,10 @@ export interface Wx {
   kind: WxKind;
   mm: number;
   hi: number | null;
+  lo: number | null;
+  pop: number | null;
+  wind: number | null;
+  code: number;
 }
 export type WxDays = Record<string, Wx>;
 export interface WxReq {
@@ -18,11 +22,17 @@ export interface WxReq {
 
 type Cache = Record<string, { t: number; days: WxDays }>;
 
-const KEY = 'wx-v2';
+const KEY = 'wx-v3';
 const TTL = 3 * 3600e3;
 const HORIZON = 15;
 
 export const locKey = (lat: number, lng: number) => `${lat.toFixed(2)},${lng.toFixed(2)}`;
+const WMO: [number, string][] = [
+  [0, 'Clear'], [1, 'Mostly clear'], [2, 'Partly cloudy'], [3, 'Overcast'], [48, 'Fog'], [55, 'Drizzle'], [57, 'Freezing drizzle'],
+  [61, 'Light rain'], [63, 'Rain'], [65, 'Heavy rain'], [67, 'Freezing rain'], [77, 'Snow'], [80, 'Light showers'],
+  [81, 'Showers'], [82, 'Heavy showers'], [86, 'Snow showers'], [95, 'Thunderstorm'], [99, 'Thunderstorm, hail'],
+];
+export const wxLabel = (code: number) => (WMO.find(([c]) => code <= c) ?? WMO[0])[1];
 export const rainLevel = (mm: number): 1 | 2 | 3 => (mm < 3 ? 1 : mm < 10 ? 2 : 3);
 
 interface DailyFc {
@@ -30,6 +40,9 @@ interface DailyFc {
   weather_code: (number | null)[];
   precipitation_sum: (number | null)[];
   temperature_2m_max: (number | null)[];
+  temperature_2m_min: (number | null)[];
+  precipitation_probability_max: (number | null)[];
+  wind_speed_10m_max: (number | null)[];
 }
 
 const getJson = async <T>(url: string): Promise<T> => {
@@ -43,13 +56,16 @@ const q = (lat: number, lng: number, from: string, to: string, daily: string) =>
 
 async function fetchForecast(lat: number, lng: number, from: string, to: string): Promise<WxDays> {
   const j = await getJson<{ daily: DailyFc }>(
-    `https://api.open-meteo.com/v1/forecast?${q(lat, lng, from, to, 'weather_code,precipitation_sum,temperature_2m_max')}`,
+    `https://api.open-meteo.com/v1/forecast?${q(lat, lng, from, to, 'weather_code,precipitation_sum,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max')}`,
   );
   const out: WxDays = {};
   j.daily.time.forEach((d, i) => {
     const mm = j.daily.precipitation_sum[i] ?? 0;
     const code = j.daily.weather_code[i] ?? 0;
-    out[d] = { kind: mm >= 1 || code >= 95 ? 'rain' : code >= 3 ? 'cloud' : 'sun', mm, hi: j.daily.temperature_2m_max[i] };
+    out[d] = { kind: mm >= 1 || code >= 95 ? 'rain' : code >= 3 ? 'cloud' : 'sun', mm, code,
+      hi: j.daily.temperature_2m_max[i], lo: j.daily.temperature_2m_min[i],
+      pop: j.daily.precipitation_probability_max[i], wind: j.daily.wind_speed_10m_max[i],
+    };
   });
   return out;
 }
@@ -90,7 +106,7 @@ export function useWeather(reqs: WxReq[], enabled: boolean): Record<string, WxDa
       await Promise.all(Array.from({ length: 4 }, async () => {
         for (let r = queue.shift(); r && !off; r = queue.shift()) await job(r);
       }));
-      try { await set(KEY, cache); } catch { /* ignore */ }
+      try { await set(KEY, { ...(await get<Cache>(KEY)), ...cache }); } catch { /* ignore */ }
     })();
     return () => { off = true; };
   }, [sig, enabled]);

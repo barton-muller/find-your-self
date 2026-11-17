@@ -147,7 +147,7 @@ export function Settings() {
             <b>{BRAND.name}</b>
             <div className="small">{BRAND.tagline}</div>
           </div>
-          <a className="iconbtn docs" href={BRAND.repo} target="_blank" rel="noreferrer" aria-label="Documentation (README)" title="Documentation (README)"><Icon name="book" size={22} /></a>
+          <a className="iconbtn docs" href={BRAND.repo} target="_blank" rel="noreferrer" aria-label="Documentation (README)" title="Documentation (README)"><Icon name="bookopen" size={22} /></a>
         </div>
       </section>
 

@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { get, set } from 'idb-keyval';
 import { applyEntry, diffEntry, sameTargets, type Entry } from './history';
 import { now } from './model';
-import { prefetchOverview } from './tiles';
+import { planPts, prefetchOverview } from './tiles';
 import { seedPlan } from './seed';
 import { configured, mergePlans, samePlan, syncPlan } from './sync';
 import type { Plan, SyncConfig } from './types';
@@ -89,7 +89,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setSync({ status: 'idle' });
         runSync();
       }
-      setTimeout(() => prefetchOverview().catch(() => {}), 4000);
+      setTimeout(() => prefetchOverview(planPts(initial)).catch(() => {}), 4000);
     })();
     const onVis = () => {
       if (document.visibilityState === 'visible') runSync();

@@ -96,7 +96,7 @@ async function shot(browser, html, w, h, file) {
       timeline: async (p) => { await p.goto(`${BASE}#/timeline`); await p.addStyleTag({ content: '.tl-ctl,.tl-mode{display:none}' }); },
       place: async (p) => { await p.goto(`${BASE}#/place/cnx`); await p.waitForTimeout(600); await p.evaluate(() => window.scrollTo(0, 420)); },
       todo: async (p) => { await p.goto(`${BASE}#/todo`); },
-      settings: async (p) => { await p.goto(`${BASE}#/settings`); await p.waitForTimeout(600); await p.evaluate(() => { const h = [...document.querySelectorAll('h2')].find((x) => /github sync/i.test(x.textContent)); window.scrollTo(0, h.getBoundingClientRect().top + window.scrollY - 70); }); },
+      settings: async (p) => { await p.goto(`${BASE}#/settings`); await p.waitForTimeout(600); await p.evaluate(() => { const h = document.getElementById('sync'); window.scrollTo(0, h.getBoundingClientRect().top + window.scrollY - 70); }); },
     });
     const panels = [
       ['plan', '#D5E9E5', 'Plan the route,<br>not just the list', 'Stops, nights and transport in one place. Dates update as you change anything.', light.plan],

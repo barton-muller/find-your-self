@@ -59,11 +59,6 @@ export function PlanView() {
   return (
     <div className="page">
       {!reorder && <Today s={s} />}
-      <div className="toolbar">
-        <button className={reorder ? 'on' : ''} onClick={() => setReorder(!reorder)}>
-          <Icon name="reorder" size={16} /> {reorder ? 'Done' : 'Reorder'}
-        </button>
-      </div>
       {reorder && (
         <p className="muted">
           Move stops with the arrows. Each connection keeps its position in the route, so check transport after reordering. Stops at forks and merges can't move.
@@ -189,6 +184,9 @@ export function PlanView() {
           </Fragment>
         );
       })}
+      <button className={`fab ${reorder ? 'on' : ''}`} aria-label={reorder ? 'Done reordering' : 'Reorder stops'} title={reorder ? 'Done' : 'Reorder'} onClick={() => setReorder(!reorder)}>
+        <Icon name={reorder ? 'check' : 'reorder'} size={22} />
+      </button>
       {!reorder && (
         <button className="big" onClick={() => update((d) => openNew(appendStop(d, s.path[s.path.length - 1])))}>
           <Icon name="plus" size={16} /> Add stop

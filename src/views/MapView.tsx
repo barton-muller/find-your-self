@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { fmtShortDate, addDays, diffDays, todayStr } from '../dates';
 import { Icon } from '../icons';
 import { TILE_URL } from '../tiles';
@@ -8,6 +8,13 @@ import { go } from '../nav';
 import { useStore } from '../store';
 import { iconSvgString } from '../icons';
 import { modeIcon } from '../ui';
+import { laneIndex, offsetLine } from '../lanes';
+import { bundledRail } from '../rail';
+import { neRail } from '../ne';
+import { arc, cached, kindOf, diag, retryFailed, route, routeKey, type Line } from '../routes';
+
+const railLine = async (a: { lat: number; lng: number }, b: { lat: number; lng: number }) =>
+  (await neRail(a, b).catch(() => null)) ?? bundledRail(a, b);
 
 export function MapView() {
   const { plan } = useStore();
@@ -15,6 +22,10 @@ export function MapView() {
   const map = useRef<L.Map | null>(null);
   const layer = useRef<L.LayerGroup | null>(null);
   const fitted = useRef(false);
+  const [lines, setLines] = useState<Record<string, Line>>({});
+  const [err, setErr] = useState('');
+  const [zoom, setZoom] = useState(5);
+  const [retry, setRetry] = useState(0);
   const me = useRef<L.LayerGroup | null>(null);
   const s = useMemo(() => schedule(plan), [plan]);
   const ci = useMemo(() => colorIndex(plan, s), [plan, s]);
@@ -28,8 +39,10 @@ export function MapView() {
       crossOrigin: true,
       attribution: '© OpenStreetMap',
     }).addTo(m);
+    m.attributionControl.setPrefix(`build ${__BUILD__} | Leaflet`);
     layer.current = L.layerGroup().addTo(m);
     map.current = m;
+    m.on('zoomend', () => setZoom(m.getZoom()));
     setTimeout(() => m.invalidateSize(), 50);
     return () => {
       m.remove();
@@ -37,6 +50,72 @@ export function MapView() {
       fitted.current = false;
     };
   }, []);
+
+  const jobs = useMemo(
+    () =>
+      liveLegs(plan)
+        .map((l) => {
+          const f = plan.stops[l.from];
+          const t = plan.stops[l.to];
+          const o = chosenOption(l);
+          if (!o || f.lat === null || f.lng === null || t.lat === null || t.lng === null) return null;
+          const kind = kindOf(o.mode);
+          if (kind === 'straight') return null;
+          const a = { lat: f.lat, lng: f.lng };
+          const b = { lat: t.lat, lng: t.lng };
+          return { key: routeKey(kind, a, b), kind, a, b, active: s.activeLegs.has(l.id) };
+        })
+        .filter((j): j is NonNullable<typeof j> => !!j)
+        .sort((x, y) => Number(y.active) - Number(x.active)),
+    [plan, s],
+  );
+  const jobsKey = jobs.map((j) => j.key).join('|');
+
+  useEffect(() => {
+    let dead = false;
+    (async () => {
+      const hit = await Promise.all(jobs.map((j) => (j.kind === 'rail' ? railLine(j.a, j.b) : cached(j.kind, j.a, j.b))));
+      if (dead) return;
+      setLines((p) => {
+        const n = { ...p };
+        jobs.forEach((j, i) => {
+          const l = hit[i];
+          if (l && !n[j.key]) n[j.key] = l;
+        });
+        return n;
+      });
+      for (let i = 0; i < jobs.length; i++) {
+        if (dead) return;
+        const j = jobs[i];
+        if (hit[i]) continue;
+        if (j.kind === 'rail') continue;
+        const line = await route(j.kind, j.a, j.b);
+        if (dead || !line) continue;
+        setLines((p) => (p[j.key] ? p : { ...p, [j.key]: line }));
+      }
+      if (!dead) setErr([diag.road && `road: ${diag.road}`].filter(Boolean).join(' | '));
+    })();
+    return () => {
+      dead = true;
+    };
+  }, [jobsKey, retry]);
+
+  const geoms = useMemo(() => {
+    const out: { id: string; from: string; o: ReturnType<typeof chosenOption>; active: boolean; pts: L.LatLngTuple[] }[] = [];
+    for (const l of liveLegs(plan)) {
+      const f = plan.stops[l.from];
+      const t = plan.stops[l.to];
+      if (f.lat === null || f.lng === null || t.lat === null || t.lng === null) continue;
+      const a: L.LatLngTuple = [f.lat, f.lng];
+      const b: L.LatLngTuple = [t.lat, t.lng];
+      const o = chosenOption(l);
+      const kind = o ? kindOf(o.mode) : 'straight';
+      const pts: L.LatLngTuple[] = kind === 'air' ? arc({ lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] }) : lines[routeKey(kind, { lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] })] ?? [a, b];
+      out.push({ id: l.id, from: l.from, o, active: s.activeLegs.has(l.id), pts });
+    }
+    return out;
+  }, [plan, s, lines]);
+  const lanes = useMemo(() => laneIndex(geoms), [geoms]);
 
   useEffect(() => {
     const m = map.current;
@@ -49,17 +128,16 @@ export function MapView() {
       const x = plan.stops[id];
       return x.lat === null || x.lng === null ? null : [x.lat, x.lng];
     };
-    for (const l of liveLegs(plan)) {
-      const a = at(l.from);
-      const b = at(l.to);
-      if (!a || !b) continue;
-      const active = s.activeLegs.has(l.id);
-      const o = chosenOption(l);
-      const line = L.polyline([a, b], {
-        className: `lc${ci[l.from]}`,
-        weight: active ? 5 : 3,
-        dashArray: active ? undefined : '6 8',
-        opacity: active ? 0.95 : 0.6,
+    const LANE_PX = 7;
+    for (const gm of geoms) {
+      const k = lanes[gm.id] ?? 0;
+      const pts2 = k ? offsetLine(gm.pts, k * LANE_PX, (p) => m.project(p, m.getZoom()), (x, y) => { const q = m.unproject([x, y], m.getZoom()); return [q.lat, q.lng]; }) : gm.pts;
+      const o = gm.o;
+      const line = L.polyline(pts2, {
+        className: `lc${ci[gm.from]}`,
+        weight: gm.active ? 5 : 3,
+        dashArray: gm.active ? undefined : '6 8',
+        opacity: gm.active ? 0.95 : 0.6,
       }).addTo(g);
       if (o) line.bindTooltip(`${iconSvgString(modeIcon(o.mode))} ${o.mode}${o.duration ? ' · ' + o.duration : ''}${o.overnight ? ' ' + iconSvgString('moon') : ''}`, { sticky: true });
     }
@@ -78,7 +156,7 @@ export function MapView() {
       m.fitBounds(L.latLngBounds(pts), { padding: [30, 30] });
       fitted.current = true;
     }
-  }, [plan, s, ci, nowId]);
+  }, [plan, s, ci, nowId, geoms, lanes, zoom]);
 
   const locate = () => {
     const m = map.current;
@@ -104,6 +182,12 @@ export function MapView() {
     <div className="mapwrap">
       <div ref={el} className="map" />
       <button className="locate" aria-label="my location" onClick={locate}><Icon name="locate" size={22} /></button>
+      {err && (
+        <div className="maphint">
+          Routing failed ({err}){' '}
+          <button type="button" className="linkbtn" onClick={() => { retryFailed(); setErr(''); setRetry((n) => n + 1); }}>Retry</button>
+        </div>
+      )}
       {missing.length > 0 && (
         <div className="maphint">
           No coordinates: {missing.map((x, i) => (

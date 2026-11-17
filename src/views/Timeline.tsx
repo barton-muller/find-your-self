@@ -8,7 +8,7 @@ import {
 import { go } from '../nav';
 import { useStore } from '../store';
 import { modeIcon } from '../ui';
-import { locKey, rainLevel, useWeather, type Wx, type WxReq } from '../weather';
+import { locKey, rainLevel, useWeather, type Wx, type WxReq } from '../dayWeather';
 
 const HH = 46;
 const TH = 54;

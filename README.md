@@ -6,7 +6,8 @@ Serverless PWA for planning a multi-week trip: where you go, how many nights, ho
 - **Plan**: stops with night steppers (dates and totals update instantly), transport options per connection (bus, train, flight, ...; overnight and multi-day), activities per day, accommodation, notes. Insert a stop between two others, reorder with arrows.
 - **Forks and merges**: branch the route (e.g. two ways through Laos), pick the active one, see the date impact at the merge.
 - **Timeline**: git-graph style view, a dot per night, travel days as black lines with mode icons, zoom/pinch, colour by stop or country.
-- **Map**: route and stops on OpenStreetMap, current location, overview tiles cached offline.
+- **Map**: stops and legs on OpenStreetMap. Road legs follow the road (OSRM), rail legs follow the track (bundled Natural Earth data plus a small custom station table), flights are arcs; legs on the same corridor are drawn side by side. Current location, overview tiles cached offline.
+- **Weather for Claude** (Settings): copies a per-stop forecast (Open-Meteo) as text.
 - **Today**: current stop, today's activities, next transport.
 - **To-do**: booked/not-booked checklist for stays and transport (soonest first) plus custom to-dos.
 - **Search a city** by name (built-in list plus Open-Meteo geocoding); **rough travel time estimates** per connection.

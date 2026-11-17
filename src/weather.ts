@@ -1,99 +1,81 @@
-import { get, set } from 'idb-keyval';
-import { useEffect, useMemo, useState } from 'react';
 import { addDays, todayStr } from './dates';
+import { liveStops, schedule } from './model';
+import type { Plan } from './types';
 
-export type WxKind = 'sun' | 'cloud' | 'rain';
-export interface Wx {
-  kind: WxKind;
-  mm: number;
-  hi: number | null;
-}
-export type WxDays = Record<string, Wx>;
-export interface WxReq {
-  key: string;
-  lat: number;
-  lng: number;
-  dates: string[];
-}
+const CODES: [number, string][] = [
+  [0, 'clear'], [1, 'mostly clear'], [2, 'partly cloudy'], [3, 'overcast'], [45, 'fog'], [48, 'fog'],
+  [51, 'drizzle'], [53, 'drizzle'], [55, 'drizzle'], [56, 'freezing drizzle'], [57, 'freezing drizzle'],
+  [61, 'light rain'], [63, 'rain'], [65, 'heavy rain'], [66, 'freezing rain'], [67, 'freezing rain'],
+  [71, 'light snow'], [73, 'snow'], [75, 'heavy snow'], [77, 'snow grains'],
+  [80, 'showers'], [81, 'showers'], [82, 'heavy showers'], [85, 'snow showers'], [86, 'snow showers'],
+  [95, 'thunderstorm'], [96, 'thunderstorm, hail'], [99, 'thunderstorm, hail'],
+];
+const desc = (c: number | null) => c === null ? '?' : CODES.find(([k]) => k === c)?.[1] ?? `code ${c}`;
+const day = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+const key = (lat: number, lng: number) => `${lat.toFixed(2)},${lng.toFixed(2)}`;
 
-type Cache = Record<string, { t: number; days: WxDays }>;
-
-const KEY = 'wx-v2';
-const TTL = 3 * 3600e3;
-const HORIZON = 15;
-
-export const locKey = (lat: number, lng: number) => `${lat.toFixed(2)},${lng.toFixed(2)}`;
-export const rainLevel = (mm: number): 1 | 2 | 3 => (mm < 3 ? 1 : mm < 10 ? 2 : 3);
-
-interface DailyFc {
+interface Daily {
   time: string[];
   weather_code: (number | null)[];
-  precipitation_sum: (number | null)[];
   temperature_2m_max: (number | null)[];
+  temperature_2m_min: (number | null)[];
+  precipitation_sum: (number | null)[];
+  precipitation_probability_max: (number | null)[];
 }
 
-const getJson = async <T>(url: string): Promise<T> => {
+export async function weatherReport(plan: Plan): Promise<string> {
+  const s = schedule(plan);
+  const stops = liveStops(plan)
+    .filter((x) => x.lat !== null && x.lng !== null && s.arrive[x.id] !== undefined)
+    .map((x) => ({ x, from: addDays(plan.start, s.arrive[x.id]), to: addDays(plan.start, s.arrive[x.id] + x.nights), on: s.path.includes(x.id) }))
+    .sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));
+  const today = todayStr();
+  const live = stops.filter((r) => r.to >= today);
+  const uniq = [...new Map(live.map((r) => [key(r.x.lat!, r.x.lng!), r.x])).values()];
+  if (!uniq.length) return 'No upcoming stops with coordinates.';
+  const url =
+    'https://api.open-meteo.com/v1/forecast?latitude=' + uniq.map((x) => x.lat!.toFixed(3)).join(',') +
+    '&longitude=' + uniq.map((x) => x.lng!.toFixed(3)).join(',') +
+    '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=auto&forecast_days=16';
   const r = await fetch(url);
-  if (!r.ok) throw new Error(String(r.status));
-  return (await r.json()) as T;
-};
-
-const q = (lat: number, lng: number, from: string, to: string, daily: string) =>
-  `latitude=${lat}&longitude=${lng}&daily=${daily}&timezone=auto&start_date=${from}&end_date=${to}`;
-
-async function fetchForecast(lat: number, lng: number, from: string, to: string): Promise<WxDays> {
-  const j = await getJson<{ daily: DailyFc }>(
-    `https://api.open-meteo.com/v1/forecast?${q(lat, lng, from, to, 'weather_code,precipitation_sum,temperature_2m_max')}`,
-  );
-  const out: WxDays = {};
-  j.daily.time.forEach((d, i) => {
-    const mm = j.daily.precipitation_sum[i] ?? 0;
-    const code = j.daily.weather_code[i] ?? 0;
-    out[d] = { kind: mm >= 1 || code >= 95 ? 'rain' : code >= 3 ? 'cloud' : 'sun', mm, hi: j.daily.temperature_2m_max[i] };
-  });
-  return out;
+  if (!r.ok) throw new Error(`Open-Meteo HTTP ${r.status}`);
+  const j = await r.json();
+  const arr: { daily: Daily }[] = Array.isArray(j) ? j : [j];
+  const by = new Map(uniq.map((x, i) => [key(x.lat!, x.lng!), arr[i].daily]));
+  const out: string[] = [
+    `Weather forecast from Open-Meteo, fetched ${new Date().toLocaleString('en-GB')}. Units: C, mm. Row: day, high/low, rain mm, rain chance, conditions.`,
+    `Plan ${plan.start} to ${plan.end}. "alt" marks stops on an inactive branch (dates are their earliest possible arrival).`,
+    '',
+  ];
+  for (const r2 of live) {
+    const d = by.get(key(r2.x.lat!, r2.x.lng!))!;
+    out.push(`${r2.x.name || 'Unnamed'}${r2.on ? '' : ' (alt)'}, ${r2.x.nights}n, ${day(r2.from)} to ${day(r2.to)}`);
+    const idx = d.time.map((t, i) => [t, i] as const).filter(([t, i]) => t >= r2.from && t <= r2.to && d.temperature_2m_max[i] !== null && d.temperature_2m_min[i] !== null);
+    if (!idx.length) {
+      out.push('  no forecast available yet (beyond the ~15-day window)');
+      continue;
+    }
+    for (const [t, i] of idx) {
+      const p = d.precipitation_probability_max[i];
+      out.push(`  ${day(t)}: ${Math.round(d.temperature_2m_max[i]!)}/${Math.round(d.temperature_2m_min[i]!)}, ${d.precipitation_sum[i] ?? '?'}mm, ${p === null || p === undefined ? '?' : p + '%'}, ${desc(d.weather_code[i])}`);
+    }
+  }
+  return out.join('\n');
 }
 
-const span = (ds: string[]) => [ds.reduce((a, b) => (a < b ? a : b)), ds.reduce((a, b) => (a > b ? a : b))] as const;
-
-export function useWeather(reqs: WxReq[], enabled: boolean): Record<string, WxDays> {
-  const [data, setData] = useState<Record<string, WxDays>>({});
-  const sig = useMemo(() => JSON.stringify(reqs), [reqs]);
-
-  useEffect(() => {
-    if (!enabled) return;
-    let off = false;
-    const list = JSON.parse(sig) as WxReq[];
-    (async () => {
-      let cache: Cache = {};
-      try { cache = (await get<Cache>(KEY)) ?? {}; } catch { /* ignore */ }
-      const publish = () => {
-        if (off) return;
-        const next: Record<string, WxDays> = {};
-        for (const r of list) next[r.key] = cache[r.key]?.days ?? {};
-        setData(next);
-      };
-      publish();
-      const today = todayStr();
-      const limit = addDays(today, HORIZON);
-      const job = async (r: WxReq) => {
-        const e = cache[r.key];
-        const ds = r.dates.filter((d) => d >= today && d <= limit);
-        if (!ds.length || (e && Date.now() - e.t < TTL && ds.every((d) => e.days[d]))) return;
-        try {
-          const [a, b] = span(ds);
-          cache[r.key] = { t: Date.now(), days: { ...e?.days, ...(await fetchForecast(r.lat, r.lng, a, b)) } };
-          publish();
-        } catch { /* offline: keep cached */ }
-      };
-      const queue = [...list];
-      await Promise.all(Array.from({ length: 4 }, async () => {
-        for (let r = queue.shift(); r && !off; r = queue.shift()) await job(r);
-      }));
-      try { await set(KEY, cache); } catch { /* ignore */ }
-    })();
-    return () => { off = true; };
-  }, [sig, enabled]);
-
-  return data;
+export async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  }
 }

@@ -268,7 +268,8 @@ export function Timeline() {
           const ov = legOvernight(l) && g.st.nights > 0;
           const branchOut = lane[l.from] === 0 && lane[l.to] !== 0;
           const curved = x1 !== x2;
-          const dk = clamp(Math.round(((y1 + y2) / 2 - TOP) / ppd - 0.5), g.lastDay, Math.max(s.arrive[l.to] - 1, g.lastDay));
+          const lastGap = Math.max(s.arrive[l.to] - 1, g.lastDay);
+          const dk = !curved ? g.lastDay + Math.floor((lastGap - g.lastDay) / 2) : branchOut ? g.lastDay : lastGap;
           const iy = Y(dk + 0.5);
           const sz = Math.min(ppd >= 18 ? 16 : 13, ppd * 0.7);
           const iLane = branchOut ? lane[l.to] : lane[l.from];

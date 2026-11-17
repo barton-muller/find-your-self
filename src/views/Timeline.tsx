@@ -38,12 +38,12 @@ const save = (k: string, v: unknown) => {
   try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ }
 };
 
-function connector(x1: number, y1: number, x2: number, y2: number): string {
+function connector(x1: number, y1: number, x2: number, y2: number, step: number, branchOut: boolean): string {
   if (x1 === x2) return `M${x1},${y1} L${x2},${y2}`;
-  const dy = Math.max(y2 - y1, 2);
-  const R = Math.max(1, Math.min(6, dy / 2, Math.abs(x2 - x1) / 2));
+  const half = Math.max(Math.min(step, y2 - y1), 2) / 2;
+  const R = Math.max(1, Math.min(6, half, Math.abs(x2 - x1) / 2));
   const sg = Math.sign(x2 - x1);
-  const yb = y1 + dy / 2 - R;
+  const yb = (branchOut ? y1 + half : y2 - half) - R;
   const s1 = sg > 0 ? 0 : 1;
   const s2 = sg > 0 ? 1 : 0;
   return `M${x1},${y1} L${x1},${yb} A${R},${R} 0 0 ${s1} ${x1 + sg * R},${yb + R} L${x2 - sg * R},${yb + R} A${R},${R} 0 0 ${s2} ${x2},${yb + 2 * R} L${x2},${y2}`;
@@ -279,8 +279,8 @@ export function Timeline() {
           const room = curved ? Infinity : y2 - y1;
           return (
             <g key={l.id} opacity={(active ? 1 : 0.7) * (s.arrive[l.from] + g.st.nights < today ? 0.5 : 1)} onClick={() => go({ view: 'place', id: l.from })} className="g-badge">
-              <path d={connector(x1, y1, x2, y2)} fill="none" stroke="var(--ink)" strokeWidth={3} strokeLinecap="round" />
-              {o && ppd >= 12 && room >= sz - 2 && (
+              <path d={connector(x1, y1, x2, y2, ppd, branchOut)} fill="none" stroke="var(--ink)" strokeWidth={3} strokeLinecap="round" />
+              {o && ppd >= 16 && room >= sz - 2 && (
                 <g color="var(--ink)">
                   <g transform={`translate(${ix - sz / 2},${(ov ? Y(g.lastDay + 0.5) : iy) - sz / 2}) scale(${sz / 24})`}>
                     <path d={iconPath(modeIcon(o.mode))} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
@@ -320,7 +320,7 @@ export function Timeline() {
           );
         })}
 
-        {wxOn && ppd >= 12 && stops.map((x) => {
+        {wxOn && ppd >= 22 && stops.map((x) => {
           const g = geo(x.id);
           const sideAt = (day: number) => (lane[x.id] !== 0 ? laneSide(lane[x.id]) : altOnSide(1, day, day + 1) && !altOnSide(-1, day, day + 1) ? -1 : 1);
           const sz = clamp(ppd * 0.5, 9, 12);

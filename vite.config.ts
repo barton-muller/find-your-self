@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { execSync } from 'node:child_process';
+import { BRAND } from './src/brand';
 
 const build = (() => {
   try {
@@ -20,9 +21,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['apple-touch-icon.png', 'icon.svg'],
       manifest: {
-        name: 'Find Your Self — Trip Planner',
-        short_name: 'Trip',
-        description: 'South East Asia route planner',
+        name: `${BRAND.name}: trip planner`,
+        short_name: BRAND.name,
+        description: BRAND.tagline,
         theme_color: '#0f766e',
         background_color: '#f6f5f1',
         display: 'standalone',

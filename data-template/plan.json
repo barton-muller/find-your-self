@@ -1,0 +1,309 @@
+{
+ "v": 1,
+ "start": "2027-01-11",
+ "end": "2027-01-26",
+ "metaUpdatedAt": 1,
+ "startId": "bkk",
+ "stops": {
+  "bkk": {
+   "id": "bkk",
+   "name": "Bangkok",
+   "lat": 13.7563,
+   "lng": 100.5018,
+   "country": "Thailand",
+   "nights": 2,
+   "notes": "Example trip. Tap any stop to edit it, or reset it in Settings.",
+   "days": [
+    "Arrive, street food in Chinatown",
+    "Grand Palace early, river boat in the afternoon"
+   ],
+   "activeOut": null,
+   "updatedAt": 1,
+   "accom": "Guesthouse near the river",
+   "accomBooked": true
+  },
+  "cnx": {
+   "id": "cnx",
+   "name": "Chiang Mai",
+   "lat": 18.7883,
+   "lng": 98.9853,
+   "country": "Thailand",
+   "nights": 3,
+   "notes": "Old city is walkable. Rent a scooter only if you have a licence.",
+   "days": [
+    "Temples in the old city, night market",
+    "Doi Suthep at sunrise",
+    "Cooking class"
+   ],
+   "activeOut": null,
+   "updatedAt": 1
+  },
+  "cri": {
+   "id": "cri",
+   "name": "Chiang Rai",
+   "lat": 19.9105,
+   "lng": 99.8406,
+   "country": "Thailand",
+   "nights": 2,
+   "notes": "",
+   "days": [
+    "White Temple",
+    "Hill tribe village by songthaew"
+   ],
+   "activeOut": null,
+   "updatedAt": 1
+  },
+  "lpb": {
+   "id": "lpb",
+   "name": "Luang Prabang",
+   "lat": 19.8845,
+   "lng": 102.1348,
+   "country": "Laos",
+   "nights": 3,
+   "notes": "Fork: pick the route after here. The slow boat arrives in the afternoon.",
+   "days": [
+    "Alms giving at dawn, night market",
+    "Kuang Si waterfalls",
+    ""
+   ],
+   "activeOut": "lpb-vv",
+   "updatedAt": 1
+  },
+  "vv": {
+   "id": "vv",
+   "name": "Vang Vieng",
+   "lat": 18.922,
+   "lng": 102.4478,
+   "country": "Laos",
+   "nights": 2,
+   "notes": "",
+   "days": [
+    "Tubing",
+    "Viewpoint hike and blue lagoon"
+   ],
+   "activeOut": null,
+   "updatedAt": 1
+  },
+  "nk": {
+   "id": "nk",
+   "name": "Nong Khiaw",
+   "lat": 20.567,
+   "lng": 102.613,
+   "country": "Laos",
+   "nights": 2,
+   "notes": "Quiet river town. Boat to Muang Ngoi for a day.",
+   "days": [],
+   "activeOut": null,
+   "updatedAt": 1
+  },
+  "vte": {
+   "id": "vte",
+   "name": "Vientiane",
+   "lat": 17.9757,
+   "lng": 102.6331,
+   "country": "Laos",
+   "nights": 2,
+   "notes": "Last stop. Fly home from here.",
+   "days": [],
+   "activeOut": null,
+   "updatedAt": 1
+  }
+ },
+ "legs": {
+  "bkk-cnx": {
+   "id": "bkk-cnx",
+   "from": "bkk",
+   "to": "cnx",
+   "options": [
+    {
+     "id": "o1",
+     "mode": "Sleeper train",
+     "duration": "12h",
+     "cost": "",
+     "notes": "Lower berth, second class",
+     "overnight": true,
+     "extraDays": 0,
+     "booked": true
+    },
+    {
+     "id": "o2",
+     "mode": "Flight",
+     "duration": "1h 15m",
+     "cost": "",
+     "notes": "",
+     "overnight": false,
+     "extraDays": 0
+    }
+   ],
+   "chosen": "o1",
+   "updatedAt": 1
+  },
+  "cnx-cri": {
+   "id": "cnx-cri",
+   "from": "cnx",
+   "to": "cri",
+   "options": [
+    {
+     "id": "o3",
+     "mode": "Bus",
+     "duration": "3h 30m",
+     "cost": "",
+     "notes": "",
+     "overnight": false,
+     "extraDays": 0
+    },
+    {
+     "id": "o4",
+     "mode": "Minivan",
+     "duration": "3h",
+     "cost": "",
+     "notes": "",
+     "overnight": false,
+     "extraDays": 0
+    }
+   ],
+   "chosen": "o3",
+   "updatedAt": 1
+  },
+  "cri-lpb": {
+   "id": "cri-lpb",
+   "from": "cri",
+   "to": "lpb",
+   "options": [
+    {
+     "id": "o5",
+     "mode": "Slow boat",
+     "duration": "2 days",
+     "cost": "",
+     "notes": "Bus to Huay Xai, one night in Pak Beng",
+     "overnight": false,
+     "extraDays": 1
+    },
+    {
+     "id": "o6",
+     "mode": "Bus",
+     "duration": "12h",
+     "cost": "",
+     "notes": "",
+     "overnight": false,
+     "extraDays": 0
+    }
+   ],
+   "chosen": "o5",
+   "updatedAt": 1
+  },
+  "lpb-vv": {
+   "id": "lpb-vv",
+   "from": "lpb",
+   "to": "vv",
+   "options": [
+    {
+     "id": "o7",
+     "mode": "Train",
+     "duration": "1h 45m",
+     "cost": "",
+     "notes": "",
+     "overnight": false,
+     "extraDays": 0
+    },
+    {
+     "id": "o8",
+     "mode": "Minivan",
+     "duration": "5h",
+     "cost": "",
+     "notes": "",
+     "overnight": false,
+     "extraDays": 0
+    }
+   ],
+   "chosen": "o7",
+   "updatedAt": 1
+  },
+  "lpb-nk": {
+   "id": "lpb-nk",
+   "from": "lpb",
+   "to": "nk",
+   "options": [
+    {
+     "id": "o9",
+     "mode": "Minivan",
+     "duration": "3h",
+     "cost": "",
+     "notes": "",
+     "overnight": false,
+     "extraDays": 0
+    }
+   ],
+   "chosen": "o9",
+   "updatedAt": 1
+  },
+  "vv-vte": {
+   "id": "vv-vte",
+   "from": "vv",
+   "to": "vte",
+   "options": [
+    {
+     "id": "o10",
+     "mode": "Train",
+     "duration": "1h",
+     "cost": "",
+     "notes": "",
+     "overnight": false,
+     "extraDays": 0
+    },
+    {
+     "id": "o11",
+     "mode": "Bus",
+     "duration": "3h",
+     "cost": "",
+     "notes": "",
+     "overnight": false,
+     "extraDays": 0
+    }
+   ],
+   "chosen": "o10",
+   "updatedAt": 1
+  },
+  "nk-vte": {
+   "id": "nk-vte",
+   "from": "nk",
+   "to": "vte",
+   "options": [
+    {
+     "id": "o12",
+     "mode": "Sleeper bus",
+     "duration": "11h",
+     "cost": "",
+     "notes": "",
+     "overnight": true,
+     "extraDays": 0
+    }
+   ],
+   "chosen": "o12",
+   "updatedAt": 1
+  }
+ },
+ "todos": {
+  "t1": {
+   "id": "t1",
+   "text": "Buy travel insurance",
+   "done": false,
+   "due": "2027-01-10",
+   "updatedAt": 1
+  },
+  "t2": {
+   "id": "t2",
+   "text": "Download offline maps",
+   "done": true,
+   "due": "2027-01-10",
+   "updatedAt": 1
+  },
+  "t3": {
+   "id": "t3",
+   "text": "Check visa rules for Laos",
+   "done": false,
+   "due": "2027-01-15",
+   "updatedAt": 1
+  }
+ }
+}

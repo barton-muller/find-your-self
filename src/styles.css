@@ -209,3 +209,8 @@ html.lock, html.lock body { overflow: hidden; height: 100%; min-height: 0; overs
 .day.closed { padding: 6px 12px; } .day.closed .label { margin: 0; display: flex; align-items: center; justify-content: space-between; min-height: 32px; }
 .dayadd { display: inline-flex; align-items: center; gap: 4px; text-transform: none; letter-spacing: 0; }
 .wxstrip { display: flex; gap: 3px; align-items: center; flex: none; max-width: 45%; flex-wrap: wrap; justify-content: flex-end; }
+
+.about-head { display: flex; gap: 12px; align-items: center; } .about-head b { font-size: 20px; } .about-head img { border-radius: 12px; }
+.btnlink { display: inline-block; text-decoration: none; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line2); background: var(--bg2); color: var(--ink); font-size: 15px; }
+.btnlink.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.card a:not(.btnlink) { color: var(--accent); }

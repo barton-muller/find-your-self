@@ -1,27 +1,109 @@
-# Trip planner
+<p align="center"><img src="docs/img/hero.png" alt="Tripfork: a trip planner for routes that branch" width="100%"></p>
 
-Serverless PWA for planning a multi-week trip: where you go, how many nights, how you get between places, and what you do each day. Works on phone and iPad, installable to the home screen.
+# Tripfork
 
-## Features
-- **Plan**: stops with night steppers (dates and totals update instantly), transport options per connection (bus, train, flight, ...; overnight and multi-day), activities per day, accommodation, notes. Insert a stop between two others, reorder with arrows.
-- **Forks and merges**: branch the route (e.g. two ways through Laos), pick the active one, see the date impact at the merge.
-- **Timeline**: git-graph style view, a dot per night, travel days as black lines with mode icons, zoom/pinch, colour by stop or country.
-- **Map**: stops and legs on OpenStreetMap. Road legs follow the road (OSRM), rail legs follow the track (bundled Natural Earth data plus a small custom station table), flights are arcs; legs on the same corridor are drawn side by side. Current location, overview tiles cached offline.
-- **Weather for Claude** (Settings): copies a per-stop forecast (Open-Meteo) as text.
-- **Today**: current stop, today's activities, next transport.
-- **To-do**: booked/not-booked checklist for stays and transport (soonest first) plus custom to-dos.
-- **Search a city** by name (built-in list plus Open-Meteo geocoding); **rough travel time estimates** per connection.
-- Undo/redo, export/import JSON, optional sync across devices.
+A trip planner for routes that branch. Add the stops, set the nights, pick how you travel between them. Keep two routes open until you decide which one to take.
 
-## Deploy
-Repo Settings > Pages > Source: GitHub Actions. Pushes to `main` build and deploy. On iPhone/iPad: Safari > Share > Add to Home Screen.
+**[Open the app](https://barton-muller.github.io/tripfork/)** &nbsp;·&nbsp; **[Make your own copy](https://github.com/barton-muller/tripfork/fork)** &nbsp;·&nbsp; [Sync and AI guide](docs/SYNC-AND-AI.md)
 
-## Sync (optional)
-1. Create a **private** repo (e.g. `trip-data`) with an initial commit (a README is enough).
-2. Fine-grained token limited to that repo, Contents: read and write. Set an expiry beyond your trip.
-3. App > gear icon > enter `owner/trip-data`, `plan.json`, `main`, token. The token stays on the device.
+Tripfork is free and open source. You can copy it, change it, and publish your own version as a GitHub page in about five minutes. [How to do that](docs/MAKE-YOUR-OWN.md).
 
-Merging is per stop, connection and to-do; the newest edit wins.
+<p align="center">
+<img src="docs/img/panel-plan.png" width="32%" alt="Plan view with stops, nights and transport">
+<img src="docs/img/panel-fork.png" width="32%" alt="A fork with two route options">
+<img src="docs/img/panel-timeline.png" width="32%" alt="Timeline with one dot per night">
+</p>
+<p align="center">
+<img src="docs/img/panel-weather.png" width="32%" alt="Weather for each day of a stop">
+<img src="docs/img/panel-todo.png" width="32%" alt="Checklist of unbooked stays and transport">
+<img src="docs/img/panel-private.png" width="32%" alt="Settings with optional GitHub sync">
+</p>
+<p align="center"><img src="docs/img/panel-devices.png" width="100%" alt="Phone, tablet and dark mode"></p>
+<p align="center"><sub>The weather in these images is sample data.</sub></p>
 
-## Dev
-`npm i && npm run dev`, `npm run build` to type-check and build. See `CLAUDE.md` for architecture and conventions.
+## What it does
+
+- **Plan.** A list of stops with a number of nights each. Dates and totals update as you change anything. Insert a stop between two others, or reorder with arrows.
+- **Branch.** Keep two ways to get from A to B. Pick one and see how the dates change where the routes meet again.
+- **Transport.** Each connection can have several options (train, bus, flight, boat) with duration, cost and notes. Mark overnight rides and multi-day trips. Tick them off when booked.
+- **Timeline.** One dot per night. Travel days are black lines with an icon. Pinch to zoom.
+- **Map.** Stops and connections on OpenStreetMap. Roads follow the road, rail follows the track, flights are arcs.
+- **Weather.** The forecast for each stop on the days you are there, up to 15 days ahead.
+- **To-do.** Stays and transport that are not booked yet, soonest first, plus your own to-dos.
+- **Notes.** For each stop and for each day.
+- **Offline.** After the first visit it works without a connection. Install it to your home screen.
+- **Undo and redo.** Export and import your trip as a file.
+
+## Your data
+
+Tripfork has no accounts and no server. Your trip is saved in your browser, on your device. Nothing is sent anywhere unless you turn on sync.
+
+Browsers can delete stored data, and iOS does so for sites you have not used for a while. Add the app to your home screen, and either turn on sync or export a backup now and then (*Settings, Backup*).
+
+## Keep your trip in a GitHub repo, and let an AI edit it
+
+Optional. You make a private GitHub repo, give the app a token that can only write to that repo, and the app saves the trip there as a file called `plan.json`. Every device with the token shows the same trip, and you get a history of every change.
+
+The same repo can be handed to an AI agent such as Claude Code. Ask it "add two nights in Hanoi after Ninh Binh" and it edits the plan, checks the dates, and saves. The folder [`data-template`](data-template) is a ready-made starter repo with the rules for agents already written.
+
+Step by step, including how to create the token: **[Sync and AI guide](docs/SYNC-AND-AI.md)**.
+
+Keep your own data repo private. It holds your dates, places and booking notes. The template is public and has no personal data.
+
+## Install on your phone
+
+- **iPhone or iPad:** open the app in Safari, tap *Share*, then *Add to Home Screen*.
+- **Android:** open the app in Chrome, open the menu, then *Install app*.
+- **Computer:** it works in any current browser.
+
+## Make your own copy
+
+1. [Fork the repo](https://github.com/barton-muller/tripfork/fork).
+2. In your fork, *Settings, Pages, Source*: choose *GitHub Actions*.
+3. Open the *Actions* tab, enable workflows, and run *Deploy*.
+4. Your site is at `https://YOUR-USERNAME.github.io/REPO-NAME/`.
+
+Then change what you like, by hand or with an AI coding agent. Every push to `main` publishes again. More detail, including what to check before many people use your copy: [Make your own copy](docs/MAKE-YOUR-OWN.md).
+
+## About this project
+
+Tripfork started as one person's planner for seven weeks in South East Asia. Almost all of the code was written by Claude, an AI assistant, from the author's instructions. It works for the author's own trips. It has no automated tests, so expect rough edges, and back up trips you care about.
+
+Because of that, copying it and adding your own features is the normal way to use it. If you build something others would want, issues and pull requests are welcome.
+
+## For developers
+
+Vite, React 19 and TypeScript, with no UI library. It is a static site. The trip lives in IndexedDB and is saved to GitHub through the Contents API when sync is on.
+
+```
+npm install
+npm run dev        # local server
+npm run build      # type-check and build into dist/
+```
+
+Where things are:
+
+| Path | What it holds |
+|---|---|
+| `src/model.ts`, `src/types.ts` | The trip as a graph of stops and legs, and the date calculation |
+| `src/views/` | Plan, Timeline, Map, Place (stop detail), To-do, Settings |
+| `src/sync.ts`, `src/history.ts` | GitHub sync with per-record merge, undo and redo |
+| `src/seed.ts` | The example trip new users see |
+| `src/brand.ts` | Name, tagline and links in one place |
+| `data-template/` | Starter for the separate data repo |
+| `scripts/screenshots.cjs` | Rebuilds the images in `docs/img/` (needs Playwright) |
+| `AGENTS.md` | Architecture notes and conventions. `CLAUDE.md` links to it. |
+
+The data model in one paragraph: a trip is a directed graph. Stops are nodes and transport legs are edges. A stop with more than one outgoing leg is a fork, and one of them is active. Dates come from walking the active path from the start. Records are never removed, only marked deleted, so syncing two devices can merge them record by record and the newest edit wins.
+
+## Credits
+
+- Weather and place search: [Open-Meteo.com](https://open-meteo.com/) (data under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)).
+- Map: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, drawn with [Leaflet](https://leafletjs.com/).
+- Rail lines: [Natural Earth](https://www.naturalearthdata.com/) (public domain).
+- Road routes: [OSRM](https://project-osrm.org/) public server.
+- Colours: [Flexoki](https://stephango.com/flexoki).
+
+## Licence
+
+[MIT](LICENSE).

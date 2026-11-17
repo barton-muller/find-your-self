@@ -1,5 +1,6 @@
 import { findCity } from './cities';
-import type { Leg, Plan, Stop, TransportOption } from './types';
+import { addDays, todayStr } from './dates';
+import type { Leg, Plan, Stop, Todo, TransportOption } from './types';
 
 let n = 0;
 const opt = (mode: string, duration: string, extra: Partial<TransportOption> = {}): TransportOption => ({
@@ -8,66 +9,60 @@ const opt = (mode: string, duration: string, extra: Partial<TransportOption> = {
 
 export const seedPlan = (): Plan => {
   const t = 1;
+  const start = addDays(todayStr(), 3);
   const stops: Record<string, Stop> = {};
   const legs: Record<string, Leg> = {};
-  const stop = (id: string, name: string, nights: number, notes = ''): void => {
+  const todos: Record<string, Todo> = {};
+  const stop = (id: string, name: string, nights: number, extra: Partial<Stop> = {}): void => {
     const c = findCity(name);
-    stops[id] = { id, name, lat: c?.[1] ?? null, lng: c?.[2] ?? null, nights, notes, days: [], activeOut: null, updatedAt: t };
+    stops[id] = {
+      id, name, lat: c?.[1] ?? null, lng: c?.[2] ?? null, country: c?.[3], nights, notes: '', days: [], activeOut: null, updatedAt: t, ...extra,
+    };
   };
   const leg = (from: string, to: string, options: TransportOption[], chosen = 0) => {
     const id = `${from}-${to}`;
     legs[id] = { id, from, to, options, chosen: options[chosen]?.id ?? null, updatedAt: t };
   };
 
-  stop('bkk1', 'Bangkok', 3);
-  stop('cnx', 'Chiang Mai', 4);
-  stop('lpb', 'Luang Prabang', 5, 'Fork: decide Laos route. Option A south via Vang Vieng/Vientiane, option B north via Nong Khiaw/Luang Namtha.');
-  stop('vv', 'Vang Vieng', 3);
-  stop('vte', 'Vientiane', 3);
-  stop('nk', 'Nong Khiaw', 4);
-  stop('lnt', 'Luang Namtha', 3);
-  stop('kmg', 'Kunming', 4);
-  stop('han', 'Hanoi', 5);
-  stop('nb', 'Ninh Binh', 2);
-  stop('hoi', 'Hoi An', 5);
-  stop('sgn', 'Ho Chi Minh City', 5);
-  stop('pnh', 'Phnom Penh', 3);
-  stop('rep', 'Siem Reap', 4);
-  stop('bkk2', 'Bangkok', 0, 'Final night before flying out / end of trip.');
+  stop('bkk', 'Bangkok', 2, {
+    notes: 'Example trip. Tap any stop to edit it, or reset it in Settings.',
+    accom: 'Guesthouse near the river', accomBooked: true,
+    days: ['Arrive, street food in Chinatown', 'Grand Palace early, river boat in the afternoon'],
+  });
+  stop('cnx', 'Chiang Mai', 3, {
+    notes: 'Old city is walkable. Rent a scooter only if you have a licence.',
+    days: ['Temples in the old city, night market', 'Doi Suthep at sunrise', 'Cooking class'],
+  });
+  stop('cri', 'Chiang Rai', 2, { days: ['White Temple', 'Hill tribe village by songthaew'] });
+  stop('lpb', 'Luang Prabang', 3, {
+    notes: 'Fork: pick the route after here. The slow boat arrives in the afternoon.',
+    days: ['Alms giving at dawn, night market', 'Kuang Si waterfalls', ''],
+  });
+  stop('vv', 'Vang Vieng', 2, { days: ['Tubing', 'Viewpoint hike and blue lagoon'] });
+  stop('nk', 'Nong Khiaw', 2, { notes: 'Quiet river town. Boat to Muang Ngoi for a day.' });
+  stop('vte', 'Vientiane', 2, { notes: 'Last stop. Fly home from here.' });
 
-  leg('bkk1', 'cnx', [
+  leg('bkk', 'cnx', [
+    opt('Sleeper train', '12h', { overnight: true, booked: true, notes: 'Lower berth, second class' }),
     opt('Flight', '1h 15m'),
-    opt('Train', '12h', { overnight: true, notes: 'Sleeper train' }),
-    opt('Bus', '10h', { overnight: true }),
   ], 0);
-  leg('cnx', 'lpb', [
-    opt('Flight', '1h 30m (via BKK/direct)'),
-    opt('Slow boat', '2 days', { extraDays: 1, notes: 'Via Chiang Khong / Huay Xai, 1 night in Pakbeng' }),
-    opt('Bus', '14h'),
-  ], 1);
-  leg('lpb', 'vv', [opt('Train', '2h'), opt('Minivan', '5-6h')]);
-  leg('lpb', 'nk', [opt('Minivan', '3h')]);
-  leg('vv', 'vte', [opt('Train', '1h'), opt('Bus', '3h')]);
-  leg('nk', 'lnt', [opt('Minivan', '5-6h', { notes: 'Via Oudomxay' })]);
-  leg('vte', 'kmg', [opt('Train', '~10h', { notes: 'Laos-China railway' }), opt('Flight', '2h 30m')]);
-  leg('lnt', 'kmg', [opt('Bus', '8-10h', { notes: 'Via Boten/Mohan border' }), opt('Bus + train', '1 day')]);
-  leg('kmg', 'han', [opt('Flight', '2h'), opt('Train', '1.5 days', { overnight: true, extraDays: 0 })]);
-  leg('han', 'nb', [opt('Train', '2h'), opt('Bus', '2h')]);
-  leg('nb', 'hoi', [opt('Train', '15h', { overnight: true, notes: 'To Da Nang then taxi' }), opt('Flight', '1h 20m (via Hanoi)')], 0);
-  leg('hoi', 'sgn', [opt('Flight', '1h 30m from Da Nang'), opt('Sleeper bus', '16h', { overnight: true })]);
-  leg('sgn', 'pnh', [opt('Bus', '6h'), opt('Boat', '5-6h (Mekong)')]);
-  leg('pnh', 'rep', [opt('Bus', '6h'), opt('Flight', '1h')]);
-  leg('rep', 'bkk2', [opt('Flight', '1h 10m'), opt('Bus', '9-10h')]);
-
+  leg('cnx', 'cri', [opt('Bus', '3h 30m'), opt('Minivan', '3h')], 0);
+  leg('cri', 'lpb', [
+    opt('Slow boat', '2 days', { extraDays: 1, notes: 'Bus to Huay Xai, one night in Pak Beng' }),
+    opt('Bus', '12h'),
+  ], 0);
+  leg('lpb', 'vv', [opt('Train', '1h 45m'), opt('Minivan', '5h')], 0);
+  leg('lpb', 'nk', [opt('Minivan', '3h')], 0);
+  leg('vv', 'vte', [opt('Train', '1h'), opt('Bus', '3h')], 0);
+  leg('nk', 'vte', [opt('Sleeper bus', '11h', { overnight: true })], 0);
   stops.lpb.activeOut = 'lpb-vv';
 
-  return {
-    v: 1,
-    start: '2026-10-28',
-    end: '2026-12-14',
-    metaUpdatedAt: t,
-    startId: 'bkk1',
-    stops,
-    legs,
+  const todo = (id: string, text: string, due: string | null, done = false) => {
+    todos[id] = { id, text, done, due, updatedAt: t };
   };
+  todo('t1', 'Buy travel insurance', addDays(start, -1));
+  todo('t2', 'Download offline maps', addDays(start, -1), true);
+  todo('t3', 'Check visa rules for Laos', addDays(start, 4));
+
+  return { v: 1, start, end: addDays(start, 15), metaUpdatedAt: t, startId: 'bkk', stops, legs, todos };
 };

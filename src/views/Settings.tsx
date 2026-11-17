@@ -4,6 +4,7 @@ import { configured } from '../sync';
 import { useStore } from '../store';
 import { Icon } from '../icons';
 import { copyText, weatherReport } from '../weather';
+import { BRAND } from '../brand';
 import type { Plan, SyncConfig } from '../types';
 
 export function Settings() {
@@ -49,6 +50,27 @@ export function Settings() {
 
   return (
     <div className="page">
+      <section className="card about">
+        <div className="about-head">
+          <img src="./icon.svg" width={52} height={52} alt="" />
+          <div>
+            <b>{BRAND.name}</b>
+            <div className="muted">{BRAND.tagline}</div>
+          </div>
+        </div>
+        <p>
+          Your trip is saved on this device. Nothing leaves it unless you turn on sync below.
+          Tripfork is free and open source. You can make your own copy, change it, and publish it as your own page on GitHub.
+        </p>
+        <div className="rowflex">
+          <a className="btnlink primary" href={BRAND.fork} target="_blank" rel="noreferrer">Make your own copy</a>
+          <a className="btnlink" href={BRAND.repo} target="_blank" rel="noreferrer">Source on GitHub</a>
+        </div>
+        <p className="muted">
+          Built with AI (Claude), so expect rough edges. <a href={BRAND.guide} target="_blank" rel="noreferrer">How to publish your own version</a>.
+          Weather by Open-Meteo.com. Maps by OpenStreetMap contributors and Natural Earth. Build {__BUILD__}.
+        </p>
+      </section>
       <section className="card">
         <h2>Trip dates</h2>
         <div className="grid2">
@@ -61,6 +83,7 @@ export function Settings() {
         <p className="muted">
           Stores the plan as a JSON file in a <b>private</b> GitHub repo, via a fine-grained token limited to that one repo
           (permission: Contents → read &amp; write). The token stays on this device only.
+          <a href={BRAND.tokenGuide} target="_blank" rel="noreferrer"> How to create a token</a>. <a href={BRAND.syncGuide} target="_blank" rel="noreferrer">Full sync guide</a>.
         </p>
         <label>Repository<input value={c.repo} onChange={set('repo')} placeholder="owner/trip-data" autoCapitalize="none" autoCorrect="off" /></label>
         <label>File path<input value={c.path} onChange={set('path')} autoCapitalize="none" /></label>

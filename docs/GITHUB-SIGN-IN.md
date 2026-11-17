@@ -17,53 +17,18 @@ The relay keeps nothing: no database and no copy of any token. The secret lives 
 
 - A GitHub account.
 - A free Cloudflare account ([cloudflare.com](https://www.cloudflare.com/)).
-- Node.js on your computer, for the Cloudflare command line tool.
-- About 20 minutes.
+- About 20 minutes. It can all be done from a phone browser.
 
-## 1. Make the GitHub App
+## 1. Set up the relay and the GitHub App
 
-Use a **GitHub App**, not an OAuth App. An OAuth App can only ask for access to all of someone's private repos. A GitHub App is installed on the repos the person picks, and only has the permission you give it.
+The relay and the GitHub App live in their own repo, because they are general and any app can share them: **[github-auth-relay](https://github.com/barton-muller/github-auth-relay)**. Its README has the full steps:
+1. Make a GitHub App (the exact fields are listed there) and keep its Client ID and client secret.
+2. Fork the repo and deploy it to Cloudflare. In the dashboard, *Workers & Pages, Create, Import a repository* does it from a phone. Put the client secret in the Worker as a **Secret**, never in a repo.
+3. Note the Worker's address and the GitHub App's slug.
 
-On github.com open *Settings, Developer settings, GitHub Apps, New GitHub App*. Fill in:
+If you use one account's GitHub Pages for several apps, add `https://<you>.github.io/` as one callback URL with wildcard matching on, and `https://<you>.github.io` as the relay's `ALLOWED_ORIGINS`. That covers every app.
 
-| Field | Value |
-|---|---|
-| GitHub App name | A unique name, for example `Go Find Yourself`. It becomes the app's address: `github.com/apps/<slug>`. Note the slug. |
-| Homepage URL | Your site, for example `https://barton-muller.github.io/find-your-self/` |
-| Callback URL | The same address, with the trailing `/`. Add one for each site that will use it (GitHub needs an exact match, and allows several). |
-| Expire user authorization tokens | Ticked (the default) |
-| Request user authorization (OAuth) during installation | Ticked |
-| Webhook, Active | Unticked |
-| Repository permissions, Contents | **Read and write** |
-| Where can this GitHub App be installed | *Any account* if other people should use it, or *Only on this account* while testing |
-
-Press *Create GitHub App*. On the app's page:
-1. Copy the **Client ID**. It is public.
-2. Under *Client secrets* press *Generate a new client secret* and copy it now. GitHub shows it once. Keep it for step 2. Never put it in the app's code or in the repo.
-
-## 2. Deploy the relay
-
-The relay code is in [`worker/`](../worker). From the repo folder:
-
-```
-cd worker
-npx wrangler login
-```
-
-Edit `wrangler.toml`:
-- `GITHUB_CLIENT_ID`: the Client ID from step 1.
-- `ALLOWED_ORIGINS`: the address of your site without a path, for example `https://barton-muller.github.io`. Separate several sites with commas. The relay refuses requests from any other site.
-
-Then store the secret and deploy:
-
-```
-npx wrangler secret put GITHUB_CLIENT_SECRET     # paste the secret when asked
-npx wrangler deploy
-```
-
-The deploy prints the relay's address, something like `https://gfy-github-auth.your-name.workers.dev`. To check the code first, run `node test.mjs` in `worker/`. It uses a pretend GitHub.
-
-## 3. Tell the app about it
+## 2. Tell the app about it
 
 The three values are public. Add them as **variables** (not secrets) in your repo: *Settings, Secrets and variables, Actions, Variables*.
 
@@ -75,7 +40,7 @@ The three values are public. Add them as **variables** (not secrets) in your rep
 
 Run the *Deploy* workflow again (or push to `main`). The deploy workflow passes the variables to the build. If you would rather not use variables, put the three values in `src/brand.ts` under `auth`.
 
-## 4. Try it
+## 3. Try it
 
 1. Open the app, *Settings*, step 3, and press **Sign in with GitHub**. Approve.
 2. The app shows "Signed in as ...". Press **Add a repo**, install the app on a private repo, come back and press **Refresh list**.
@@ -84,8 +49,8 @@ Run the *Deploy* workflow again (or push to `main`). The deploy workflow passes 
 ## More apps on the same storage
 
 The relay and the GitHub App are not tied to one app.
-- Add each new site to `ALLOWED_ORIGINS` and run `npx wrangler deploy` again.
-- Add the site's address as another *Callback URL* on the GitHub App (it allows several).
+- Add each new site to the relay's `ALLOWED_ORIGINS` and redeploy (one entry per origin covers every page under it).
+- Add the site's address as another *Callback URL* on the GitHub App, unless wildcard matching already covers it.
 - Give the new app the same three `VITE_GH_*` values.
 
 Each app signs people in with the same account. Two points to know:
@@ -98,7 +63,7 @@ The GitHub App has access to every repo it is installed on, and the token works 
 
 - **No invite links for signed-in people.** An access token from sign-in expires after 8 hours, so it cannot go in a link. On another device the person signs in again. Invite links still work for people who connect with a token. A friend without a GitHub account can only use those.
 - **AI agents.** The *Copy for AI* text for a signed-in person has no token. Their agent uses their own GitHub login, for example after `gh auth login`.
-- **Revoking.** A person can remove the app under their GitHub settings, *Applications*. To cut everyone off at once, regenerate the client secret in the GitHub App and run `npx wrangler secret put GITHUB_CLIENT_SECRET` again.
+- **Revoking.** A person can remove the app under their GitHub settings, *Applications*. To cut everyone off at once, regenerate the client secret in the GitHub App and update the `GITHUB_CLIENT_SECRET` secret in Cloudflare.
 - **Cost.** The relay makes two small calls per person per 8 hours. That fits Cloudflare's free tier, but check Cloudflare's current limits.
 - **Privacy.** Tokens pass through the relay once. It does not store or log them. If you change its code, keep it that way.
 

@@ -35,7 +35,7 @@ After that they make trips as usual. Their trips are saved to their branch. Thei
 
 ## Your own other devices
 
-To connect another phone or computer of your own, open *Settings*, step 3, *Set up another device of yours*, and tap *Make link*. Send the link to yourself and open it on the other device. It connects to the same repo and branch. Opening a link again on a device that is already connected skips the question and goes straight to your trips.
+To connect another phone or computer of your own, open *Settings*, step 3, and tap *Copy link for another device*. Send the link to yourself and open it on the other device. It connects to the same repo and branch. Opening a link again on a device that is already connected skips the question and goes straight to your trips.
 
 ## Editing with an AI agent
 

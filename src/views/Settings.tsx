@@ -45,7 +45,6 @@ export function Settings() {
   const [inviteName, setInviteName] = useState('');
   const [inviteLink, setInviteLink] = useState('');
   const [aiMsg, setAiMsg] = useState('');
-  const [deviceLink, setDeviceLink] = useState('');
   const [pasted, setPasted] = useState('');
   const [pasteErr, setPasteErr] = useState('');
   const makeInvite = () => {
@@ -56,6 +55,10 @@ export function Settings() {
   const copyBrief = async (b: Parameters<typeof aiBrief>[0]) => {
     setAiMsg((await copyText(aiBrief(b))) ? 'Copied. Paste it into your AI agent.' : 'Could not copy.');
     window.setTimeout(() => setAiMsg(''), 4000);
+  };
+  const copyLink = async (link: string, ok: string) => {
+    setAiMsg((await copyText(link)) ? ok : 'Could not copy.');
+    window.setTimeout(() => setAiMsg(''), 5000);
   };
   const joinFromPaste = (v: string) => {
     setPasted(v);
@@ -207,32 +210,17 @@ export function Settings() {
               {sync.status === 'error' && `Error: ${sync.error}`}
               {sync.status === 'off' && 'Not synced.'}
             </p>
-            <div className="rowflex">
+            <div className="rowflex actrow">
               <button className="ibtn" onClick={syncNow}><Icon name="sync" size={18} /> Sync now</button>
-              <button className="iconbtn danger" aria-label="Disconnect" title="Disconnect" onClick={() => { saveCfg(null); setC({ ...c, token: '' }); }}><Icon name="x" size={20} /></button>
-            </div>
-            <div className="rowflex ailine">
+              <button className="ibtn" onClick={() => copyLink(makeInviteLink({ repo: cfg.repo, token: cfg.token, branch: cfg.branch }), 'Link copied. Open it on your other device and press Join.')}>
+                <Icon name="link" size={18} /> Copy link for another device
+              </button>
               <button className="ibtn" onClick={() => copyBrief({ repo: cfg.repo, token: cfg.token, branch: cfg.branch, trip: activeTrip.name, path: tripPath })}>
                 <Icon name="sparkle" size={18} /> Copy for AI agent
               </button>
-              <span className="small">{aiMsg || 'Repo, branch, token and instructions for Claude Code or similar. Contains your token.'}</span>
+              <button className="iconbtn danger" aria-label="Disconnect" title="Disconnect" onClick={() => { saveCfg(null); setC({ ...c, token: '' }); }}><Icon name="x" size={20} /></button>
             </div>
-            <details className="adv">
-              <summary><Icon name="link" size={15} /> Set up another device of yours</summary>
-              <p className="small">Make a link that connects your phone, tablet or computer to this same repo and branch. Open it there and press Join. It contains your token, so send it only to yourself.</p>
-              <div className="rowflex">
-                <button className="ibtn" onClick={() => setDeviceLink(makeInviteLink({ repo: cfg.repo, token: cfg.token, branch: cfg.branch }))}><Icon name="link" size={16} /> Make link</button>
-              </div>
-              {deviceLink && (
-                <>
-                  <input className="linkout" readOnly value={deviceLink} onFocus={(e) => e.currentTarget.select()} />
-                  <div className="rowflex">
-                    <button className="ibtn" onClick={() => copyText(deviceLink)}><Icon name="copy" size={16} /> Copy</button>
-                    {typeof navigator.share === 'function' && <button className="ibtn" onClick={() => navigator.share({ title: 'Go Find Yourself: connect this device', url: deviceLink }).catch(() => {})}><Icon name="upload" size={16} /> Share</button>}
-                  </div>
-                </>
-              )}
-            </details>
+            <p className="small">{aiMsg || 'The link and the AI text contain your token. Send them only to yourself or people you trust.'}</p>
             <p className="small">
               Want a repo of your own? <a href={BRAND.syncGuide} target="_blank" rel="noreferrer">How to set one up</a>.
             </p>

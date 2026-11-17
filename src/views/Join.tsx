@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Icon } from '../icons';
 import { parseInvite } from '../invite';
 import { useStore } from '../store';
@@ -8,11 +8,12 @@ const leave = (hash: string) => location.replace(`${location.pathname}${location
 export function Join({ data }: { data: string }) {
   const { cfg, saveCfg } = useStore();
   const inv = parseInvite(data);
+  const joined = useRef(false);
   const same = !!inv && !!cfg && cfg.repo === inv.repo && cfg.branch === inv.branch && cfg.token === inv.token;
   useEffect(() => {
-    if (same) leave('#/plan');
+    if (same && !joined.current) leave('#/plan');
   }, [same]);
-  if (same) return <div className="page"><p className="small">You are already connected. Opening your trips…</p></div>;
+  if (same && !joined.current) return <div className="page"><p className="small">You are already connected. Opening your trips…</p></div>;
   if (!inv) {
     return (
       <div className="page">
@@ -25,6 +26,7 @@ export function Join({ data }: { data: string }) {
     );
   }
   const accept = () => {
+    joined.current = true;
     saveCfg({ repo: inv.repo, token: inv.token, branch: inv.branch, path: 'plan.json' });
     leave('#/settings');
   };

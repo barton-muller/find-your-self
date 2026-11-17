@@ -2,7 +2,7 @@ import { get, set, del } from 'idb-keyval';
 import { BRAND } from './brand';
 
 // "Sign in with GitHub" with a GitHub App. The browser sends the user to github.com, GitHub sends back a one-time code,
-// and a small relay (the github-auth-relay repo) swaps it for tokens, because that step needs the app's client secret.
+// and a small relay (the pages-storage repo) swaps it for tokens, because that step needs the app's client secret.
 // PKCE ties the code to this browser. After that the app talks to api.github.com directly with the user's token.
 
 export interface AuthState {

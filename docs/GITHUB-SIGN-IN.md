@@ -21,10 +21,10 @@ The relay keeps nothing: no database and no copy of any token. The secret lives 
 
 ## 1. Set up the relay and the GitHub App
 
-The relay and the GitHub App live in their own repo, because they are general and any app can share them: **[github-auth-relay](https://github.com/barton-muller/github-auth-relay)**. Its README has the full steps:
+The relay and the GitHub App live in their own repo, because they are general and any app can share them: **[pages-storage](https://github.com/barton-muller/pages-storage)**. Its README has the full steps:
 1. Make a GitHub App (the exact fields are listed there) and keep its Client ID and client secret.
-2. Fork the repo and deploy it to Cloudflare. In the dashboard, *Workers & Pages, Create, Import a repository* does it from a phone. Put the client secret in the Worker as a **Secret**, never in a repo.
-3. Note the Worker's address and the GitHub App's slug.
+2. Use the Deploy to Cloudflare button in its README. It copies the repo into your account and asks for the Client ID, the client secret and the allowed sites. The secret is stored as a Cloudflare secret, never in a repo.
+3. Set the GitHub App's Setup URL to `<relay address>/return`, and note the relay's address and the app's slug.
 
 If you use one account's GitHub Pages for several apps, add `https://<you>.github.io/` as one callback URL with wildcard matching on, and `https://<you>.github.io` as the relay's `ALLOWED_ORIGINS`. That covers every app.
 

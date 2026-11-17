@@ -38,12 +38,12 @@ const save = (k: string, v: unknown) => {
   try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ }
 };
 
-function connector(x1: number, y1: number, x2: number, y2: number, branchOut: boolean): string {
+function connector(x1: number, y1: number, x2: number, y2: number): string {
   if (x1 === x2) return `M${x1},${y1} L${x2},${y2}`;
   const dy = Math.max(y2 - y1, 2);
   const R = Math.max(1, Math.min(6, dy / 2, Math.abs(x2 - x1) / 2));
   const sg = Math.sign(x2 - x1);
-  const yb = branchOut ? y1 : y1 + dy - 2 * R;
+  const yb = y1 + dy / 2 - R;
   const s1 = sg > 0 ? 0 : 1;
   const s2 = sg > 0 ? 1 : 0;
   return `M${x1},${y1} L${x1},${yb} A${R},${R} 0 0 ${s1} ${x1 + sg * R},${yb + R} L${x2 - sg * R},${yb + R} A${R},${R} 0 0 ${s2} ${x2},${yb + 2 * R} L${x2},${y2}`;
@@ -267,10 +267,8 @@ export function Timeline() {
           const o = chosenOption(l);
           const ov = legOvernight(l) && g.st.nights > 0;
           const branchOut = lane[l.from] === 0 && lane[l.to] !== 0;
-          const R = x1 === x2 ? 0 : Math.max(1, Math.min(6, Math.max(y2 - y1, 2) / 2, Math.abs(x2 - x1) / 2));
-          const v0 = branchOut ? y1 + 2 * R : y1;
-          const v1 = branchOut ? y2 : y2 - 2 * R;
-          const dk = clamp(Math.round(((v0 + v1) / 2 - TOP) / ppd - 0.5), g.lastDay, Math.max(s.arrive[l.to] - 1, g.lastDay));
+          const curved = x1 !== x2;
+          const dk = clamp(Math.round(((y1 + y2) / 2 - TOP) / ppd - 0.5), g.lastDay, Math.max(s.arrive[l.to] - 1, g.lastDay));
           const iy = Y(dk + 0.5);
           const sz = Math.min(ppd >= 18 ? 16 : 13, ppd * 0.7);
           const iLane = branchOut ? lane[l.to] : lane[l.from];
@@ -278,10 +276,10 @@ export function Timeline() {
           const d1 = (ov ? g.lastDay + 2 : dk + 1) + 1;
           const side = iLane !== 0 ? laneSide(iLane) : altOnSide(1, d0, d1) && !altOnSide(-1, d0, d1) ? -1 : 1;
           const ix = (branchOut ? x2 : x1) + side * (6 + sz / 2);
-          const room = v1 - v0;
+          const room = curved ? Infinity : y2 - y1;
           return (
             <g key={l.id} opacity={(active ? 1 : 0.7) * (s.arrive[l.from] + g.st.nights < today ? 0.5 : 1)} onClick={() => go({ view: 'place', id: l.from })} className="g-badge">
-              <path d={connector(x1, y1, x2, y2, branchOut)} fill="none" stroke="var(--ink)" strokeWidth={3} strokeLinecap="round" />
+              <path d={connector(x1, y1, x2, y2)} fill="none" stroke="var(--ink)" strokeWidth={3} strokeLinecap="round" />
               {o && ppd >= 12 && room >= sz - 2 && (
                 <g color="var(--ink)">
                   <g transform={`translate(${ix - sz / 2},${(ov ? Y(g.lastDay + 0.5) : iy) - sz / 2}) scale(${sz / 24})`}>
@@ -306,13 +304,18 @@ export function Timeline() {
           const col = colorOf(x.id);
           const y0 = Y(g.a);
           return (
-            <g key={x.id} className="g-node" opacity={past ? 0.5 : on ? 1 : 0.8} onClick={() => go({ view: 'place', id: x.id })}>
+            <g key={x.id}>
+            <g pointerEvents="none" fill="var(--bg)">
+              {Array.from({ length: g.dots }, (_, k) => <circle key={k} cx={px} cy={Y(g.a + k)} r={(k === 0 ? rd + 2.5 : rd) + 2} />)}
+            </g>
+            <g className="g-node" opacity={past ? 0.5 : on ? 1 : 0.8} onClick={() => go({ view: 'place', id: x.id })}>
               {g.dots > 1 && <line x1={px} x2={px} y1={y0} y2={Y(g.lastDay)} stroke={col} strokeWidth={showDots ? 3 : clamp(ppd * 0.5, 3, 6)} strokeLinecap="round" />}
               {showDots && Array.from({ length: g.dots - 1 }, (_, k) => (
                 <circle key={k} cx={px} cy={Y(g.a + k + 1)} r={rd} fill={col} stroke="var(--bg)" strokeWidth={1.5} />
               ))}
               <circle cx={px} cy={y0} r={rd + 2.5} fill={g.hollow ? 'var(--bg)' : col} stroke={g.hollow ? col : 'var(--bg)'} strokeWidth={g.hollow ? 2.5 : 2} />
               <rect x={px - LW / 2} y={y0 - 8} width={LW} height={Math.max(Y(g.lastDay) - y0, 0) + 16} fill="transparent" />
+            </g>
             </g>
           );
         })}

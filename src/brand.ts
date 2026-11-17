@@ -14,6 +14,6 @@ export const BRAND = {
   auth: {
     clientId: (import.meta.env?.VITE_GH_CLIENT_ID as string | undefined) || 'Iv23li69aGBxYokv1i8f', // GitHub App client ID
     relay: (import.meta.env?.VITE_GH_RELAY as string | undefined) || 'https://pages-storage-active.barton-fna.workers.dev', // any Worker address works; set VITE_GH_RELAY to use another
-    appSlug: (import.meta.env?.VITE_GH_APP_SLUG as string | undefined) || 'remote-storage-bm', // GitHub App name in its URL: github.com/apps/<slug>
+    appSlug: (import.meta.env?.VITE_GH_APP_SLUG as string | undefined) || 'pages-storage-bm', // GitHub App name in its URL: github.com/apps/<slug>
   },
 } as const;

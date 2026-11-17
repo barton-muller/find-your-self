@@ -6,6 +6,7 @@ import {
   toggleLegBooked, toggleStay,
 } from '../model';
 import { go } from '../nav';
+import { ssGet, ssSet } from '../storage';
 import { useStore } from '../store';
 import { LegSummary, Stepper } from '../ui';
 import { Today } from './Today';
@@ -41,12 +42,12 @@ export function PlanView() {
   }, [plan.start, s]);
   useEffect(() => {
     let saved: string | null = null;
-    try { saved = sessionStorage.getItem('plan-scroll'); } catch { /* ignore */ }
+    saved = ssGet('plan-scroll');
     const raf = requestAnimationFrame(() => {
       if (saved !== null) window.scrollTo(0, Number(saved));
       else if (nowId) document.getElementById(`stop-${nowId}`)?.scrollIntoView({ block: 'start' });
     });
-    const onScroll = () => { try { sessionStorage.setItem('plan-scroll', String(window.scrollY)); } catch { /* ignore */ } };
+    const onScroll = () => ssSet('plan-scroll', String(window.scrollY));
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => { cancelAnimationFrame(raf); window.removeEventListener('scroll', onScroll); };
     // eslint-disable-next-line react-hooks/exhaustive-deps

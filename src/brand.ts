@@ -2,6 +2,9 @@ export const BRAND = {
   name: 'Go Find Yourself',
   short: 'Find Yourself',
   tagline: 'A trip planner for routes that branch.',
+  // Names this app's data in the browser. Sites on one origin (for example several github.io project pages) share browser storage,
+  // so every app that runs there needs its own value. The GitHub sign-in token is shared on purpose.
+  storage: 'gfy',
   repo: 'https://github.com/barton-muller/find-your-self',
   fork: 'https://github.com/barton-muller/find-your-self/fork',
   guide: 'https://github.com/barton-muller/find-your-self/blob/main/docs/MAKE-YOUR-OWN.md',

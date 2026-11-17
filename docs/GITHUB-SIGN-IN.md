@@ -30,7 +30,7 @@ On github.com open *Settings, Developer settings, GitHub Apps, New GitHub App*. 
 |---|---|
 | GitHub App name | A unique name, for example `Go Find Yourself`. It becomes the app's address: `github.com/apps/<slug>`. Note the slug. |
 | Homepage URL | Your site, for example `https://barton-muller.github.io/find-your-self/` |
-| Callback URL | The same address, with the trailing `/`. You can add more, one per site that will use it. |
+| Callback URL | The same address, with the trailing `/`. Add one for each site that will use it (GitHub needs an exact match, and allows several). |
 | Expire user authorization tokens | Ticked (the default) |
 | Request user authorization (OAuth) during installation | Ticked |
 | Webhook, Active | Unticked |
@@ -88,7 +88,11 @@ The relay and the GitHub App are not tied to one app.
 - Add the site's address as another *Callback URL* on the GitHub App (it allows several).
 - Give the new app the same three `VITE_GH_*` values.
 
-Each app then signs people in with the same account and can use the same repo, so several apps can share one storage repo. Keep each app's files in its own folder in the repo.
+Each app signs people in with the same account. Two points to know:
+- **One sign-in for all your sites on one address.** The sign-in token is kept under a shared name, so signing in on one site signs you in on the others at `you.github.io`. Each site still picks its own repo.
+- **Give every app its own `storage` name** in `src/brand.ts` (this app uses `gfy`). Browser storage is shared by all pages on one address, so without a different name two apps would overwrite each other's trips and repo choice. Only the sign-in token is shared on purpose.
+
+The GitHub App has access to every repo it is installed on, and the token works on all of them. Each app only uses the repo it picked, but nothing stops its code from reaching the others. For hard separation, make a separate GitHub App per app.
 
 ## Good to know
 

@@ -1,4 +1,4 @@
-import { get, set } from 'idb-keyval';
+import { get, lsGet, set } from './storage';
 import { useEffect, useMemo, useState } from 'react';
 import { addDays, todayStr } from './dates';
 
@@ -27,7 +27,7 @@ const TTL = 3 * 3600e3;
 const HORIZON = 15;
 
 export const wxEnabled = (): boolean => {
-  try { return localStorage.getItem('tl-wx') !== 'false'; } catch { return true; }
+  return lsGet('tl-wx') !== 'false';
 };
 export const locKey = (lat: number, lng: number) => `${lat.toFixed(2)},${lng.toFixed(2)}`;
 const WMO: [number, string][] = [

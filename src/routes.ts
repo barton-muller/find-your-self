@@ -1,4 +1,4 @@
-import { get, set } from 'idb-keyval';
+import { get, set } from './storage';
 import type { Pt } from './estimate';
 
 export type Line = [number, number][];

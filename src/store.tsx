@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { get, set } from 'idb-keyval';
+import { get, migrateLegacy, set } from './storage';
 import { applyEntry, diffEntry, sameTargets, type Entry } from './history';
 import { now, uid } from './model';
 import { todayStr } from './dates';
@@ -128,6 +128,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       let tr: TripsState | undefined;
       let p: Plan | undefined;
       let c: SyncConfig | undefined;
+      await migrateLegacy();
       try {
         c = await get<SyncConfig>(CFG_KEY);
         try {

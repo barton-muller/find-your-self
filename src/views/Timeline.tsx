@@ -8,6 +8,7 @@ import {
 import { go } from '../nav';
 import { useStore } from '../store';
 import { modeIcon } from '../ui';
+import { lsGet, lsSet } from '../storage';
 import { locKey, useWeather, type Wx, type WxReq } from '../dayWeather';
 import { WxBody } from './WxIcon';
 
@@ -28,15 +29,13 @@ const trunc = (t: string, px: number, cw: number) => {
 };
 const load = <T,>(k: string, d: T): T => {
   try {
-    const v = localStorage.getItem(k);
+    const v = lsGet(k);
     return v === null ? d : (JSON.parse(v) as T);
   } catch {
     return d;
   }
 };
-const save = (k: string, v: unknown) => {
-  try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ }
-};
+const save = (k: string, v: unknown) => lsSet(k, JSON.stringify(v));
 
 function connector(x1: number, y1: number, x2: number, y2: number, step: number, branchOut: boolean, back: boolean, endOff = 0): string {
   if (x1 === x2) return `M${x1},${y1} L${x2},${y2}`;

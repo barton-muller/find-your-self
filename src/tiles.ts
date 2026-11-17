@@ -1,4 +1,4 @@
-import { get, set } from 'idb-keyval';
+import { get, set } from './storage';
 import type { Plan } from './types';
 
 export const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';

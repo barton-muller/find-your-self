@@ -1,6 +1,6 @@
 import { BRAND } from './brand';
 
-interface Brief { repo: string; token: string; branch: string; trip?: string; path?: string }
+interface Brief { repo: string; token?: string; branch: string; trip?: string; path?: string }
 
 // A message to paste into an AI coding agent (Claude Code and similar) so it can edit trips in the repo.
 export function aiBrief(o: Brief): string {
@@ -8,14 +8,15 @@ export function aiBrief(o: Brief): string {
 
 Repo: ${o.repo}
 Branch: ${o.branch}
-Token: ${o.token}
-Clone: git clone --branch ${o.branch} https://${o.token}@github.com/${o.repo}.git
+${o.token ? `Token: ${o.token}
+Clone: git clone --branch ${o.branch} https://${o.token}@github.com/${o.repo}.git` : `Clone: git clone --branch ${o.branch} https://github.com/${o.repo}.git
+Sign in to GitHub on this computer first (for example with: gh auth login), so git can push to this private repo.`}
 ${o.path ? `Current trip: "${o.trip ?? ''}" in ${o.path}. Other trips are in trips/<name>/plan.json.` : 'Trips are in trips/<name>/plan.json.'}
 
-The token is a GitHub fine-grained token with Contents read and write on this one repo. Use it only for this repo. Do not print it back, and do not write it into any file or commit.
+${o.token ? 'The token is a GitHub fine-grained token with Contents read and write on this one repo. Use it only for this repo. Do not print it back, and do not write it into any file or commit.' : 'Use my own GitHub login for this repo. Do not write credentials into any file or commit.'}
 
 How to work:
-1. Clone the repo and stay on branch ${o.branch}. It is my own branch. Do not switch to, edit or push to main or to other branches (u/...).
+1. Clone the repo and stay on branch ${o.branch}. ${o.branch === 'main' || o.branch === 'master' ? 'Pull before you start and commit to it normally.' : 'It is my own branch. Do not switch to, edit or push to main or to other branches (u/...).'}
 2. Read AGENTS.md and the DECISIONS.md files first. They hold the rules and my preferences. If AGENTS.md is missing, use the notes below.
 3. Run git pull before you start. The app also commits to this branch.
 4. If the repo has scripts/plan.py, edit trips through it. It validates the plan and keeps updatedAt right. Run python3 scripts/plan.py summary trips/<name>/plan.json before you push.

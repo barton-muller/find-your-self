@@ -1,0 +1,11 @@
+name = "gfy-github-auth"
+main = "index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+# Public value from your GitHub App's settings page.
+GITHUB_CLIENT_ID = ""
+# Comma-separated origins (scheme + host, no path) of the sites that may use this relay.
+ALLOWED_ORIGINS = "https://barton-muller.github.io"
+
+# The client secret is NOT stored here. Set it with:  npx wrangler secret put GITHUB_CLIENT_SECRET

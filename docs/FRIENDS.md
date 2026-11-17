@@ -1,5 +1,7 @@
 # Share a trip repo with friends and family
 
+This page is for sharing with an invite link. If your friends have GitHub accounts and the site has "Sign in with GitHub" turned on ([setup](GITHUB-SIGN-IN.md)), they can sign in and use their own repos instead. Invite links are for people who do not.
+
 Making a GitHub token is the hardest part of sync. If you plan trips for people who would give up at that step, you can do it once for all of them.
 
 You set up one private repo and one token. Then you send each person a link. When they open it, their app is connected. They need no GitHub account and no token.

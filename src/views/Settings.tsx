@@ -5,6 +5,7 @@ import { configured, listRemoteTrips, type RemoteTrip } from '../sync';
 import { prettyName, slug, uniquePath } from '../trips';
 import { inviteCode, makeInviteLink, parseInvite } from '../invite';
 import { aiBrief } from '../aiBrief';
+import { authAvailable, freshAccess, installUrl, listRepos, manageUrl, type RepoChoice } from '../auth';
 import { useStore } from '../store';
 import { Icon, type IconName } from '../icons';
 import { copyText, weatherReport } from '../weather';
@@ -31,7 +32,7 @@ function Sec({ id, num, icon, title, hint, children }: { id?: string; num?: numb
 }
 
 export function Settings() {
-  const { setMeta, cfg, saveCfg, sync, syncNow, plan, replacePlan, resetSeed, trips, activeTrip, switchTrip, newTrip, renameTrip, archiveTrip, importTrip } = useStore();
+  const { setMeta, cfg, saveCfg, sync, syncNow, plan, replacePlan, resetSeed, trips, activeTrip, switchTrip, newTrip, renameTrip, archiveTrip, importTrip, auth, authError, signIn, signOut, chooseRepo, effCfg } = useStore();
   const [c, setC] = useState<SyncConfig>(cfg ?? { token: '', repo: '', path: 'plan.json', branch: 'main' });
   const file = useRef<HTMLInputElement>(null);
   const [tiles, setTiles] = useState<string>('');
@@ -69,8 +70,16 @@ export function Settings() {
   const refreshRemote = () => {
     if (!configured(cfg)) { setRemote([]); setRemoteMsg(''); return; }
     setRemoteMsg('Checking the repo…');
-    listRemoteTrips(cfg).then((r) => { setRemote(r); setRemoteMsg(''); }).catch((e) => setRemoteMsg(String(e.message ?? e)));
+    effCfg().then((c) => (c ? listRemoteTrips(c) : [])).then((r) => { setRemote(r); setRemoteMsg(''); }).catch((e) => setRemoteMsg(String(e.message ?? e)));
   };
+  const [repos, setRepos] = useState<RepoChoice[] | null>(null);
+  const [repoMsg, setRepoMsg] = useState('');
+  const loadRepos = () => {
+    setRepoMsg('Looking for your repos…');
+    freshAccess().then((t) => (t ? listRepos(t) : Promise.reject(new Error('Signed out. Sign in again.'))))
+      .then((r) => { setRepos(r); setRepoMsg(''); }).catch((e) => setRepoMsg(String(e.message ?? e)));
+  };
+  useEffect(() => { if (auth && !configured(cfg)) loadRepos(); }, [auth, cfg]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(refreshRemote, [cfg, sync.status === 'ok']); // eslint-disable-line react-hooks/exhaustive-deps
   const visible = trips.list.filter((t) => !t.archived);
   const known = new Set(trips.list.map((t) => t.path));
@@ -189,7 +198,7 @@ export function Settings() {
       <Sec
         id="sync" num={3} icon="branch" title="Sync and AI agents"
         hint={<>
-          Your trips are saved to a <b>private</b> GitHub repo, using a token limited to that one repo (permission: Contents, read and write). The token stays on this device.
+          Your trips are saved to a <b>private</b> GitHub repo. You sign in with GitHub, or use a token limited to that one repo (permission: Contents, read and write). Either way, the key stays on this device.
           An AI coding agent such as Claude Code can edit the same repo, so you can ask it to change your plan.
         </>}
       >
@@ -199,7 +208,7 @@ export function Settings() {
               <Icon name="repo" size={22} className="ico" />
               <div>
                 <div>Syncing with <b>{cfg.repo}</b></div>
-                <div className="small">Branch <code>{cfg.branch}</code>. This trip is saved as <code>{tripPath}</code>.</div>
+                <div className="small">{cfg.viaGitHub && auth ? <>Signed in as <b>{auth.login}</b>. </> : null}Branch <code>{cfg.branch}</code>. This trip is saved as <code>{tripPath}</code>.</div>
               </div>
             </div>
             <p className={`status s-${sync.status}`}>
@@ -212,18 +221,24 @@ export function Settings() {
             </p>
             <div className="actgrid">
               <button className="ibtn" onClick={syncNow}><Icon name="sync" size={18} /> Sync now</button>
-              <button className="ibtn" onClick={() => copyBrief({ repo: cfg.repo, token: cfg.token, branch: cfg.branch, trip: activeTrip.name, path: tripPath })}>
+              <button className="ibtn" onClick={() => copyBrief({ repo: cfg.repo, token: cfg.viaGitHub ? undefined : cfg.token, branch: cfg.branch, trip: activeTrip.name, path: tripPath })}>
                 <Icon name="sparkle" size={18} /> Copy for AI
               </button>
-              <button className="ibtn wide" onClick={() => copyLink(makeInviteLink({ repo: cfg.repo, token: cfg.token, branch: cfg.branch }), 'Link copied. Open it on your other device and press Join.')}>
-                <Icon name="link" size={18} /> Copy link for another device
-              </button>
+              {cfg.viaGitHub ? (
+                <button className="ibtn wide danger" onClick={() => confirm('Sign out of GitHub on this device? Your trips stay here.') && signOut()}>
+                  <Icon name="x" size={18} /> Sign out
+                </button>
+              ) : (
+                <button className="ibtn wide" onClick={() => copyLink(makeInviteLink({ repo: cfg.repo, token: cfg.token, branch: cfg.branch }), 'Link copied. Open it on your other device and press Join.')}>
+                  <Icon name="link" size={18} /> Copy link for another device
+                </button>
+              )}
             </div>
-            <p className="small">{aiMsg || 'The link and the AI text contain your token. Send them only to yourself or people you trust.'}</p>
+            <p className="small">{aiMsg || (cfg.viaGitHub ? 'On another device, open the app and sign in with GitHub. The AI text has no token: your agent uses your own GitHub login.' : 'The link and the AI text contain your token. Send them only to yourself or people you trust.')}</p>
             <p className="small">
               Want a repo of your own? <a href={BRAND.syncGuide} target="_blank" rel="noreferrer">How to set one up</a>.
             </p>
-            <details className="adv">
+            {!cfg.viaGitHub && <details className="adv">
               <summary>Change connection</summary>
               <label className="fld"><span className="fl"><Icon name="repo" size={16} /> Repository</span>
                 <input value={c.repo} onChange={set('repo')} placeholder="owner/trip-data" autoCapitalize="none" autoCorrect="off" />
@@ -236,11 +251,41 @@ export function Settings() {
                 <button className="primary ibtn" disabled={!configured(c)} onClick={() => saveCfg(c)}><Icon name="sync" size={18} /> Save and sync</button>
                 <button className="ibtn danger" onClick={() => { saveCfg(null); setC({ ...c, token: '' }); }}><Icon name="x" size={18} /> Disconnect</button>
               </div>
-            </details>
+            </details>}
+            {cfg.viaGitHub && <p className="small"><a href={manageUrl()} target="_blank" rel="noreferrer">Manage which repos the app can use</a>.</p>}
           </>
         ) : (
           <>
             <p className="lead">Keep your trips in a GitHub repo you own. Every device stays in step, and an AI agent can edit them for you.</p>
+            {authAvailable && (
+              <div className="signin">
+                {authError && <p className="small err">{authError}</p>}
+                {!auth ? (
+                  <button className="primary ibtn wide" onClick={signIn}><Icon name="branch" size={18} /> Sign in with GitHub</button>
+                ) : (
+                  <>
+                    <p className="lead">Signed in as <b>{auth.login}</b>. Pick the repo for your trips.</p>
+                    {repos && repos.length > 0 && (
+                      <ul className="triplist">
+                        {repos.map((r) => (
+                          <li key={r.full}><button className="tripbtn" onClick={() => chooseRepo(r.full, r.branch)}><Icon name="repo" size={18} /> <span>{r.full}</span></button></li>
+                        ))}
+                      </ul>
+                    )}
+                    {repos && repos.length === 0 && <p className="small">The app is not installed on any repo yet.</p>}
+                    {repoMsg && <p className="small">{repoMsg}</p>}
+                    <div className="actgrid">
+                      <a className="btnlink ibtn" href={installUrl()} target="_blank" rel="noreferrer"><Icon name="plus" size={18} /> Add a repo</a>
+                      <button className="ibtn" onClick={loadRepos}><Icon name="sync" size={18} /> Refresh list</button>
+                      <button className="ibtn wide danger" onClick={signOut}><Icon name="x" size={18} /> Sign out</button>
+                    </div>
+                  </>
+                )}
+                <p className="small">Choose a private repo you own. The app can only use repos you add here.</p>
+              </div>
+            )}
+            {authAvailable ? (
+              <details className="adv"><summary>Use a token or invite link instead</summary>
             <div className="guidelinks">
               <a className="ibtn" href={BRAND.syncGuide} target="_blank" rel="noreferrer"><Icon name="book" size={16} /> How to set up sync</a>
               <a className="ibtn" href={BRAND.tokenGuide} target="_blank" rel="noreferrer"><Icon name="lock" size={16} /> How to create a token</a>
@@ -262,6 +307,32 @@ export function Settings() {
             <div className="rowflex">
               <button className="primary ibtn" disabled={!configured(c)} onClick={() => saveCfg(c)}><Icon name="sync" size={18} /> Save and sync</button>
             </div>
+              </details>
+            ) : (
+              <>
+            <div className="guidelinks">
+              <a className="ibtn" href={BRAND.syncGuide} target="_blank" rel="noreferrer"><Icon name="book" size={16} /> How to set up sync</a>
+              <a className="ibtn" href={BRAND.tokenGuide} target="_blank" rel="noreferrer"><Icon name="lock" size={16} /> How to create a token</a>
+            </div>
+            <label className="fld"><span className="fl"><Icon name="link" size={16} /> Got an invite link? Paste it here</span>
+              <input value={pasted} onChange={(e) => joinFromPaste(e.target.value)} placeholder="https://…#/j/…" autoCapitalize="none" autoCorrect="off" />
+              {pasteErr && <span className="small err">{pasteErr}</span>}
+            </label>
+            <label className="fld"><span className="fl"><Icon name="repo" size={16} /> Repository</span>
+              <input value={c.repo} onChange={set('repo')} placeholder="owner/trip-data" autoCapitalize="none" autoCorrect="off" />
+            </label>
+            <label className="fld"><span className="fl"><Icon name="lock" size={16} /> Token</span>
+              <input type="password" value={c.token} onChange={set('token')} placeholder="github_pat_…" autoComplete="off" />
+            </label>
+            <details className="adv">
+              <summary>Advanced</summary>
+              <label className="fld"><span className="fl">Branch</span><input value={c.branch} onChange={set('branch')} autoCapitalize="none" /></label>
+            </details>
+            <div className="rowflex">
+              <button className="primary ibtn" disabled={!configured(c)} onClick={() => saveCfg(c)}><Icon name="sync" size={18} /> Save and sync</button>
+            </div>
+              </>
+            )}
             <p className={`status s-${sync.status}`}>
               <Icon name={stIcon} size={16} />
               Not synced. Data is on this device only.
@@ -276,7 +347,7 @@ export function Settings() {
         {wxText && <textarea readOnly value={wxText} rows={8} onFocus={(e) => e.currentTarget.select()} />}
       </Sec>
 
-      {configured(cfg) && (
+      {configured(cfg) && !cfg.viaGitHub && (
         <Sec
           num={4} icon="link" title="Invite someone"
           hint="Make a link that sets up sync on another person's device, using this repo. They get their own branch, so their trips are saved separately, and they need no GitHub account. Anyone with the link can read and change everything in the repo."

@@ -56,7 +56,8 @@ export interface Plan {
 }
 
 export interface SyncConfig {
-  token: string;
+  token: string; // empty when viaGitHub: the access token then comes from the GitHub sign-in
+  viaGitHub?: boolean;
   repo: string;
   path: string;
   branch: string;

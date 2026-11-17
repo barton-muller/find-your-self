@@ -5,6 +5,7 @@ import { now, uid } from './model';
 import { todayStr } from './dates';
 import { emptyPlan, uniquePath } from './trips';
 import { planPts, prefetchOverview } from './tiles';
+import { clearAuth, finishSignIn, freshAccess, loadAuth, startSignIn, type AuthState } from './auth';
 import { seedPlan } from './seed';
 import { configured, fetchRemote, mergePlans, samePlan, syncPlan } from './sync';
 import type { Plan, SyncConfig, TripMeta, TripsState } from './types';
@@ -32,6 +33,12 @@ interface Ctx {
   renameTrip: (id: string, name: string) => void;
   archiveTrip: (id: string) => Promise<void>;
   importTrip: (name: string, path: string) => Promise<string | null>;
+  auth: AuthState | null;
+  authError: string;
+  signIn: () => void;
+  signOut: () => Promise<void>;
+  chooseRepo: (repo: string, branch: string) => void;
+  effCfg: () => Promise<SyncConfig | null>;
 }
 
 const StoreCtx = createContext<Ctx>(null as unknown as Ctx);
@@ -48,6 +55,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [trips, setTrips] = useState<TripsState>({ active: 'main', list: [{ id: 'main', name: 'My trip' }] });
   const tripsRef = useRef<TripsState>(trips);
   const [sync, setSync] = useState<SyncState>({ status: 'off' });
+  const [auth, setAuth] = useState<AuthState | null>(null);
+  const [authError, setAuthError] = useState('');
   const planRef = useRef<Plan | null>(null);
   const cfgRef = useRef<SyncConfig | null>(null);
   const busy = useRef(false);
@@ -77,14 +86,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return path;
   }, [saveTrips]);
 
-  const runSync = useCallback(async () => {
+  // the sync settings with a usable token: for a GitHub sign-in the access token is refreshed when it is about to expire
+  const effCfg = useCallback(async (): Promise<SyncConfig | null> => {
     const c = cfgRef.current;
+    if (!c) return null;
+    if (!c.viaGitHub) return c;
+    const t = await freshAccess();
+    return t ? { ...c, token: t } : null;
+  }, []);
+
+  const runSync = useCallback(async () => {
+    const base = cfgRef.current;
     const p = planRef.current;
-    if (!configured(c) || !p || busy.current) return;
+    if (!configured(base) || !p || busy.current) return;
     busy.current = true;
     const tid = tripsRef.current.active;
     setSync((s) => ({ ...s, status: 'syncing' }));
     try {
+      const c = await effCfg();
+      if (!c) throw new Error('Signed out of GitHub. Sign in again in Settings.');
       const merged = await syncPlan({ ...c, path: activePath() }, p);
       if (tripsRef.current.active !== tid) {
         set(planKey(tid), merged).catch(() => {});
@@ -101,7 +121,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } finally {
       busy.current = false;
     }
-  }, [activePath]);
+  }, [activePath, effCfg]);
 
   useEffect(() => {
     (async () => {
@@ -110,6 +130,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       let c: SyncConfig | undefined;
       try {
         c = await get<SyncConfig>(CFG_KEY);
+        try {
+          setAuth((await finishSignIn()) ?? (await loadAuth()));
+        } catch (e) {
+          setAuthError(e instanceof Error ? e.message : String(e));
+          setAuth(await loadAuth());
+        }
         tr = await get<TripsState>(TRIPS_KEY);
         if (!tr) {
           // first start with trips: the single plan of earlier versions becomes the first trip
@@ -269,9 +295,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [flush, saveTrips, loadTrip]);
 
   const importTrip = useCallback(async (name: string, path: string): Promise<string | null> => {
-    const c = cfgRef.current;
-    if (!configured(c)) return 'Connect a repository first.';
+    if (!configured(cfgRef.current)) return 'Connect a repository first.';
     try {
+      const c = await effCfg();
+      if (!c) return 'Signed out of GitHub. Sign in again in Settings.';
       const remote = await fetchRemote({ ...c, path });
       if (!remote) return `No plan.json found at ${path}.`;
       await flush();
@@ -284,7 +311,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       return e instanceof Error ? e.message : String(e);
     }
-  }, [flush, saveTrips, loadTrip]);
+  }, [flush, saveTrips, loadTrip, effCfg]);
 
   const saveCfg = useCallback((c: SyncConfig | null) => {
     cfgRef.current = c;
@@ -296,14 +323,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } else setSync({ status: 'off' });
   }, [runSync]);
 
+  const signOut = useCallback(async () => {
+    await clearAuth();
+    setAuth(null);
+    if (cfgRef.current?.viaGitHub) saveCfg(null);
+  }, [saveCfg]);
+
+  const chooseRepo = useCallback((repo: string, branch: string) => {
+    saveCfg({ repo, branch, path: 'plan.json', token: '', viaGitHub: true });
+  }, [saveCfg]);
+
   const value = useMemo<Ctx | null>(
     () => plan && {
       plan, update, setMeta, replacePlan, resetSeed, cfg, saveCfg, sync, syncNow: runSync, undo, redo,
       trips, activeTrip: trips.list.find((t) => t.id === trips.active) ?? trips.list[0], switchTrip, newTrip, renameTrip, archiveTrip, importTrip,
+      auth, authError, signIn: () => { void startSignIn(); }, signOut, chooseRepo, effCfg,
       canUndo: undoStack.current.length > 0, canRedo: redoStack.current.length > 0,
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [plan, update, setMeta, replacePlan, resetSeed, cfg, saveCfg, sync, runSync, undo, redo, trips, switchTrip, newTrip, renameTrip, archiveTrip, importTrip, undoStack.current.length, redoStack.current.length],
+    [plan, update, setMeta, replacePlan, resetSeed, cfg, saveCfg, sync, runSync, undo, redo, trips, switchTrip, newTrip, renameTrip, archiveTrip, importTrip, auth, authError, signOut, chooseRepo, effCfg, undoStack.current.length, redoStack.current.length],
   );
   if (!value) return <div className="boot">Loading…</div>;
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;

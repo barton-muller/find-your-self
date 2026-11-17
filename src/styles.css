@@ -265,3 +265,4 @@ code { font-size: .92em; background: var(--bg2); padding: 1px 5px; border-radius
 .actgrid button { width: 100%; justify-content: center; white-space: nowrap; min-height: 44px; padding: 8px 10px; }
 .actgrid .wide { grid-column: 1 / -1; }
 .set .rowflex .ibtn { justify-content: center; }
+.signin { margin-top: 6px; } .signin .btnlink { text-align: center; justify-content: center; }

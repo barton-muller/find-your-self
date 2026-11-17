@@ -33,6 +33,7 @@ There are no accounts and no server. Your trips are saved in your browser, on yo
 
 - **Safe and in step.** Each trip is a file in your repo, `trips/<name>/plan.json`. Every device shows the same trips, and git keeps a history of every change.
 - **An AI agent can edit them.** Point an agent such as Claude Code at the repo. Ask it "add two nights in Hanoi after Ninh Binh" and it edits the plan, checks the dates and saves. *Settings* has a *Copy for AI agent* button that copies the repo, branch and instructions for it.
+- **Sign in with GitHub.** If the site's owner has set it up, you press a button, approve, and pick a repo from a list. No token to make by hand. ([Setup for site owners](docs/GITHUB-SIGN-IN.md))
 - **Share with friends and family.** If they cannot make a GitHub token, make one in the app and send an invite link. Opening it connects their app to your repo, on a branch of their own. They need no GitHub account.
 
 Start here: **[Sync and AI guide](docs/SYNC-AND-AI.md)** (includes how to make the token). For invite links: **[Share a trip repo](docs/FRIENDS.md)**. The folder [`data-template`](data-template) is a ready-made starter repo with the rules for agents already written.

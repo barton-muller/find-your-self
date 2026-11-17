@@ -18,7 +18,7 @@ const headers = (c: SyncConfig) => ({
   'X-GitHub-Api-Version': '2022-11-28',
 });
 
-export const configured = (c: SyncConfig | null): c is SyncConfig => !!c && !!c.token && /^[^/]+\/[^/]+$/.test(c.repo) && !!c.path;
+export const configured = (c: SyncConfig | null): c is SyncConfig => !!c && (!!c.token || !!c.viaGitHub) && /^[^/]+\/[^/]+$/.test(c.repo) && !!c.path;
 
 export async function fetchRemote(c: SyncConfig): Promise<{ plan: Plan; sha: string } | null> {
   const r = await fetch(`${url(c)}?ref=${encodeURIComponent(c.branch)}&_=${Date.now()}`, {

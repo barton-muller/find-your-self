@@ -199,7 +199,8 @@ html.lock, html.lock body { overflow: hidden; height: 100%; min-height: 0; overs
 
 /* settings */
 .set .sec { padding: 14px; } .set .brandcard { padding: 14px; }
-.brandrow { display: flex; gap: 12px; align-items: center; } .brandrow img { border-radius: 12px; } .brandrow b { font-size: 19px; }
+.brandrow { display: flex; gap: 12px; align-items: center; } .brandrow img { border-radius: 12px; } .brandrow b { font-size: 19px; } .brandrow .grow { flex: 1; min-width: 0; }
+.iconbtn.docs { flex: none; text-decoration: none; color: var(--accent); border: 1px solid var(--line2); background: var(--bg2); }
 .sec-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .sec-head h3 { margin: 0; font-size: 17px; flex: 1; }
 .sec-head .ico { color: var(--accent); flex: none; }

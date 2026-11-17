@@ -143,13 +143,11 @@ export function Settings() {
       <section className="card brandcard">
         <div className="brandrow">
           <img src="./icon.svg" width={48} height={48} alt="" />
-          <div>
+          <div className="grow">
             <b>{BRAND.name}</b>
             <div className="small">{BRAND.tagline}</div>
           </div>
-        </div>
-        <div className="rowflex">
-          <a className="btnlink ibtn" href={BRAND.repo} target="_blank" rel="noreferrer"><Icon name="book" size={18} /> README</a>
+          <a className="iconbtn docs" href={BRAND.repo} target="_blank" rel="noreferrer" aria-label="Documentation (README)" title="Documentation (README)"><Icon name="book" size={22} /></a>
         </div>
       </section>
 

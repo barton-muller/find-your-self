@@ -10,8 +10,8 @@ export function WxBody({ w }: { w: Wx }) {
   );
 }
 
-export function WxIcon({ w, size = 22 }: { w: Wx; size?: number }) {
+export function WxIcon({ w, size = 22, title }: { w: Wx; size?: number; title?: string }) {
   return (
-    <svg className={`wx wx-${w.kind}`} width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"><WxBody w={w} /></svg>
+    <svg className={`wx wx-${w.kind}`} width={size} height={size} viewBox="0 0 24 24" aria-hidden={title ? undefined : true}>{title && <title>{title}</title>}<WxBody w={w} /></svg>
   );
 }

@@ -7,7 +7,7 @@ Serverless trip-planner PWA (Vite 8 + React 19 + TS, no UI lib). Static site on 
 - No test suite. Verify UI with headless Playwright (preinstalled; `require('playwright')`): build, `vite preview --port 4173`, load `http://127.0.0.1:4173/#/plan`, block the service worker (`serviceWorkers: 'block'`), screenshot at a phone viewport (Pixel 7) and iPad. External hosts (OSM tiles, OSRM, Open-Meteo) are not reachable from the sandbox; mock them with `page.route`.
 - Test with real data: load `findyouself-data/plan.json` into the app by writing it to IndexedDB (`keyval-store` / `keyval`, key `plan-v1`) via `page.evaluate`, then reload. Core modules can be bundled and run under node with esbuild; `import.meta.glob` must be stubbed (`--define:import.meta.glob=...`).
 - Verify a deploy: GitHub Actions run "Deploy" on `main` succeeded. The map's attribution corner shows `build <sha>`, so the phone can confirm which build it runs.
-- Deploy: push to `main` triggers `.github/workflows/deploy.yml` (build + Pages). Site: https://barton-muller.github.io/find-your-self/. Develop on the session branch and push it, then also push it to `main` to deploy. If the user says "show me before push", send screenshots and do not push.
+- Deploy: push to `main` triggers `.github/workflows/deploy.yml` (build + Pages). Site: https://barton-muller.github.io/find-your-self/. **Work directly on `main` and push to `main` after every change, including small tweaks, without asking first** (standing instruction from the user; they will ask for a revert if something is wrong, so use `git revert`, never force-push). Fetch and merge `origin/main` before pushing, since other sessions also push there. Check the Deploy run afterwards. If the user says "show me before push", send screenshots and do not push.
 
 ## Data model (`src/types.ts`, `src/model.ts`)
 - `Plan`: `start`/`end` dates, `startId`, `stops`, `legs`, `todos` (all keyed by id). A DAG: stops = nodes, legs = transport edges.
@@ -26,7 +26,7 @@ The live plan is `barton-muller/findyouself-data` (`plan.json` on `main`). The a
 - `src/history.ts`: undo/redo records only the records a step changed, restores them with a fresh `updatedAt` (so it syncs and never reverts other devices' edits). Rapid edits to the same records coalesce.
 
 ## UI map (`src/views`)
-Tabs: Map, Timeline, Plan, To-do; Place (stop detail) and Settings via hash routes (`src/nav.ts`).
+Plan cards also show a small weather strip right of the stop name (same data and `tl-wx` toggle). Tabs: Map, Timeline, Plan, To-do; Place (stop detail) and Settings via hash routes (`src/nav.ts`).
 - `PlanView` (+`Today`): list, nights steppers, fork picker, reorder mode (swap with neighbour, `swapWithNext`), insert stop between, past stops collapsed.
 - `Timeline`: git-graph style SVG. Time runs down; one dot per night; black line + icon = travel day; lanes for alternatives; pinch/buttons zoom; Auto colour switches to by-country only when fully zoomed out. Per-day weather icon (sun/cloud/rain, 1-3 drops by mm) beside each night dot, only from the Open-Meteo 15-day forecast (`dayWeather.ts`, cached in IndexedDB `wx-v2`, toggle `tl-wx`); travel icons are centred between day lines and use the same side rule as weather icons. Weather icons go right of the dot on single track, left of the main lane where a fork lane sits on its right, outward on alt lanes.
 - `MapView`: Leaflet + OSM; `tiles.ts` prefetches overview tiles (zoom 3-6) into the `osm-tiles` cache.

@@ -208,3 +208,4 @@ html.lock, html.lock body { overflow: hidden; height: 100%; min-height: 0; overs
 @media (max-width: 420px) { .wxw { display: none; } .wxrow { grid-template-columns: 6.2em 22px 1fr auto auto; } }
 .day.closed { padding: 6px 12px; } .day.closed .label { margin: 0; display: flex; align-items: center; justify-content: space-between; min-height: 32px; }
 .dayadd { display: inline-flex; align-items: center; gap: 4px; text-transform: none; letter-spacing: 0; }
+.wxstrip { display: flex; gap: 3px; align-items: center; flex: none; max-width: 45%; flex-wrap: wrap; justify-content: flex-end; }

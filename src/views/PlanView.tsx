@@ -9,6 +9,8 @@ import { go } from '../nav';
 import { useStore } from '../store';
 import { LegSummary, Stepper } from '../ui';
 import { Today } from './Today';
+import { WxIcon } from './WxIcon';
+import { locKey, useWeather, wxEnabled, wxLabel, type WxReq } from '../dayWeather';
 
 const col = (i: number) => ({ '--cc': `var(--c${i})` }) as React.CSSProperties;
 
@@ -18,6 +20,19 @@ export function PlanView() {
   const [showPast, setShowPast] = useState(false);
   const s = useMemo(() => schedule(plan), [plan]);
   const ci = useMemo(() => colorIndex(plan, s), [plan, s]);
+  const wxReqs = useMemo<WxReq[]>(() => {
+    const m = new Map<string, WxReq>();
+    for (const id of s.path) {
+      const x = plan.stops[id];
+      if (x.lat === null || x.lng === null) continue;
+      const key = locKey(x.lat, x.lng);
+      const r = m.get(key) ?? { key, lat: Number(x.lat.toFixed(2)), lng: Number(x.lng.toFixed(2)), dates: [] };
+      for (let k = 0; k < Math.max(hotelNights(plan, s, id), 1); k++) r.dates.push(addDays(plan.start, s.arrive[id] + k));
+      m.set(key, r);
+    }
+    return [...m.values()].map((r) => ({ ...r, dates: [...new Set(r.dates)].sort() }));
+  }, [plan, s]);
+  const wx = useWeather(wxReqs, wxEnabled());
   const orphans = Object.values(plan.stops).filter((x) => !x.deleted && !s.onPath.has(x.id) && s.arrive[x.id] === undefined);
   const nowId = useMemo(() => {
     const d = diffDays(plan.start, todayStr());
@@ -112,6 +127,13 @@ export function PlanView() {
                     {hn !== st.nights && <span> · {hn} hotel</span>}
                   </div>
                 </div>
+                <span className="wxstrip">
+                  {Array.from({ length: Math.min(Math.max(hn, 1), 7) }, (_, k) => {
+                    const d = addDays(plan.start, s.arrive[id] + k);
+                    const w = st.lat === null || st.lng === null ? undefined : wx[locKey(st.lat, st.lng)]?.[d];
+                    return w ? <WxIcon key={d} w={w} size={18} title={`${fmtDate(d)}: ${wxLabel(w.code)}${w.hi === null ? '' : `, ${Math.round(w.hi)}°`}${w.mm >= 1 ? `, ${Math.round(w.mm)} mm` : ''}`} /> : null;
+                  })}
+                </span>
               </div>
               <div className="stop-foot">
                 <Stepper value={st.nights} onChange={(n) => update((d) => { d.stops[id].nights = n; d.stops[id].updatedAt = Date.now(); })} />

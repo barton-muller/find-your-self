@@ -26,6 +26,9 @@ const KEY = 'wx-v3';
 const TTL = 3 * 3600e3;
 const HORIZON = 15;
 
+export const wxEnabled = (): boolean => {
+  try { return localStorage.getItem('tl-wx') !== 'false'; } catch { return true; }
+};
 export const locKey = (lat: number, lng: number) => `${lat.toFixed(2)},${lng.toFixed(2)}`;
 const WMO: [number, string][] = [
   [0, 'Clear'], [1, 'Mostly clear'], [2, 'Partly cloudy'], [3, 'Overcast'], [48, 'Fog'], [55, 'Drizzle'], [57, 'Freezing drizzle'],

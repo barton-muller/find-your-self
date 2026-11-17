@@ -5,7 +5,7 @@ import { configured, listRemoteTrips, type RemoteTrip } from '../sync';
 import { prettyName, slug, uniquePath } from '../trips';
 import { inviteCode, makeInviteLink, parseInvite } from '../invite';
 import { aiBrief } from '../aiBrief';
-import { authAvailable, freshAccess, installUrl, listRepos, manageUrl, type RepoChoice } from '../auth';
+import { authAvailable, freshAccess, installUrl, listRepos, manageUrl, rememberReturn, type RepoChoice } from '../auth';
 import { useStore } from '../store';
 import { Icon, type IconName } from '../icons';
 import { copyText, weatherReport } from '../weather';
@@ -252,7 +252,7 @@ export function Settings() {
                 <button className="ibtn danger" onClick={() => { saveCfg(null); setC({ ...c, token: '' }); }}><Icon name="x" size={18} /> Disconnect</button>
               </div>
             </details>}
-            {cfg.viaGitHub && <p className="small"><a href={manageUrl()} target="_blank" rel="noreferrer">Manage which repos the app can use</a>.</p>}
+            {cfg.viaGitHub && <p className="small"><a href={manageUrl()} onClick={rememberReturn} target="_blank" rel="noreferrer">Manage which repos the app can use</a>.</p>}
           </>
         ) : (
           <>
@@ -275,7 +275,7 @@ export function Settings() {
                     {repos && repos.length === 0 && <p className="small">The app is not installed on any repo yet.</p>}
                     {repoMsg && <p className="small">{repoMsg}</p>}
                     <div className="actgrid">
-                      <a className="btnlink ibtn" href={installUrl()} target="_blank" rel="noreferrer"><Icon name="plus" size={18} /> Add a repo</a>
+                      <a className="btnlink ibtn" href={installUrl()} onClick={rememberReturn} target="_blank" rel="noreferrer"><Icon name="plus" size={18} /> Add a repo</a>
                       <button className="ibtn" onClick={loadRepos}><Icon name="sync" size={18} /> Refresh list</button>
                       <button className="ibtn wide danger" onClick={signOut}><Icon name="x" size={18} /> Sign out</button>
                     </div>

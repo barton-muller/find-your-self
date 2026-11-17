@@ -18,6 +18,12 @@ const PENDING = 'gh-auth-pending';
 const SKEW = 5 * 60 * 1000;
 
 export const authAvailable = !!(BRAND.auth.clientId && BRAND.auth.relay);
+// Before the person leaves for github.com to install the app, leave a note saying which site to come back to.
+// All pages of one origin share localStorage, so a forwarder page at the root of the origin can read it (see the relay repo).
+export const RETURN_KEY = 'gh-auth-return';
+export const rememberReturn = () => {
+  try { localStorage.setItem(RETURN_KEY, redirectUri()); } catch { /* ignore */ }
+};
 export const installUrl = () => `https://github.com/apps/${BRAND.auth.appSlug}/installations/new`;
 export const manageUrl = () => `https://github.com/apps/${BRAND.auth.appSlug}`;
 

@@ -16,6 +16,9 @@ python3 scripts/plan.py check                       # validate every trip
 python3 scripts/plan.py summary trips/japan/plan.json   # dates for every fork combination of one trip
 ```
 
+## Sharing with others
+If several people use this repo, keep a branch called `template` with just these files. The app starts each person's branch (`u/<name>`) from it. See the [friends guide](https://github.com/barton-muller/find-your-self/blob/main/docs/FRIENDS.md).
+
 ## Keep this repo private
 The plans hold your dates, places and booking notes. Do not make the repo public.
 

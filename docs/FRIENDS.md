@@ -6,7 +6,7 @@ You set up one private repo and one token. Then you send each person a link. Whe
 
 ## How it works
 
-- Each person gets their own branch in your repo, for example `u/maria`. Their trips are saved there as `trips/<name>/plan.json`, so they don't overwrite each other's trips.
+- Each person gets their own branch in your repo, for example `u/maria`. A new branch starts from a branch called `template` if the repo has one (otherwise from the default branch). Keep `template` free of personal data: it should hold only the example trip, `AGENTS.md`, `scripts/plan.py` and empty notes files, like the [data template](../data-template). Their trips are saved there as `trips/<name>/plan.json`, so they don't overwrite each other's trips.
 - The link contains the repo name, the token and the branch name. The part after the `#` in a link is never sent to any server, including GitHub Pages. It stays in the browser.
 - The app asks before it joins. It shows the repo and branch and says that anyone with the link can read and change the repo.
 
@@ -20,7 +20,7 @@ What the token cannot do: it only works on this one repo. It cannot touch your o
 
 ## Set it up
 
-1. Make a **private** repo for it, for example from the [data template](../data-template). See [step 1 of the sync guide](SYNC-AND-AI.md#1-make-a-private-repo-from-the-template). Use a repo that holds nothing else.
+1. Make a **private** repo for it, for example from the [data template](../data-template). Put the template files on a branch named `template` as well as on `main`: `git push origin main:template`. Every invitee's branch then starts with the agent rules and the validator. See [step 1 of the sync guide](SYNC-AND-AI.md#1-make-a-private-repo-from-the-template). Use a repo that holds nothing else, and do not use the repo that has your own trips on `main`: friends can read every branch.
 2. [Make a fine-grained token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token) for that repo only, with *Contents: Read and write*. Set the expiry to a date after the last trip you expect. GitHub allows at most a year.
 3. In the app, open *Settings*. In step 3, enter the repo and token and press *Save and sync*. Step 3 then shows which repo you are syncing with, and step 4 appears.
 4. Go to step 4, *Invite someone*. Type their name and tap the link button. Copy the link or share it. The link is long mostly because of the token, which cannot be shortened.

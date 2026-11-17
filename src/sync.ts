@@ -106,8 +106,13 @@ async function prepareBranch(c: SyncConfig): Promise<boolean> {
   if (!repo.ok) return true;
   const def = ((await repo.json()) as { default_branch: string }).default_branch;
   if (c.branch === def) return true;
-  const base = await fetch(`${api}/git/ref/heads/${enc(def)}`, { headers: h, cache: 'no-store' });
-  if (!base.ok) throw new Error(`The repo has no ${def} branch yet. Add a first commit (a README) and try again.`);
+  // A branch called "template" is the starting point for everyone else's branch (no personal data on it).
+  // Without one, new branches start from the default branch.
+  let baseName = def;
+  let base = c.branch === 'template' ? null : await fetch(`${api}/git/ref/heads/template`, { headers: h, cache: 'no-store' });
+  if (base?.ok) baseName = 'template';
+  else base = await fetch(`${api}/git/ref/heads/${enc(def)}`, { headers: h, cache: 'no-store' });
+  if (!base || !base.ok) throw new Error(`The repo has no ${baseName} branch yet. Add a first commit (a README) and try again.`);
   const sha = ((await base.json()) as { object: { sha: string } }).object.sha;
   const mk = await fetch(`${api}/git/refs`, {
     method: 'POST',

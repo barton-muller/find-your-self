@@ -110,23 +110,46 @@ export const branchesOf = (p: Plan, s: Schedule, forkId: string): Branch[] => {
   });
 };
 
+// Side lanes for stops that are off the active path. Each alternative chain gets the lowest free lane for the
+// days it spans, so lanes are reused once a branch has rejoined and three routes sit symmetrically (1 right, 2 left).
 export const lanes = (p: Plan, s: Schedule): Record<string, number> => {
   const lane: Record<string, number> = {};
   s.path.forEach((id) => (lane[id] = 0));
-  let next = 1;
-  const visit = (id: string, ln: number) => {
-    if (lane[id] !== undefined) return;
-    lane[id] = ln;
-    outs(p, id).forEach((l) => visit(l.to, ln));
+  const chains: string[][] = [];
+  const claimed = new Set<string>();
+  const collect = (id: string, chain: string[]) => {
+    if (lane[id] !== undefined || claimed.has(id)) return;
+    claimed.add(id);
+    chain.push(id);
+    outs(p, id).forEach((l) => collect(l.to, chain));
   };
   for (const id of s.path) {
     for (const l of outs(p, id)) {
-      if (lane[l.to] === undefined) visit(l.to, next++);
+      const chain: string[] = [];
+      collect(l.to, chain);
+      if (chain.length) chains.push(chain);
     }
   }
   liveStops(p).forEach((st) => {
-    if (lane[st.id] === undefined) lane[st.id] = next++;
+    if (lane[st.id] === undefined && !claimed.has(st.id)) {
+      claimed.add(st.id);
+      chains.push([st.id]);
+    }
   });
+  const span = (c: string[]): [number, number] => {
+    const ts = c.filter((id) => s.arrive[id] !== undefined);
+    if (!ts.length) return [0, 0];
+    return [Math.min(...ts.map((id) => s.arrive[id])) - 1, Math.max(...ts.map((id) => s.arrive[id] + Math.max(p.stops[id].nights, 1))) + 1];
+  };
+  const used: [number, number][][] = [];
+  chains.sort((a, b) => span(a)[0] - span(b)[0]);
+  for (const c of chains) {
+    const [t0, t1] = span(c);
+    let k = 0;
+    while (used[k]?.some(([a, b]) => t0 < b && a < t1)) k++;
+    (used[k] ??= []).push([t0, t1]);
+    c.forEach((id) => (lane[id] = k + 1));
+  }
   return lane;
 };
 

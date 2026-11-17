@@ -3,7 +3,7 @@ import { countryOf } from '../cities';
 import { addDays, diffDays, fmtMonthName, fmtShortDate, todayStr } from '../dates';
 import { Icon, iconPath } from '../icons';
 import {
-  activeOutLeg, chosenOption, colorIndex, ins, lanes, legOvernight, liveLegs, liveStops, schedule,
+  activeOutLeg, chosenOption, colorIndex, ins, lanes, legExtra, legOvernight, liveLegs, liveStops, outs, schedule,
 } from '../model';
 import { go } from '../nav';
 import { useStore } from '../store';
@@ -204,16 +204,32 @@ export function Timeline() {
   });
 
   // labels
-  type L = { id: string; y: number; side: -1 | 1; lane: number };
+  type L = { id: string; y: number; side: -1 | 1; lane: number; short?: boolean };
   const raw: L[] = [];
   const altOnSide = (side: number, d0: number, d1: number) =>
     stops.some((x) => lane[x.id] !== 0 && laneSide(lane[x.id]) === side && s.arrive[x.id] < d1 && s.arrive[x.id] + Math.max(x.nights, 1) > d0);
+  const altLabelAt = (side: number, day: number) =>
+    stops.some((x) => lane[x.id] !== 0 && laneSide(lane[x.id]) === side && Math.abs(s.arrive[x.id] - day) < 1);
   s.path.forEach((id, i) => {
     const g = geo(id);
     const pref: -1 | 1 = i % 2 === 0 ? 1 : -1;
-    let side = pref;
-    if (altOnSide(pref, g.a, g.a + Math.max(g.st.nights, 1))) side = (-pref) as -1 | 1;
-    raw.push({ id, y: Y(g.a), side, lane: 0 });
+    const span = [g.a, g.a + Math.max(g.st.nights, 1)] as const;
+    const branchSides = new Set<number>(outs(plan, id).filter((l) => lane[l.to] !== 0).map((l) => laneSide(lane[l.to])));
+    // an alternative rejoining just below this stop bends in under its label
+    const mergeSides = new Set<number>(
+      liveLegs(plan)
+        .filter((l) => lane[l.from] !== 0 && lane[l.to] === 0 && s.arrive[l.from] !== undefined)
+        .filter((l) => {
+          const e = Math.max(s.arrive[l.from] + plan.stops[l.from].nights + legExtra(l), s.arrive[l.to]);
+          return e > g.a && e <= g.a + 1.1;
+        })
+        .map((l) => laneSide(lane[l.from])),
+    );
+    const blocked = (sd: number) => altOnSide(sd, ...span) || branchSides.has(sd) || mergeSides.has(sd);
+    const side: -1 | 1 = !blocked(pref) ? pref : !blocked(-pref) ? ((-pref) as -1 | 1) : pref;
+    // alternatives on both sides with their own labels on the same row: put this label just below theirs
+    const dy = altOnSide(1, ...span) && altOnSide(-1, ...span) && altLabelAt(side, g.a) ? 34 : 0;
+    raw.push({ id, y: Y(g.a) + dy, side, lane: 0, short: blocked(side) });
   });
   stops.filter((x) => !s.onPath.has(x.id)).forEach((x) => {
     raw.push({ id: x.id, y: Y(s.arrive[x.id]), side: (laneSide(lane[x.id]) || 1) as -1 | 1, lane: lane[x.id] });
@@ -222,7 +238,7 @@ export function Timeline() {
     const list = raw.filter((r) => r.side === side).sort((a, b) => a.y - b.y);
     return list.map((r, k) => {
       const avail = list[k + 1] ? list[k + 1].y - r.y : 999;
-      const lines = avail >= 32 && ppd >= 15 ? 2 : avail >= 15 ? 1 : 0;
+      const lines = avail >= 32 && ppd >= 15 && !r.short ? 2 : avail >= 15 || r.lane === 0 ? 1 : 0;
       return { ...r, lines };
     }).filter((r) => r.lines > 0);
   });
@@ -262,13 +278,16 @@ export function Timeline() {
           const x1 = laneX(lane[l.from]);
           const x2 = laneX(lane[l.to]);
           const y1 = Y(g.lastDay);
-          const y2 = Y(s.arrive[l.to]);
+          // Where this route would arrive. An alternative that rejoins later than the active route ends at that later
+          // day, and a ring on the stop's lane marks it. One that would arrive earlier ends at the stop's scheduled day.
+          const eff = Math.max(s.arrive[l.from] + g.st.nights + legExtra(l), s.arrive[l.to]);
+          const y2 = Y(eff);
           const active = s.activeLegs.has(l.id);
           const o = chosenOption(l);
           const ov = legOvernight(l) && g.st.nights > 0;
           const branchOut = lane[l.from] === 0 && lane[l.to] !== 0;
           const curved = x1 !== x2;
-          const lastGap = Math.max(s.arrive[l.to] - 1, g.lastDay);
+          const lastGap = Math.max(eff - 1, g.lastDay);
           const dk = !curved ? g.lastDay + Math.floor((lastGap - g.lastDay) / 2) : branchOut ? g.lastDay : lastGap;
           const iy = Y(dk + 0.5);
           const sz = Math.min(ppd >= 18 ? 16 : 13, ppd * 0.7);
@@ -281,6 +300,7 @@ export function Timeline() {
           return (
             <g key={l.id} opacity={(active ? 1 : 0.7) * (s.arrive[l.from] + g.st.nights < today ? 0.5 : 1)} onClick={() => go({ view: 'place', id: l.from })} className="g-badge">
               <path d={connector(x1, y1, x2, y2, ppd, branchOut)} fill="none" stroke="var(--ink)" strokeWidth={3} strokeLinecap="round" />
+              {eff > s.arrive[l.to] && <circle cx={x2} cy={y2} r={rd + 1.5} fill="var(--bg)" stroke="var(--alt)" strokeWidth={2.5}><title>{`Arrives in ${plan.stops[l.to].name} ${eff - s.arrive[l.to]} ${eff - s.arrive[l.to] === 1 ? 'day' : 'days'} later on this route`}</title></circle>}
               {o && ppd >= 16 && room >= sz - 2 && (
                 <g color="var(--ink)">
                   <g transform={`translate(${ix - sz / 2},${(ov ? Y(g.lastDay + 0.5) : iy) - sz / 2}) scale(${sz / 24})`}>

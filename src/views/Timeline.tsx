@@ -274,7 +274,9 @@ export function Timeline() {
           const iy = Y(dk + 0.5);
           const sz = Math.min(ppd >= 18 ? 16 : 13, ppd * 0.7);
           const iLane = branchOut ? lane[l.to] : lane[l.from];
-          const side = iLane === 0 ? -1 : laneSide(iLane);
+          const d0 = ov ? g.lastDay : dk;
+          const d1 = (ov ? g.lastDay + 2 : dk + 1) + 1;
+          const side = iLane !== 0 ? laneSide(iLane) : altOnSide(1, d0, d1) && !altOnSide(-1, d0, d1) ? -1 : 1;
           const ix = (branchOut ? x2 : x1) + side * (6 + sz / 2);
           const room = v1 - v0;
           return (

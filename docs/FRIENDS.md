@@ -45,6 +45,8 @@ git clone --branch u/maria https://TOKEN@github.com/OWNER/REPO.git
 - The clone contains `AGENTS.md`, which tells the agent how to edit a trip safely and to stay on that branch. Changes it pushes show up in the app on the next sync.
 - The token ends up in the clone's `.git/config` in plain text, so treat that folder like the link.
 
+You do not have to explain this by hand. In the app, *Settings*, step 3 has **Copy for AI agent** and step 4 has **Copy for their AI agent** next to the invite link. They copy a message with the repo, branch, token, the clone command, the working rules and a short description of the plan format, ready to paste into Claude Code or a similar tool. Send it to your friend together with the invite link. It contains the token, so send it privately.
+
 This is a lot to ask of most friends. Two easier routes: ask the person who runs the repo to make the change for them (their agent can edit any branch), or use the app's own editing. A way to copy a trip as text for a chat assistant and paste the result back is not built yet.
 
 ## Keep it safe

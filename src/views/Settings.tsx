@@ -4,6 +4,7 @@ import { overviewCount, planPts, prefetchOverview } from '../tiles';
 import { configured, listRemoteTrips, type RemoteTrip } from '../sync';
 import { prettyName, slug, uniquePath } from '../trips';
 import { inviteCode, makeInviteLink, parseInvite } from '../invite';
+import { aiBrief } from '../aiBrief';
 import { useStore } from '../store';
 import { Icon, type IconName } from '../icons';
 import { copyText, weatherReport } from '../weather';
@@ -43,12 +44,17 @@ export function Settings() {
   const [newName, setNewName] = useState('');
   const [inviteName, setInviteName] = useState('');
   const [inviteLink, setInviteLink] = useState('');
+  const [aiMsg, setAiMsg] = useState('');
   const [pasted, setPasted] = useState('');
   const [pasteErr, setPasteErr] = useState('');
   const makeInvite = () => {
     if (!configured(cfg)) return;
     const branch = `u/${slug(inviteName || 'friend')}`;
     setInviteLink(makeInviteLink({ repo: cfg.repo, token: cfg.token, branch, name: inviteName.trim() || undefined }));
+  };
+  const copyBrief = async (b: Parameters<typeof aiBrief>[0]) => {
+    setAiMsg((await copyText(aiBrief(b))) ? 'Copied. Paste it into your AI agent.' : 'Could not copy.');
+    window.setTimeout(() => setAiMsg(''), 4000);
   };
   const joinFromPaste = (v: string) => {
     setPasted(v);
@@ -204,6 +210,12 @@ export function Settings() {
               <button className="ibtn" onClick={syncNow}><Icon name="sync" size={18} /> Sync now</button>
               <button className="iconbtn danger" aria-label="Disconnect" title="Disconnect" onClick={() => { saveCfg(null); setC({ ...c, token: '' }); }}><Icon name="x" size={20} /></button>
             </div>
+            <div className="rowflex ailine">
+              <button className="ibtn" onClick={() => copyBrief({ repo: cfg.repo, token: cfg.token, branch: cfg.branch, trip: activeTrip.name, path: tripPath })}>
+                <Icon name="sparkle" size={18} /> Copy for AI agent
+              </button>
+              <span className="small">{aiMsg || 'Repo, branch, token and instructions for Claude Code or similar. Contains your token.'}</span>
+            </div>
             <p className="small">
               Want a repo of your own? <a href={BRAND.syncGuide} target="_blank" rel="noreferrer">How to set one up</a>.
             </p>
@@ -273,7 +285,13 @@ export function Settings() {
                 <button className="ibtn" onClick={() => copyText(inviteLink)}><Icon name="copy" size={16} /> Copy</button>
                 {typeof navigator.share === 'function' && <button className="ibtn" onClick={() => navigator.share({ title: 'Join my trips', url: inviteLink }).catch(() => {})}><Icon name="upload" size={16} /> Share</button>}
               </div>
-              <p className="small">Send it privately.</p>
+              <div className="rowflex ailine">
+                <button className="ibtn" onClick={() => copyBrief({ repo: cfg.repo, token: cfg.token, branch: `u/${slug(inviteName || 'friend')}` })}>
+                  <Icon name="sparkle" size={16} /> Copy for their AI agent
+                </button>
+                <span className="small">{aiMsg}</span>
+              </div>
+              <p className="small">Send both privately. They contain the token.</p>
             </>
           )}
         </Sec>

@@ -33,6 +33,10 @@ What the token cannot do: it only works on this one repo. It cannot touch your o
 
 After that they make trips as usual. Their trips are saved to their branch. Their step 3 only says which repo they are syncing with. They can invite others from step 4 too, since the same link works for anyone who has it.
 
+## Your own other devices
+
+To connect another phone or computer of your own, open *Settings*, step 3, *Set up another device of yours*, and tap *Make link*. Send the link to yourself and open it on the other device. It connects to the same repo and branch. Opening a link again on a device that is already connected skips the question and goes straight to your trips.
+
 ## Editing with an AI agent
 
 A friend does not need their own repo or a GitHub account for this, but they do need an AI coding agent that works on files in a folder (Claude Code, for example) and git on their computer. The invite link holds everything the agent needs:

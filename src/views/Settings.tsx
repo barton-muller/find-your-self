@@ -45,6 +45,7 @@ export function Settings() {
   const [inviteName, setInviteName] = useState('');
   const [inviteLink, setInviteLink] = useState('');
   const [aiMsg, setAiMsg] = useState('');
+  const [deviceLink, setDeviceLink] = useState('');
   const [pasted, setPasted] = useState('');
   const [pasteErr, setPasteErr] = useState('');
   const makeInvite = () => {
@@ -216,6 +217,22 @@ export function Settings() {
               </button>
               <span className="small">{aiMsg || 'Repo, branch, token and instructions for Claude Code or similar. Contains your token.'}</span>
             </div>
+            <details className="adv">
+              <summary><Icon name="link" size={15} /> Set up another device of yours</summary>
+              <p className="small">Make a link that connects your phone, tablet or computer to this same repo and branch. Open it there and press Join. It contains your token, so send it only to yourself.</p>
+              <div className="rowflex">
+                <button className="ibtn" onClick={() => setDeviceLink(makeInviteLink({ repo: cfg.repo, token: cfg.token, branch: cfg.branch }))}><Icon name="link" size={16} /> Make link</button>
+              </div>
+              {deviceLink && (
+                <>
+                  <input className="linkout" readOnly value={deviceLink} onFocus={(e) => e.currentTarget.select()} />
+                  <div className="rowflex">
+                    <button className="ibtn" onClick={() => copyText(deviceLink)}><Icon name="copy" size={16} /> Copy</button>
+                    {typeof navigator.share === 'function' && <button className="ibtn" onClick={() => navigator.share({ title: 'Go Find Yourself: connect this device', url: deviceLink }).catch(() => {})}><Icon name="upload" size={16} /> Share</button>}
+                  </div>
+                </>
+              )}
+            </details>
             <p className="small">
               Want a repo of your own? <a href={BRAND.syncGuide} target="_blank" rel="noreferrer">How to set one up</a>.
             </p>

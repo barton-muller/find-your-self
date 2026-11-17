@@ -18,7 +18,6 @@ Free and open source: go ahead and [clone or fork it](docs/MAKE-YOUR-OWN.md).
 <img src="docs/img/panel-todo.png" width="32%" alt="Checklist of unbooked stays and transport">
 <img src="docs/img/panel-private.png" width="32%" alt="Settings with optional GitHub sync">
 </p>
-<p align="center"><sub>The weather in these images is sample data.</sub></p>
 
 ## Install on your phone
 

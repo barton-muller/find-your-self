@@ -30,6 +30,8 @@ npm run dev
 ```
 `npm run build` checks the types and builds the site.
 
+Before you publish, look at `auth` in `src/brand.ts`. It holds the original author's public GitHub App values for "Sign in with GitHub". Their relay refuses requests from your site, so the button would fail for your users. Either set your own three values (see [Set up Sign in with GitHub](GITHUB-SIGN-IN.md)) or empty them to hide the button.
+
 Things you will probably want to change first:
 - Name, tagline and links: `src/brand.ts`. Also set `storage` there to a short name of your own. Browser storage is shared by every page on one address, so two apps on `you.github.io` would overwrite each other's data without it. Also `index.html` and the title in `vite.config.ts` if you rename it.
 - Icon: `public/icon.svg`. Run `node scripts/icons.cjs` to make the PNG versions (needs Playwright).

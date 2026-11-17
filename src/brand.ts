@@ -10,10 +10,10 @@ export const BRAND = {
   guide: 'https://github.com/barton-muller/find-your-self/blob/main/docs/MAKE-YOUR-OWN.md',
   syncGuide: 'https://github.com/barton-muller/find-your-self/blob/main/docs/SYNC-AND-AI.md',
   tokenGuide: 'https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token',
-  // "Sign in with GitHub" is off until these three public values are filled in (see docs/GITHUB-SIGN-IN.md). Set them here, or as VITE_GH_CLIENT_ID, VITE_GH_RELAY and VITE_GH_APP_SLUG at build time.
+  // "Sign in with GitHub" needs these three public values; forks must replace them with their own or leave them empty to turn it off (see docs/GITHUB-SIGN-IN.md). Set them here, or as VITE_GH_CLIENT_ID, VITE_GH_RELAY and VITE_GH_APP_SLUG at build time.
   auth: {
-    clientId: (import.meta.env?.VITE_GH_CLIENT_ID as string | undefined) ?? '', // GitHub App client ID
-    relay: (import.meta.env?.VITE_GH_RELAY as string | undefined) ?? '', // https://gfy-github-auth.<you>.workers.dev
-    appSlug: (import.meta.env?.VITE_GH_APP_SLUG as string | undefined) ?? '', // GitHub App name in its URL: github.com/apps/<slug>
+    clientId: (import.meta.env?.VITE_GH_CLIENT_ID as string | undefined) || 'Iv23li69aGBxYokv1i8f', // GitHub App client ID
+    relay: (import.meta.env?.VITE_GH_RELAY as string | undefined) || 'https://github-auth-relay.barton-fna.workers.dev', // https://gfy-github-auth.<you>.workers.dev
+    appSlug: (import.meta.env?.VITE_GH_APP_SLUG as string | undefined) || 'remote-storage-bm', // GitHub App name in its URL: github.com/apps/<slug>
   },
 } as const;

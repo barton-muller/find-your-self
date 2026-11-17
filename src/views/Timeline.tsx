@@ -313,13 +313,17 @@ export function Timeline() {
               {back && <title>{`Arrives in ${plan.stops[l.to].name} ${eff - s.arrive[l.to]} ${eff - s.arrive[l.to] === 1 ? 'day' : 'days'} later than the chosen route`}</title>}
               {o && ppd >= 16 && room >= sz - 2 && (
                 <g color="var(--ink)">
+                  <circle cx={ix} cy={ov ? Y(g.lastDay + 0.5) : iy} r={sz * 0.62} fill="var(--bg)" />
                   <g transform={`translate(${ix - sz / 2},${(ov ? Y(g.lastDay + 0.5) : iy) - sz / 2}) scale(${sz / 24})`}>
-                    <path d={iconPath(modeIcon(o.mode))} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+                    <path d={iconPath(modeIcon(o.mode))} fill="var(--bg)" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
                   </g>
                   {ov && (
-                    <g transform={`translate(${ix - sz / 2},${Y(g.lastDay + 1.5) - sz / 2}) scale(${sz / 24})`} className="g-moon">
-                      <path d={iconPath('moon')} fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinejoin="round" />
-                    </g>
+                    <>
+                      <circle cx={ix} cy={Y(g.lastDay + 1.5)} r={sz * 0.62} fill="var(--bg)" />
+                      <g transform={`translate(${ix - sz / 2},${Y(g.lastDay + 1.5) - sz / 2}) scale(${sz / 24})`} className="g-moon">
+                        <path d={iconPath('moon')} fill="var(--bg)" stroke="currentColor" strokeWidth={2.4} strokeLinejoin="round" />
+                      </g>
+                    </>
                   )}
                 </g>
               )}

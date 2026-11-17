@@ -106,13 +106,13 @@ export function Settings() {
         hint={<>
           Your trip is saved to a <b>private</b> GitHub repo that you own, using a token limited to that one repo (permission: Contents, read and write). The token stays on this device.
           An AI coding agent such as Claude Code can edit the same repo, so you can ask it to change your plan.
-          <div className="links">
-            <a href={BRAND.tokenGuide} target="_blank" rel="noreferrer">How to create a token</a>
-            <a href={BRAND.syncGuide} target="_blank" rel="noreferrer">Full guide</a>
-          </div>
         </>}
       >
         <p className="lead">Keep your trip in a GitHub repo you own. Every device stays in step, and an AI agent can edit it for you.</p>
+        <div className="guidelinks">
+          <a className="ibtn" href={BRAND.syncGuide} target="_blank" rel="noreferrer"><Icon name="book" size={16} /> How to set up sync</a>
+          <a className="ibtn" href={BRAND.tokenGuide} target="_blank" rel="noreferrer"><Icon name="lock" size={16} /> How to create a token</a>
+        </div>
         <label className="fld"><span className="fl"><Icon name="repo" size={16} /> Repository</span>
           <input value={c.repo} onChange={set('repo')} placeholder="owner/trip-data" autoCapitalize="none" autoCorrect="off" />
         </label>

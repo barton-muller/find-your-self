@@ -1,5 +1,5 @@
 import { BRAND } from './brand';
-import { createRepo, freshAccess, listRepos } from './auth';
+import { createRepo, listRepos, writeMany } from './auth';
 
 // The starter files for a new data repo are the ones in data-template/, bundled at build time: the rules and scripts an AI agent needs.
 const raw = import.meta.glob(['../data-template/*.md', '../data-template/scripts/*.py'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
@@ -46,29 +46,6 @@ export async function createDataRepo(): Promise<NewRepo> {
   return { ...made, ready };
 }
 
-// Adds the starter files in one commit through the Git data API (a handful of requests, however many files).
-// A branch that moved in the meantime, for example from the first sync, makes the last step fail, so it starts again.
-export async function pushStarterFiles(repo: string, branch: string): Promise<void> {
-  const token = await freshAccess();
-  if (!token) throw new Error('Signed out of GitHub.');
-  const api = `https://api.github.com/repos/${repo}`;
-  const h = { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' };
-  const call = async (path: string, method = 'GET', body?: unknown) => {
-    const r = await fetch(`${api}${path}`, { method, headers: h, cache: 'no-store', ...(body ? { body: JSON.stringify(body) } : {}) });
-    if (!r.ok && !(method === 'PATCH' && (r.status === 422 || r.status === 409))) throw new Error(`GitHub ${r.status}`);
-    return r;
-  };
-  const files = { 'README.md': rootReadme(repo.split('/')[1]), ...templateFiles() };
-  for (let attempt = 0; attempt < 4; attempt++) {
-    const head = ((await (await call(`/git/ref/heads/${encodeURIComponent(branch)}`)).json()) as { object: { sha: string } }).object.sha;
-    const base = ((await (await call(`/git/commits/${head}`)).json()) as { tree: { sha: string } }).tree.sha;
-    const tree = (await (await call('/git/trees', 'POST', {
-      base_tree: base,
-      tree: Object.entries(files).map(([path, content]) => ({ path, mode: '100644', type: 'blob', content })),
-    })).json()) as { sha: string };
-    const commit = (await (await call('/git/commits', 'POST', { message: `Add starter files for ${BRAND.name}`, tree: tree.sha, parents: [head] })).json()) as { sha: string };
-    const up = await call(`/git/refs/heads/${encodeURIComponent(branch)}`, 'PATCH', { sha: commit.sha });
-    if (up.ok) return;
-  }
-  throw new Error('The branch kept changing. Try again later.');
-}
+// Adds the starter files in one commit. A branch that moved in the meantime, for example from the first sync, is handled by the client.
+export const pushStarterFiles = (repo: string, branch: string) =>
+  writeMany(repo, { 'README.md': rootReadme(repo.split('/')[1]), ...templateFiles() }, { branch, message: `Add starter files for ${BRAND.name}` }).then(() => undefined);

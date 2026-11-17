@@ -31,6 +31,14 @@ export const installUrl = () => client.installUrl();
 
 export const startSignIn = () => client.signIn();
 export const createRepo = (name: string, description?: string) => client.createRepo(name, { description });
+// Several files in one commit; a null value deletes a file.
+export const writeMany = (repo: string, files: Record<string, string | null>, opts: { branch?: string; message?: string }) => client.writeMany(repo, files, opts);
+// The commits that touched a file, newest first, and the file as it was at one of them.
+export const history = (repo: string, path: string, branch?: string) => client.history(repo, path, { branch, limit: 20 });
+export async function readAt(repo: string, path: string, sha: string): Promise<string | null> {
+  const f = await client.read(repo, path, sha);
+  return f && 'text' in f ? f.text : null;
+}
 export const loadAuth = () => client.auth();
 export const clearAuth = () => client.signOut();
 // A valid access token, renewed through the relay shortly before it expires. Null when signed out.

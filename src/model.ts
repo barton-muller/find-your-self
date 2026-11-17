@@ -394,3 +394,16 @@ export const deleteTodo = (p: Plan, id: string) => {
   p.todos[id].deleted = true;
   p.todos[id].updatedAt = now();
 };
+
+// An older version of the plan, as a change that syncs: every record of the old version gets a fresh updatedAt so it wins the merge,
+// and records that did not exist then are marked deleted rather than removed.
+export function restorePlan(current: Plan, old: Plan): Plan {
+  const t = now();
+  const redo = <T extends { updatedAt: number; deleted?: boolean }>(cur: Record<string, T> = {}, was: Record<string, T> = {}) => {
+    const out: Record<string, T> = {};
+    for (const [id, r] of Object.entries(was)) out[id] = { ...r, updatedAt: t };
+    for (const [id, r] of Object.entries(cur)) if (!(id in was)) out[id] = r.deleted ? r : { ...r, deleted: true, updatedAt: t };
+    return out;
+  };
+  return { ...old, v: 1, metaUpdatedAt: t, stops: redo(current.stops, old.stops), legs: redo(current.legs, old.legs), todos: redo(current.todos, old.todos) };
+}

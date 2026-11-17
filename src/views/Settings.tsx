@@ -6,7 +6,8 @@ import { prettyName, slug, uniquePath } from '../trips';
 import { inviteCode, makeInviteLink, parseInvite } from '../invite';
 import { aiBrief } from '../aiBrief';
 import { createDataRepo, pushStarterFiles } from '../dataRepo';
-import { authAvailable, installUrl, listRepos, rememberReturn, type RepoChoice } from '../auth';
+import { authAvailable, history, installUrl, listRepos, readAt, rememberReturn, type RepoChoice } from '../auth';
+import { restorePlan } from '../model';
 import { useStore } from '../store';
 import { GithubMark, Icon, type IconName } from '../icons';
 import { copyText, weatherReport } from '../weather';
@@ -76,10 +77,36 @@ export function Settings() {
   const [repos, setRepos] = useState<RepoChoice[] | null>(null);
   const [repoMsg, setRepoMsg] = useState('');
   const [creating, setCreating] = useState(false);
+  const [versions, setVersions] = useState<{ sha: string; date: string; author: string }[] | null>(null);
+  const [histMsg, setHistMsg] = useState('');
   const loadRepos = () => {
     setRepoMsg('Looking for your repos…');
     listRepos()
       .then((r) => { setRepos(r); setRepoMsg(''); }).catch((e) => setRepoMsg(String(e.message ?? e)));
+  };
+  const fmtWhen = (d: string) => (d ? new Date(d).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '');
+  const loadHistory = async () => {
+    if (!configured(cfg) || !cfg.viaGitHub) return;
+    setHistMsg('Loading…');
+    try {
+      setVersions(await history(cfg.repo, `${cfg.dir ?? ''}${tripPath}`, cfg.branch));
+      setHistMsg('');
+    } catch (e) {
+      setHistMsg(String((e as Error).message ?? e));
+    }
+  };
+  const restore = async (v: { sha: string; date: string }) => {
+    if (!configured(cfg) || !confirm(`Go back to the version from ${fmtWhen(v.date)}? Your current plan is replaced, and your other devices follow.`)) return;
+    setHistMsg('Restoring…');
+    try {
+      const text = await readAt(cfg.repo, `${cfg.dir ?? ''}${tripPath}`, v.sha);
+      const old = text ? (JSON.parse(text) as Plan) : null;
+      if (!old || old.v !== 1 || !old.stops || !old.legs) throw new Error('That version could not be read.');
+      replacePlan(restorePlan(plan, old));
+      setHistMsg('Restored. It syncs now.');
+    } catch (e) {
+      setHistMsg(String((e as Error).message ?? e));
+    }
   };
   const makeRepo = async () => {
     setCreating(true);
@@ -253,6 +280,24 @@ export function Settings() {
               )}
             </div>
             {aiMsg && <p className="small">{aiMsg}</p>}
+            {cfg.viaGitHub && (
+              <details className="adv" onToggle={(e) => { if ((e.currentTarget as HTMLDetailsElement).open) void loadHistory(); }}>
+                <summary>Version history</summary>
+                {histMsg && <p className="small">{histMsg}</p>}
+                {versions && versions.length > 0 && (
+                  <ul className="triplist">
+                    {versions.map((v, i) => (
+                      <li key={v.sha}>
+                        <button className="tripbtn" disabled={i === 0} onClick={() => restore(v)}>
+                          <Icon name={i === 0 ? 'check' : 'undo'} size={18} /> <span>{fmtWhen(v.date)}</span> <small>{i === 0 ? 'current' : v.author}</small>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {versions && versions.length === 0 && !histMsg && <p className="small">No versions yet. Sync first.</p>}
+              </details>
+            )}
             {!cfg.viaGitHub && <details className="adv">
               <summary>Change connection</summary>
               <label className="fld"><span className="fl"><Icon name="repo" size={16} /> Repository</span>

@@ -11,7 +11,7 @@
   "dependencies": {
     "idb-keyval": "^6.3.0",
     "leaflet": "^1.9.4",
-    "pages-storage": "git+https://github.com/barton-muller/pages-storage.git#6dd6bba885f5621d3b23665b13f4c10e1072e76e",
+    "pages-storage": "git+https://github.com/barton-muller/pages-storage.git#78d8d772a74b81eae4d5df726d70cb0a09002807",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

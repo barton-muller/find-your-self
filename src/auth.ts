@@ -76,6 +76,13 @@ export async function finishSignIn(): Promise<AuthState | null> {
   const code = q.get('code');
   const state = q.get('state');
   const err = q.get('error');
+  // GitHub returns here after the app is installed or changed on a repo (?installation_id=...&setup_action=...).
+  // That is not a sign-in: drop the query and let the repo list reload.
+  if (q.has('installation_id')) {
+    history.replaceState(null, '', `${location.pathname}#/settings`);
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+    return null;
+  }
   if (!code && !err) return null;
   const clean = () => {
     history.replaceState(null, '', `${location.pathname}#/settings`);

@@ -82,7 +82,7 @@ export function Settings() {
         <h2>GitHub sync</h2>
         <p className="muted">
           Stores the plan as a JSON file in a <b>private</b> GitHub repo, via a fine-grained token limited to that one repo
-          (permission: Contents → read &amp; write). The token stays on this device only.
+          (permission: Contents → read &amp; write). The token stays on this device only. An AI agent can edit the trip through the same repo.
           <a href={BRAND.tokenGuide} target="_blank" rel="noreferrer"> How to create a token</a>. <a href={BRAND.syncGuide} target="_blank" rel="noreferrer">Full sync guide</a>.
         </p>
         <label>Repository<input value={c.repo} onChange={set('repo')} placeholder="owner/trip-data" autoCapitalize="none" autoCorrect="off" /></label>

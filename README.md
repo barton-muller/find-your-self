@@ -18,7 +18,6 @@ Go Find Yourself is free and open source. You can copy it, change it, and publis
 <img src="docs/img/panel-todo.png" width="32%" alt="Checklist of unbooked stays and transport">
 <img src="docs/img/panel-private.png" width="32%" alt="Settings with optional GitHub sync">
 </p>
-<p align="center"><img src="docs/img/panel-devices.png" width="100%" alt="Phone, tablet and dark mode"></p>
 <p align="center"><sub>The weather in these images is sample data.</sub></p>
 
 ## What it does
@@ -36,7 +35,7 @@ Go Find Yourself is free and open source. You can copy it, change it, and publis
 
 ## Your data
 
-Go Find Yourself has no accounts and no server. Your trip is saved in your browser, on your device. Nothing is sent anywhere unless you turn on sync.
+Go Find Yourself has no accounts and no server. Your trip is saved in your browser, on your device. Nothing is sent anywhere unless you turn on sync. Sync saves the trip to a GitHub repo that you own, and that same repo is how an AI agent can edit your trip (see below).
 
 Browsers can delete stored data, and iOS does so for sites you have not used for a while. Add the app to your home screen, and either turn on sync or export a backup now and then (*Settings, Backup*).
 

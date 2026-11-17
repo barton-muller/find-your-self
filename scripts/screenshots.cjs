@@ -95,23 +95,18 @@ async function shot(browser, html, w, h, file) {
       timeline: async (p) => { await p.goto(`${BASE}#/timeline`); },
       place: async (p) => { await p.goto(`${BASE}#/place/cnx`); await p.waitForTimeout(600); await p.evaluate(() => window.scrollTo(0, 420)); },
       todo: async (p) => { await p.goto(`${BASE}#/todo`); },
-      settings: async (p) => { await p.goto(`${BASE}#/settings`); await p.evaluate(() => window.scrollTo(0, 0)); },
+      settings: async (p) => { await p.goto(`${BASE}#/settings`); await p.waitForTimeout(600); await p.evaluate(() => { const h = [...document.querySelectorAll('h2')].find((x) => /github sync/i.test(x.textContent)); window.scrollTo(0, h.getBoundingClientRect().top + window.scrollY - 70); }); },
     });
     const dark = await raw(browser, 'dark', { ...phoneOpts, colorScheme: 'dark' }, {
       timeline: async (p) => { await p.goto(`${BASE}#/timeline`); },
-      plan: async (p) => { await p.goto(`${BASE}#/plan`); },
     });
-    const ipad = await raw(browser, 'ipad', { viewport: { width: 1180, height: 820 }, deviceScaleFactor: 1.5 }, {
-      timeline: async (p) => { await p.goto(`${BASE}#/timeline`); },
-    });
-
     const panels = [
       ['plan', '#D5E9E5', 'Plan the route,<br>not just the list', 'Stops, nights and transport in one place. Dates update as you change anything.', light.plan],
       ['fork', '#E3DCF0', 'Branch when you<br>cannot decide', 'Keep two routes side by side. Pick one and see how it moves the dates.', light.fork],
       ['timeline', '#D6E4F2', 'See the whole<br>trip at a glance', 'One dot per night. Travel days and overnight rides are easy to spot.', light.timeline],
       ['weather', '#F6E3B4', 'Weather for<br>every day', 'Forecast for each stop on the days you are there.', light.place],
       ['todo', '#F2DCE6', 'Know what is<br>still unbooked', 'Stays and transport turn into a checklist, soonest first.', light.todo],
-      ['private', '#D5E9E5', 'Your trip stays<br>with you', 'Saved on your device. Optional sync to a GitHub repo you own.', light.settings],
+      ['private', '#D5E9E5', 'Your trip stays<br>with you', 'Saved on your device. Optional sync to a GitHub repo you own, which an AI agent can edit for you.', light.settings],
     ];
     for (const [k, tint, t, s, f] of panels) await shot(browser, panel(tint, t, s, f), 1080, 1500, `panel-${k}.png`);
 
@@ -128,10 +123,6 @@ async function shot(browser, html, w, h, file) {
     </div></body></html>`;
     await shot(browser, hero, 1600, 800, 'hero.png');
 
-    const wide = `<html><style>${CSS}.w{width:1600px;height:1000px;background:#E3DCF0;padding:80px}.w h1{font-size:64px}.w p{font-size:30px;margin-top:16px}</style><body><div class="w"><h1>Phone, tablet, dark mode</h1><p>Installs to the home screen and works without a connection.</p>
-      <div class="phone" style="left:120px;top:330px;width:880px;border-radius:40px;border-width:10px"><img src="${b64(ipad.timeline)}"></div>
-      ${phone(dark.plan, 330, 'left:1100px;top:250px')}</div></body></html>`;
-    await shot(browser, wide, 1600, 1000, 'panel-devices.png');
   } finally {
     await browser.close();
     srv.kill();

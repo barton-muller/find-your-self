@@ -13,7 +13,7 @@ export const BRAND = {
   // "Sign in with GitHub" needs these three public values; forks must replace them with their own or leave them empty to turn it off (see docs/GITHUB-SIGN-IN.md). Set them here, or as VITE_GH_CLIENT_ID, VITE_GH_RELAY and VITE_GH_APP_SLUG at build time.
   auth: {
     clientId: (import.meta.env?.VITE_GH_CLIENT_ID as string | undefined) || 'Iv23li69aGBxYokv1i8f', // GitHub App client ID
-    relay: (import.meta.env?.VITE_GH_RELAY as string | undefined) || 'https://github-auth-relay.barton-fna.workers.dev', // the Worker keeps its original name
+    relay: (import.meta.env?.VITE_GH_RELAY as string | undefined) || 'https://pages-storage-active.barton-fna.workers.dev', // any Worker address works; set VITE_GH_RELAY to use another
     appSlug: (import.meta.env?.VITE_GH_APP_SLUG as string | undefined) || 'remote-storage-bm', // GitHub App name in its URL: github.com/apps/<slug>
   },
 } as const;

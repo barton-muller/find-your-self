@@ -1,6 +1,7 @@
 // name, lat, lng, country
 export const CITIES: readonly (readonly [string, number, number, string])[] = [
   ['Bangkok', 13.7563, 100.5018, 'Thailand'],
+  ['Amsterdam', 52.3676, 4.9041, 'Netherlands'],
   ['Chiang Mai', 18.7883, 98.9853, 'Thailand'],
   ['Chiang Rai', 19.9105, 99.8406, 'Thailand'],
   ['Chiang Khong', 20.2700, 100.4070, 'Thailand'],

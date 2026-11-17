@@ -110,6 +110,11 @@ def validate(p):
             a = S[k].get('activeOut')
             if a not in [l['id'] for l in ls]:
                 warn.append(f'fork {S[k]["name"]} ({k}): activeOut {a} is not one of its legs (app picks the first)')
+    # every route should end at the same stop
+    ends = [k for k, s in S.items() if not s.get('deleted') and k not in O]
+    if len(ends) > 1:
+        for k in ends:
+            warn.append(f'stop {k} ({S[k]["name"]}) is a dead end; {len(ends)} stops have no onward leg. Join every branch to the final stop')
     # cycles + reachability
     seen, stack, cyc = set(), set(), []
 

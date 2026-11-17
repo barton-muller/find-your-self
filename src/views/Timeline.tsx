@@ -38,14 +38,21 @@ const save = (k: string, v: unknown) => {
   try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ }
 };
 
-function connector(x1: number, y1: number, x2: number, y2: number, step: number, branchOut: boolean): string {
+function connector(x1: number, y1: number, x2: number, y2: number, step: number, branchOut: boolean, back: boolean): string {
   if (x1 === x2) return `M${x1},${y1} L${x2},${y2}`;
-  const half = Math.max(Math.min(step, y2 - y1), 2) / 2;
-  const R = Math.max(1, Math.min(6, half, Math.abs(x2 - x1) / 2));
   const sg = Math.sign(x2 - x1);
-  const yb = (branchOut ? y1 + half : y2 - half) - R;
   const s1 = sg > 0 ? 0 : 1;
   const s2 = sg > 0 ? 1 : 0;
+  if (back) {
+    // The route arrives after the stop's scheduled day: leave the lane below its last night, cross over,
+    // and curve back up to the earlier day.
+    const R = Math.max(1, Math.min(6, step / 2, Math.abs(x2 - x1) / 2));
+    const yh = y1 + step / 2;
+    return `M${x1},${y1} L${x1},${yh - R} A${R},${R} 0 0 ${s1} ${x1 + sg * R},${yh} L${x2 - sg * R},${yh} A${R},${R} 0 0 ${s1} ${x2},${yh - R} L${x2},${y2}`;
+  }
+  const half = Math.max(Math.min(step, y2 - y1), 2) / 2;
+  const R = Math.max(1, Math.min(6, half, Math.abs(x2 - x1) / 2));
+  const yb = (branchOut ? y1 + half : y2 - half) - R;
   return `M${x1},${y1} L${x1},${yb} A${R},${R} 0 0 ${s1} ${x1 + sg * R},${yb + R} L${x2 - sg * R},${yb + R} A${R},${R} 0 0 ${s2} ${x2},${yb + 2 * R} L${x2},${y2}`;
 }
 
@@ -204,7 +211,7 @@ export function Timeline() {
   });
 
   // labels
-  type L = { id: string; y: number; side: -1 | 1; lane: number; short?: boolean };
+  type L = { id: string; y: number; side: -1 | 1; lane: number; short?: boolean; elane?: number };
   const raw: L[] = [];
   const altOnSide = (side: number, d0: number, d1: number) =>
     stops.some((x) => lane[x.id] !== 0 && laneSide(lane[x.id]) === side && s.arrive[x.id] < d1 && s.arrive[x.id] + Math.max(x.nights, 1) > d0);
@@ -220,8 +227,9 @@ export function Timeline() {
       liveLegs(plan)
         .filter((l) => lane[l.from] !== 0 && lane[l.to] === 0 && s.arrive[l.from] !== undefined)
         .filter((l) => {
-          const e = Math.max(s.arrive[l.from] + plan.stops[l.from].nights + legExtra(l), s.arrive[l.to]);
-          return e > g.a && e <= g.a + 1.1;
+          const eff = s.arrive[l.from] + plan.stops[l.from].nights + legExtra(l);
+          const bend = eff > s.arrive[l.to] ? geo(l.from).lastDay + 0.5 : s.arrive[l.to] - 0.5;
+          return l.to === id && bend > g.a - 0.1 && bend <= g.a + 1.1;
         })
         .map((l) => laneSide(lane[l.from])),
     );
@@ -229,7 +237,9 @@ export function Timeline() {
     const side: -1 | 1 = !blocked(pref) ? pref : !blocked(-pref) ? ((-pref) as -1 | 1) : pref;
     // alternatives on both sides with their own labels on the same row: put this label just below theirs
     const dy = altOnSide(1, ...span) && altOnSide(-1, ...span) && altLabelAt(side, g.a) ? 34 : 0;
-    raw.push({ id, y: Y(g.a) + dy, side, lane: 0, short: blocked(side) });
+    // when alternatives sit on that side while this stop is shown, the label starts outside the outermost one
+    const outer = Math.max(0, ...stops.filter((x) => lane[x.id] !== 0 && laneSide(lane[x.id]) === side && s.arrive[x.id] < span[1] + 1 && s.arrive[x.id] + Math.max(x.nights, 1) > span[0] - 1).map((x) => lane[x.id]));
+    raw.push({ id, y: Y(g.a) + dy, side, lane: 0, short: blocked(side), elane: outer || undefined });
   });
   stops.filter((x) => !s.onPath.has(x.id)).forEach((x) => {
     raw.push({ id: x.id, y: Y(s.arrive[x.id]), side: (laneSide(lane[x.id]) || 1) as -1 | 1, lane: lane[x.id] });
@@ -278,17 +288,17 @@ export function Timeline() {
           const x1 = laneX(lane[l.from]);
           const x2 = laneX(lane[l.to]);
           const y1 = Y(g.lastDay);
-          // Where this route would arrive. An alternative that rejoins later than the active route ends at that later
-          // day, and a ring on the stop's lane marks it. One that would arrive earlier ends at the stop's scheduled day.
-          const eff = Math.max(s.arrive[l.from] + g.st.nights + legExtra(l), s.arrive[l.to]);
-          const y2 = Y(eff);
+          const y2 = Y(s.arrive[l.to]);
           const active = s.activeLegs.has(l.id);
           const o = chosenOption(l);
           const ov = legOvernight(l) && g.st.nights > 0;
           const branchOut = lane[l.from] === 0 && lane[l.to] !== 0;
           const curved = x1 !== x2;
-          const lastGap = Math.max(eff - 1, g.lastDay);
-          const dk = !curved ? g.lastDay + Math.floor((lastGap - g.lastDay) / 2) : branchOut ? g.lastDay : lastGap;
+          // A route that would arrive after the stop's scheduled day (the timeline follows the chosen route) curves back up.
+          const eff = s.arrive[l.from] + g.st.nights + legExtra(l);
+          const back = curved && !branchOut && eff > s.arrive[l.to];
+          const lastGap = Math.max(s.arrive[l.to] - 1, g.lastDay);
+          const dk = !curved ? g.lastDay + Math.floor((lastGap - g.lastDay) / 2) : branchOut || back ? g.lastDay : lastGap;
           const iy = Y(dk + 0.5);
           const sz = Math.min(ppd >= 18 ? 16 : 13, ppd * 0.7);
           const iLane = branchOut ? lane[l.to] : lane[l.from];
@@ -299,8 +309,8 @@ export function Timeline() {
           const room = curved ? Infinity : y2 - y1;
           return (
             <g key={l.id} opacity={(active ? 1 : 0.7) * (s.arrive[l.from] + g.st.nights < today ? 0.5 : 1)} onClick={() => go({ view: 'place', id: l.from })} className="g-badge">
-              <path d={connector(x1, y1, x2, y2, ppd, branchOut)} fill="none" stroke="var(--ink)" strokeWidth={3} strokeLinecap="round" />
-              {eff > s.arrive[l.to] && <circle cx={x2} cy={y2} r={rd + 1.5} fill="var(--bg)" stroke="var(--alt)" strokeWidth={2.5}><title>{`Arrives in ${plan.stops[l.to].name} ${eff - s.arrive[l.to]} ${eff - s.arrive[l.to] === 1 ? 'day' : 'days'} later on this route`}</title></circle>}
+              <path d={connector(x1, y1, x2, y2, ppd, branchOut, back)} fill="none" stroke="var(--ink)" strokeWidth={3} strokeLinecap="round" />
+              {back && <title>{`Arrives in ${plan.stops[l.to].name} ${eff - s.arrive[l.to]} ${eff - s.arrive[l.to] === 1 ? 'day' : 'days'} later than the chosen route`}</title>}
               {o && ppd >= 16 && room >= sz - 2 && (
                 <g color="var(--ink)">
                   <g transform={`translate(${ix - sz / 2},${(ov ? Y(g.lastDay + 0.5) : iy) - sz / 2}) scale(${sz / 24})`}>
@@ -356,11 +366,11 @@ export function Timeline() {
           );
         })}
 
-        {labels.map(({ id, y, side, lane: l, lines }) => {
+        {labels.map(({ id, y, side, lane: l, lines, elane }) => {
           const x = plan.stops[id];
           const on = s.onPath.has(id);
           const px = laneX(l);
-          const edge = px + side * 30;
+          const edge = (elane ? laneX(elane) : px) + side * 30;
           const room = side === 1 ? W - edge - 6 : edge - AXIS - 10;
           const past = s.arrive[id] + x.nights < today;
           const il = inLeg(id);

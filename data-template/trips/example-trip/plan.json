@@ -103,7 +103,7 @@
    "lng": 102.6331,
    "country": "Laos",
    "nights": 2,
-   "notes": "Fork: three ways back to Bangkok. They arrive on different days.",
+   "notes": "Fork: three ways back to Bangkok. They arrive on different days, but the trip carries on from the route you pick.",
    "days": [],
    "activeOut": "vte-bkk2",
    "updatedAt": 1
@@ -154,7 +154,19 @@
    "lng": 100.5018,
    "country": "Thailand",
    "nights": 2,
-   "notes": "Fly home from here.",
+   "notes": "Every route ends here, then home.",
+   "days": [],
+   "activeOut": null,
+   "updatedAt": 1
+  },
+  "ams": {
+   "id": "ams",
+   "name": "Amsterdam",
+   "lat": 52.3676,
+   "lng": 4.9041,
+   "country": "Netherlands",
+   "nights": 0,
+   "notes": "Home. Every route ends at this stop.",
    "days": [],
    "activeOut": null,
    "updatedAt": 1
@@ -457,6 +469,24 @@
     }
    ],
    "chosen": "o20",
+   "updatedAt": 1
+  },
+  "bkk2-ams": {
+   "id": "bkk2-ams",
+   "from": "bkk2",
+   "to": "ams",
+   "options": [
+    {
+     "id": "o21",
+     "mode": "Flight",
+     "duration": "11h 30m",
+     "cost": "",
+     "notes": "Direct",
+     "overnight": false,
+     "extraDays": 0
+    }
+   ],
+   "chosen": "o21",
    "updatedAt": 1
   }
  },

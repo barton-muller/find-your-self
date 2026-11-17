@@ -40,11 +40,12 @@ export const seedPlan = (): Plan => {
   });
   stop('vv', 'Vang Vieng', 2, { days: ['Tubing', 'Viewpoint hike and blue lagoon'] });
   stop('nk', 'Nong Khiaw', 2, { notes: 'Quiet river town. Boat to Muang Ngoi for a day.' });
-  stop('vte', 'Vientiane', 2, { notes: 'Fork: three ways back to Bangkok. They arrive on different days.' });
+  stop('vte', 'Vientiane', 2, { notes: 'Fork: three ways back to Bangkok. They arrive on different days, but the trip carries on from the route you pick.' });
   stop('udn', 'Udon Thani', 2, { notes: 'Cross the border at Nong Khai.' });
   stop('kkc', 'Khon Kaen', 2);
   stop('ayu', 'Ayutthaya', 2, { days: ['Temples by bike', 'Boat on the river'] });
-  stop('bkk2', 'Bangkok', 2, { notes: 'Fly home from here.' });
+  stop('bkk2', 'Bangkok', 2, { notes: 'Every route ends here, then home.' });
+  stop('ams', 'Amsterdam', 0, { notes: 'Home. Every route ends at this stop.' });
 
   leg('bkk', 'cnx', [
     opt('Sleeper train', '12h', { overnight: true, booked: true, notes: 'Lower berth, second class' }),
@@ -68,6 +69,7 @@ export const seedPlan = (): Plan => {
   leg('vte', 'kkc', [opt('Bus', '5h')], 0);
   leg('kkc', 'ayu', [opt('Train', '5h')], 0);
   leg('ayu', 'bkk2', [opt('Train', '1h 30m')], 0);
+  leg('bkk2', 'ams', [opt('Flight', '11h 30m', { notes: 'Direct' })], 0);
   stops.lpb.activeOut = 'lpb-vv';
   stops.vte.activeOut = 'vte-bkk2';
 

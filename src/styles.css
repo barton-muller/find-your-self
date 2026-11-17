@@ -221,7 +221,7 @@ html.lock, html.lock body { overflow: hidden; height: 100%; min-height: 0; overs
 .sec-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .sec-head h3 { margin: 0; font-size: 17px; flex: 1; }
 .sec-head .ico, .wxline .ico { color: var(--accent); flex: none; }
-.num { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 13px; font-weight: 700; flex: none; }
+.num { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; line-height: 1; padding: 0 0 1px; flex: none; font-variant-numeric: tabular-nums; }
 .qbtn { border: 0; background: none; padding: 6px; margin: -6px -6px -6px 0; color: var(--muted); border-radius: 50%; display: grid; place-items: center; }
 .hint { font-size: 13px; line-height: 1.45; color: var(--muted); background: var(--bg2); border-radius: 10px; padding: 9px 11px; margin: 0 0 10px; }
 .hint .links { display: flex; gap: 14px; margin-top: 6px; }
@@ -260,3 +260,8 @@ code { font-size: .92em; background: var(--bg2); padding: 1px 5px; border-radius
 .linkout { margin-top: 10px; font-size: 13px; }
 .ailine { margin-top: 8px; align-items: center; }
 .actrow { gap: 8px; }
+
+.actgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.actgrid button { width: 100%; justify-content: center; white-space: nowrap; min-height: 44px; padding: 8px 10px; }
+.actgrid .wide { grid-column: 1 / -1; }
+.set .rowflex .ibtn { justify-content: center; }

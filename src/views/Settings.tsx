@@ -210,15 +210,14 @@ export function Settings() {
               {sync.status === 'error' && `Error: ${sync.error}`}
               {sync.status === 'off' && 'Not synced.'}
             </p>
-            <div className="rowflex actrow">
+            <div className="actgrid">
               <button className="ibtn" onClick={syncNow}><Icon name="sync" size={18} /> Sync now</button>
-              <button className="ibtn" onClick={() => copyLink(makeInviteLink({ repo: cfg.repo, token: cfg.token, branch: cfg.branch }), 'Link copied. Open it on your other device and press Join.')}>
+              <button className="ibtn" onClick={() => copyBrief({ repo: cfg.repo, token: cfg.token, branch: cfg.branch, trip: activeTrip.name, path: tripPath })}>
+                <Icon name="sparkle" size={18} /> Copy for AI
+              </button>
+              <button className="ibtn wide" onClick={() => copyLink(makeInviteLink({ repo: cfg.repo, token: cfg.token, branch: cfg.branch }), 'Link copied. Open it on your other device and press Join.')}>
                 <Icon name="link" size={18} /> Copy link for another device
               </button>
-              <button className="ibtn" onClick={() => copyBrief({ repo: cfg.repo, token: cfg.token, branch: cfg.branch, trip: activeTrip.name, path: tripPath })}>
-                <Icon name="sparkle" size={18} /> Copy for AI agent
-              </button>
-              <button className="iconbtn danger" aria-label="Disconnect" title="Disconnect" onClick={() => { saveCfg(null); setC({ ...c, token: '' }); }}><Icon name="x" size={20} /></button>
             </div>
             <p className="small">{aiMsg || 'The link and the AI text contain your token. Send them only to yourself or people you trust.'}</p>
             <p className="small">
@@ -233,7 +232,10 @@ export function Settings() {
                 <input type="password" value={c.token} onChange={set('token')} placeholder="github_pat_…" autoComplete="off" />
               </label>
               <label className="fld"><span className="fl">Branch</span><input value={c.branch} onChange={set('branch')} autoCapitalize="none" /></label>
-              <div className="rowflex"><button className="primary ibtn" disabled={!configured(c)} onClick={() => saveCfg(c)}><Icon name="sync" size={18} /> Save and sync</button></div>
+              <div className="rowflex">
+                <button className="primary ibtn" disabled={!configured(c)} onClick={() => saveCfg(c)}><Icon name="sync" size={18} /> Save and sync</button>
+                <button className="ibtn danger" onClick={() => { saveCfg(null); setC({ ...c, token: '' }); }}><Icon name="x" size={18} /> Disconnect</button>
+              </div>
             </details>
           </>
         ) : (
@@ -303,14 +305,14 @@ export function Settings() {
       )}
 
       <Sec icon="map" title="Offline map" hint="Saves the whole world at low detail and the area around your stops in more detail, so the map still works without a connection. Other areas are saved as you browse them.">
-        <div className="rowflex">
-          <button className="ibtn" onClick={() => { setTiles('Downloading…'); prefetchOverview(pts, true).then(refreshTiles); }}><Icon name="download" size={18} /> Download</button>
-          <span className="small">{tiles}</span>
+        <div className="actgrid">
+          <button className="ibtn wide" onClick={() => { setTiles('Downloading…'); prefetchOverview(pts, true).then(refreshTiles); }}><Icon name="download" size={18} /> Download map</button>
         </div>
+        <p className="small">{tiles}</p>
       </Sec>
 
       <Sec icon="download" title="Backup" hint="Browsers can delete stored data, and iOS does so for sites you have not used for a while. Export a file now and then, or turn on sync.">
-        <div className="rowflex">
+        <div className="actgrid">
           <button className="ibtn" onClick={exportJson}><Icon name="download" size={18} /> Export</button>
           <button className="ibtn" onClick={() => file.current?.click()}><Icon name="upload" size={18} /> Import</button>
           <input ref={file} type="file" accept="application/json" hidden onChange={(e) => e.target.files?.[0] && importJson(e.target.files[0])} />

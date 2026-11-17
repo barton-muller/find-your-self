@@ -24,7 +24,7 @@ const RETURN_KEY = 'gh-auth-return';
 export const rememberReturn = () => {
   try { localStorage.setItem(RETURN_KEY, redirectUri()); } catch { /* ignore */ }
 };
-export const installUrl = () => `https://github.com/apps/${BRAND.auth.appSlug}/installations/new`;
+export const installUrl = () => `https://github.com/apps/${BRAND.auth.appSlug}/installations/new?state=${encodeURIComponent(redirectUri())}`;
 export const manageUrl = () => `https://github.com/apps/${BRAND.auth.appSlug}`;
 
 const rand = (n: number) => {

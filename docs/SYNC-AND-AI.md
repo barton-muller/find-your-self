@@ -15,7 +15,7 @@ Nothing goes through a server run by Go Find Yourself. The app talks straight to
 
 ## 1. Make a private repo from the template
 
-The folder [`data-template`](../data-template) in this repo is a ready-to-use data repo. It has a sample `plan.json`, rules for AI agents, a notes file for your decisions and a script that checks the plan.
+The folder [`data-template`](../data-template) in this repo is a ready-to-use data repo. It holds an example trip in `trips/example-trip/`, rules for AI agents, notes files for your decisions and a script that checks the plans. Each trip lives in its own folder, `trips/<name>/plan.json`.
 
 With the GitHub command line (`gh`):
 
@@ -52,16 +52,19 @@ The token is saved in the browser on the device where you paste it. It is not se
 
 ## 3. Connect the app
 
-Open the app, then *Settings, GitHub sync*, and fill in:
+Open the app, then *Settings*. The steps there are in order:
 
-- **Repository**: `your-username/my-trip-data`
-- **File path**: `plan.json`
-- **Branch**: `main`
-- **Token**: the one you just made
+1. **Your trip.** Name your trip, or pick one you already have. You can keep several trips on the device, with or without sync.
+2. **Trip dates.**
+3. **Sync and AI agents.** Enter:
+   - **Repository**: `your-username/my-trip-data`
+   - **Token**: the one you just made
 
 Press *Save and sync*. Do the same on each device. The app syncs when you open it and when you come back to it from another app.
 
-**Before the first sync, set up your own trip.** The first sync merges what is on the device with what is in the repo, and the newest edit to each stop wins. If both hold different example trips you will see both. Delete the example stops you do not want, or start with an empty plan.
+**Several trips.** Each trip is saved in the repo as `trips/<name>/plan.json`, chosen when the trip is first synced. The trip list in step 1 also shows trips that are in the repo but not on this device yet. Tap one to download it. Use *New trip* to start another one. Renaming a trip in the app does not rename its folder.
+
+**Before the first sync, name your trip.** The first sync saves the trip you have open into the repo. If the repo already has the example trip from the template, and your trip is the unchanged example, they match and nothing is duplicated.
 
 ## 4. Point an AI agent at the repo
 

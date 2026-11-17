@@ -1,27 +1,47 @@
 #!/usr/bin/env python3
-"""Validate, summarise and safely edit plan.json.
+"""Validate, summarise and safely edit trip plans.
 
-CLI:   python scripts/plan.py check      # validate, exit 1 on errors
-       python scripts/plan.py summary    # check + dated walk of every branch
-Edits: from scripts.plan import *  (see CLAUDE.md); save() refuses invalid plans
-       and records that changed without a newer updatedAt.
+A repo can hold several trips: trips/<name>/plan.json (and, for older setups, plan.json in the root).
+CLI:   python scripts/plan.py check [path]      # validate every plan, or one; exit 1 on errors
+       python scripts/plan.py summary [path]    # check + dated walk of every branch
+Edits: from plan import *  (see AGENTS.md). With several trips, pass the path to load() and save(),
+       or set PLAN=trips/<name>/plan.json. save() refuses invalid plans and records that changed
+       without a newer updatedAt.
 """
 import copy
 import datetime as dt
 import json
+import os
 import sys
 import time
 from pathlib import Path
 
-PATH = Path(__file__).resolve().parent.parent / 'plan.json'
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def plan_files():
+    files = [ROOT / 'plan.json', *sorted((ROOT / 'trips').glob('*/plan.json'))]
+    return [f for f in files if f.exists()]
+
+
+def resolve(path=None):
+    if path is None:
+        path = os.environ.get('PLAN')
+    if path is None:
+        files = plan_files()
+        if len(files) != 1:
+            raise SystemExit('Several trips here: pass the path, or set PLAN=trips/<name>/plan.json')
+        return files[0]
+    path = Path(path)
+    return path if path.is_absolute() else ROOT / path
 
 
 def now():
     return int(time.time() * 1000)
 
 
-def load(path=PATH):
-    p = json.loads(Path(path).read_text())
+def load(path=None):
+    p = json.loads(resolve(path).read_text())
     return p, copy.deepcopy(p)
 
 
@@ -156,7 +176,7 @@ def summary(p):
             print(f'  {d:%a %d %b}  {n} ({nights}n)')
 
 
-def save(p, orig, path=PATH):
+def save(p, orig, path=None):
     """Write plan.json only if valid and every changed record has a newer updatedAt."""
     err, warn = validate(p)
     for kind in ('stops', 'legs'):
@@ -176,7 +196,7 @@ def save(p, orig, path=PATH):
             print('ERROR:', e)
         raise SystemExit('refusing to save')
     p['metaUpdatedAt'] = max(p.get('metaUpdatedAt', 0), now())
-    Path(path).write_text(json.dumps(p, indent=1, ensure_ascii=False) + '\n')
+    resolve(path).write_text(json.dumps(p, indent=1, ensure_ascii=False) + '\n')
 
 
 # helpers: every one bumps updatedAt
@@ -208,13 +228,20 @@ def kill_leg(p, id):
 
 if __name__ == '__main__':
     cmd = sys.argv[1] if len(sys.argv) > 1 else 'check'
-    plan, _ = load()
-    e, w = validate(plan)
-    for x in w:
-        print('warn:', x)
-    for x in e:
-        print('ERROR:', x)
-    if cmd == 'summary':
-        summary(plan)
-    print(f'\n{len(e)} errors, {len(w)} warnings')
-    sys.exit(1 if e else 0)
+    targets = [resolve(sys.argv[2])] if len(sys.argv) > 2 else plan_files()
+    if not targets:
+        raise SystemExit('No plan.json found (looked in the root and in trips/*/).')
+    failed = False
+    for target in targets:
+        print(f'== {target.relative_to(ROOT) if target.is_relative_to(ROOT) else target}')
+        plan, _ = load(target)
+        e, w = validate(plan)
+        for x in w:
+            print('warn:', x)
+        for x in e:
+            print('ERROR:', x)
+        if cmd == 'summary':
+            summary(plan)
+        print(f'\n{len(e)} errors, {len(w)} warnings\n')
+        failed = failed or bool(e)
+    sys.exit(1 if failed else 0)

@@ -61,3 +61,15 @@ export interface SyncConfig {
   path: string;
   branch: string;
 }
+
+export interface TripMeta {
+  id: string;
+  name: string;
+  path?: string;
+  archived?: boolean;
+}
+
+export interface TripsState {
+  active: string;
+  list: TripMeta[];
+}

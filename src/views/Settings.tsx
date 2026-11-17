@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { diffDays } from '../dates';
 import { overviewCount, planPts, prefetchOverview } from '../tiles';
-import { configured } from '../sync';
+import { configured, listRemoteTrips, type RemoteTrip } from '../sync';
+import { prettyName, slug, uniquePath } from '../trips';
 import { useStore } from '../store';
 import { Icon, type IconName } from '../icons';
 import { copyText, weatherReport } from '../weather';
@@ -28,13 +29,27 @@ function Sec({ id, num, icon, title, hint, children }: { id?: string; num?: numb
 }
 
 export function Settings() {
-  const { setMeta, cfg, saveCfg, sync, syncNow, plan, replacePlan, resetSeed } = useStore();
+  const { setMeta, cfg, saveCfg, sync, syncNow, plan, replacePlan, resetSeed, trips, activeTrip, switchTrip, newTrip, renameTrip, archiveTrip, importTrip } = useStore();
   const [c, setC] = useState<SyncConfig>(cfg ?? { token: '', repo: '', path: 'plan.json', branch: 'main' });
   const file = useRef<HTMLInputElement>(null);
   const [tiles, setTiles] = useState<string>('');
   const [wx, setWx] = useState('');
   const [wxText, setWxText] = useState('');
   const pts = useMemo(() => planPts(plan), [plan]);
+  const [remote, setRemote] = useState<RemoteTrip[]>([]);
+  const [remoteMsg, setRemoteMsg] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState('');
+  const refreshRemote = () => {
+    if (!configured(cfg)) { setRemote([]); setRemoteMsg(''); return; }
+    setRemoteMsg('Checking the repo…');
+    listRemoteTrips(cfg).then((r) => { setRemote(r); setRemoteMsg(''); }).catch((e) => setRemoteMsg(String(e.message ?? e)));
+  };
+  useEffect(refreshRemote, [cfg, sync.status === 'ok']); // eslint-disable-line react-hooks/exhaustive-deps
+  const visible = trips.list.filter((t) => !t.archived);
+  const known = new Set(trips.list.map((t) => t.path));
+  const remoteOnly = remote.filter((r) => !known.has(r.path));
+  const tripPath = activeTrip.path ?? uniquePath(activeTrip.name, trips.list);
   const copyWeather = async () => {
     setWx('Fetching…');
     setWxText('');
@@ -57,7 +72,7 @@ export function Settings() {
   const exportJson = () => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(plan, null, 1)], { type: 'application/json' }));
-    a.download = 'trip-plan.json';
+    a.download = `${slug(activeTrip.name)}.json`;
     a.click();
   };
   const importJson = async (f: File) => {
@@ -89,7 +104,51 @@ export function Settings() {
         </div>
       </section>
 
-      <Sec num={1} icon="calendar" title="Trip dates" hint="Set when the trip starts and ends. Dates for each stop follow from the nights you give it. You can change these any time, for example to add days at the end.">
+      <Sec
+        num={1} icon="flag" title="Your trip"
+        hint={<>Name your trip, or pick another one. Each trip is saved separately on this device. With sync on, each trip is also saved in your repo as <code>trips/&lt;name&gt;/plan.json</code>, and trips from your other devices show up here.</>}
+      >
+        <label className="fld"><span className="fl"><Icon name="flag" size={16} /> Name</span>
+          <input value={activeTrip.name} onChange={(e) => renameTrip(activeTrip.id, e.target.value)} placeholder="Name your trip" />
+        </label>
+        <ul className="triplist">
+          {visible.map((t) => (
+            <li key={t.id} className={t.id === trips.active ? 'on' : ''}>
+              <button className="tripbtn" onClick={() => switchTrip(t.id)}>
+                <Icon name={t.id === trips.active ? 'check' : 'pin'} size={18} /> <span>{t.name || 'Untitled trip'}</span>
+              </button>
+              {t.id !== trips.active && (
+                <button className="iconbtn sm" aria-label={`Archive ${t.name}`} title="Archive (hide on this device)" onClick={() => confirm(`Hide "${t.name}" on this device? Its file in the repo stays.`) && archiveTrip(t.id)}>
+                  <Icon name="archive" size={18} />
+                </button>
+              )}
+            </li>
+          ))}
+          {remoteOnly.map((r) => (
+            <li key={r.path} className="remote">
+              <button className="tripbtn" onClick={async () => { const err = await importTrip(prettyName(r.name), r.path); if (err) alert(err); }}>
+                <Icon name="cloud" size={18} /> <span>{prettyName(r.name)}</span> <small>in your repo</small>
+              </button>
+              <span className="iconbtn sm ghost"><Icon name="download" size={18} /></span>
+            </li>
+          ))}
+          <li>
+            {adding ? (
+              <form className="newtrip" onSubmit={(e) => { e.preventDefault(); newTrip(newName); setNewName(''); setAdding(false); }}>
+                <input autoFocus value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Name of the new trip" />
+                <button className="primary iconbtn" type="submit" aria-label="Create trip"><Icon name="check" size={20} /></button>
+                <button className="iconbtn" type="button" aria-label="Cancel" onClick={() => setAdding(false)}><Icon name="x" size={20} /></button>
+              </form>
+            ) : (
+              <button className="tripbtn add" onClick={() => setAdding(true)}><Icon name="plus" size={18} /> <span>New trip</span></button>
+            )}
+          </li>
+        </ul>
+        {remoteMsg && <p className="small">{remoteMsg}</p>}
+        {!configured(cfg) && <p className="small">Trips saved in your repo appear here once sync is set up in step 3.</p>}
+      </Sec>
+
+      <Sec num={2} icon="calendar" title="Trip dates" hint="Set when this trip starts and ends. Dates for each stop follow from the nights you give it. You can change these any time, for example to add days at the end.">
         <div className="grid2">
           <label className="fld"><span className="fl"><Icon name="flag" size={16} /> Start</span>
             <input type="date" value={plan.start} onChange={(e) => e.target.value && setMeta({ start: e.target.value })} />
@@ -102,7 +161,7 @@ export function Settings() {
       </Sec>
 
       <Sec
-        id="sync" num={2} icon="branch" title="Sync and AI agents"
+        id="sync" num={3} icon="branch" title="Sync and AI agents"
         hint={<>
           Your trip is saved to a <b>private</b> GitHub repo that you own, using a token limited to that one repo (permission: Contents, read and write). The token stays on this device.
           An AI coding agent such as Claude Code can edit the same repo, so you can ask it to change your plan.
@@ -121,7 +180,6 @@ export function Settings() {
         </label>
         <details className="adv">
           <summary>Advanced</summary>
-          <label className="fld"><span className="fl">File path</span><input value={c.path} onChange={set('path')} autoCapitalize="none" /></label>
           <label className="fld"><span className="fl">Branch</span><input value={c.branch} onChange={set('branch')} autoCapitalize="none" /></label>
         </details>
         <div className="rowflex">
@@ -129,6 +187,7 @@ export function Settings() {
           <button className="iconbtn" aria-label="Sync now" title="Sync now" disabled={!configured(cfg)} onClick={syncNow}><Icon name="sync" size={20} /></button>
           {cfg && <button className="iconbtn danger" aria-label="Disconnect" title="Disconnect" onClick={() => { saveCfg(null); setC({ ...c, token: '' }); }}><Icon name="x" size={20} /></button>}
         </div>
+        {configured(cfg) && <p className="small">This trip is saved in your repo as <code>{tripPath}</code>.</p>}
         <p className={`status s-${sync.status}`}>
           <Icon name={stIcon} size={16} className={sync.status === 'syncing' ? 'spin' : ''} />
           {sync.status === 'off' && 'Not synced. Data is on this device only.'}

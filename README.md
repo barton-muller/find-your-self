@@ -30,6 +30,7 @@ Go Find Yourself is free and open source. You can copy it, change it, and publis
 - **Weather.** The forecast for each stop on the days you are there, up to 15 days ahead.
 - **To-do.** Stays and transport that are not booked yet, soonest first, plus your own to-dos.
 - **Notes.** For each stop and for each day.
+- **Several trips.** Keep as many trips as you like on the device and switch between them in Settings.
 - **Offline.** After the first visit it works without a connection. Install it to your home screen.
 - **Undo and redo.** Export and import your trip as a file.
 
@@ -41,7 +42,7 @@ Browsers can delete stored data, and iOS does so for sites you have not used for
 
 ## Keep your trip in a GitHub repo, and let an AI edit it
 
-Optional. You make a private GitHub repo, give the app a token that can only write to that repo, and the app saves the trip there as a file called `plan.json`. Every device with the token shows the same trip, and you get a history of every change.
+Optional. You make a private GitHub repo, give the app a token that can only write to that repo, and the app saves each trip there as a file, `trips/<name>/plan.json`. Every device with the token shows the same trip, and you get a history of every change.
 
 The same repo can be handed to an AI agent such as Claude Code. Ask it "add two nights in Hanoi after Ninh Binh" and it edits the plan, checks the dates, and saves. The folder [`data-template`](data-template) is a ready-made starter repo with the rules for agents already written.
 

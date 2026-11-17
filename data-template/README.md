@@ -1,21 +1,22 @@
 # My trip data
 
-This repo holds one trip for the [Go Find Yourself](https://github.com/barton-muller/find-your-self) planner app. The whole trip is one file, `plan.json`.
+This repo holds your trips for the [Go Find Yourself](https://github.com/barton-muller/find-your-self) planner app. Each trip is one folder with one file, `trips/<name>/plan.json`.
 
-The app saves to this repo when you change something, and reads from it when you open the app. You can also edit the trip here, or ask an AI agent to do it. The agent rules are in `AGENTS.md`.
+The app saves to this repo when you change something, and reads from it when you open the app. A trip you start in the app gets its own folder on the first sync. You can also edit trips here, or ask an AI agent to do it. The agent rules are in `AGENTS.md`.
 
 ## Files
-- `plan.json`: the trip. Stops, transport between them, to-dos. It starts as the example trip from the app. Replace it with your own in the app, or let an agent do it.
-- `DECISIONS.md`: your preferences, constraints and the reasons behind the route. Agents read this before they change anything. Keep it up to date.
+- `trips/<name>/plan.json`: one trip. Stops, transport between them, to-dos. `trips/example-trip` is the example trip from the app.
+- `trips/<name>/DECISIONS.md`: reasons behind that trip's route, checked transport facts, open questions.
+- `DECISIONS.md`: your preferences and constraints that apply to every trip.
 - `AGENTS.md`: rules for AI agents that edit this repo. `CLAUDE.md` points to the same file.
-- `scripts/plan.py`: checks the plan and prints a dated summary of every route option.
+- `scripts/plan.py`: checks the plans and prints a dated summary of every route option.
 
 ```
-python3 scripts/plan.py check      # validate the plan
-python3 scripts/plan.py summary    # dates for every fork combination
+python3 scripts/plan.py check                       # validate every trip
+python3 scripts/plan.py summary trips/japan/plan.json   # dates for every fork combination of one trip
 ```
 
 ## Keep this repo private
-`plan.json` has your dates, places and booking notes. Do not make it public.
+The plans hold your dates, places and booking notes. Do not make the repo public.
 
 Setup steps for the app side (token, sync settings) are in the [sync guide](https://github.com/barton-muller/find-your-self/blob/main/docs/SYNC-AND-AI.md).

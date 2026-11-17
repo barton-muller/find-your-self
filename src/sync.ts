@@ -20,7 +20,7 @@ const headers = (c: SyncConfig) => ({
 
 export const configured = (c: SyncConfig | null): c is SyncConfig => !!c && !!c.token && /^[^/]+\/[^/]+$/.test(c.repo) && !!c.path;
 
-async function fetchRemote(c: SyncConfig): Promise<{ plan: Plan; sha: string } | null> {
+export async function fetchRemote(c: SyncConfig): Promise<{ plan: Plan; sha: string } | null> {
   const r = await fetch(`${url(c)}?ref=${encodeURIComponent(c.branch)}&_=${Date.now()}`, {
     headers: headers(c),
     cache: 'no-store',
@@ -110,4 +110,23 @@ export async function syncPlan(c: SyncConfig, local: Plan, attempt = 0): Promise
     return syncPlan(c, merged, attempt + 1);
   }
   return merged;
+}
+
+export interface RemoteTrip { name: string; path: string }
+
+// Trips in the repo: every folder under trips/ that holds a plan.json, plus a plan.json in the repo root.
+export async function listRemoteTrips(c: SyncConfig): Promise<RemoteTrip[]> {
+  const api = (path: string) => `https://api.github.com/repos/${c.repo}/contents/${path}?ref=${encodeURIComponent(c.branch)}&_=${Date.now()}`;
+  const get = async (path: string) => {
+    const r = await fetch(api(path), { headers: headers(c), cache: 'no-store' });
+    if (r.status === 404) return [];
+    if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.text()).slice(0, 160)}`);
+    const j = await r.json();
+    return Array.isArray(j) ? (j as { name: string; type: string }[]) : [];
+  };
+  const [root, trips] = await Promise.all([get(''), get('trips')]);
+  const out: RemoteTrip[] = [];
+  if (root.some((e) => e.type === 'file' && e.name === 'plan.json')) out.push({ name: 'Main trip', path: 'plan.json' });
+  for (const e of trips) if (e.type === 'dir') out.push({ name: e.name, path: `trips/${e.name}/plan.json` });
+  return out;
 }

@@ -86,6 +86,10 @@ Things you can ask:
 
 The agent saves its changes with git. The app picks them up the next time it syncs. Changes you make in the app reach the repo within a few seconds, so tell the agent to `git pull` before it starts.
 
+## Friends and family
+
+If the people you plan with cannot make a token, you can set sync up once and send them links. See [Share a trip repo with friends and family](FRIENDS.md).
+
 ## Fixing problems
 
 | Message in the app | Likely cause |

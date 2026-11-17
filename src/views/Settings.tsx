@@ -3,6 +3,7 @@ import { diffDays } from '../dates';
 import { overviewCount, planPts, prefetchOverview } from '../tiles';
 import { configured, listRemoteTrips, type RemoteTrip } from '../sync';
 import { prettyName, slug, uniquePath } from '../trips';
+import { makeInviteLink, parseInvite } from '../invite';
 import { useStore } from '../store';
 import { Icon, type IconName } from '../icons';
 import { copyText, weatherReport } from '../weather';
@@ -40,6 +41,21 @@ export function Settings() {
   const [remoteMsg, setRemoteMsg] = useState('');
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
+  const [inviteName, setInviteName] = useState('');
+  const [inviteLink, setInviteLink] = useState('');
+  const [pasted, setPasted] = useState('');
+  const [pasteErr, setPasteErr] = useState('');
+  const makeInvite = () => {
+    if (!configured(cfg)) return;
+    const branch = `u/${slug(inviteName || 'friend')}`;
+    setInviteLink(makeInviteLink({ repo: cfg.repo, token: cfg.token, branch, name: inviteName.trim() || undefined }));
+  };
+  const joinFromPaste = (v: string) => {
+    setPasted(v);
+    const inv = parseInvite(v);
+    if (inv) { setPasteErr(''); const code = v.match(/#\/join\/([A-Za-z0-9_-]+)/)?.[1] ?? v.trim(); location.hash = `#/join/${code}`; }
+    else setPasteErr(v.trim() ? 'This is not a valid invite link.' : '');
+  };
   const refreshRemote = () => {
     if (!configured(cfg)) { setRemote([]); setRemoteMsg(''); return; }
     setRemoteMsg('Checking the repo…');
@@ -172,6 +188,12 @@ export function Settings() {
           <a className="ibtn" href={BRAND.syncGuide} target="_blank" rel="noreferrer"><Icon name="book" size={16} /> How to set up sync</a>
           <a className="ibtn" href={BRAND.tokenGuide} target="_blank" rel="noreferrer"><Icon name="lock" size={16} /> How to create a token</a>
         </div>
+        {!configured(cfg) && (
+          <label className="fld"><span className="fl"><Icon name="link" size={16} /> Got an invite link? Paste it here</span>
+            <input value={pasted} onChange={(e) => joinFromPaste(e.target.value)} placeholder="https://…#/join/…" autoCapitalize="none" autoCorrect="off" />
+            {pasteErr && <span className="small err">{pasteErr}</span>}
+          </label>
+        )}
         <label className="fld"><span className="fl"><Icon name="repo" size={16} /> Repository</span>
           <input value={c.repo} onChange={set('repo')} placeholder="owner/trip-data" autoCapitalize="none" autoCorrect="off" />
         </label>
@@ -188,6 +210,26 @@ export function Settings() {
           {cfg && <button className="iconbtn danger" aria-label="Disconnect" title="Disconnect" onClick={() => { saveCfg(null); setC({ ...c, token: '' }); }}><Icon name="x" size={20} /></button>}
         </div>
         {configured(cfg) && <p className="small">This trip is saved in your repo as <code>{tripPath}</code>.</p>}
+        {configured(cfg) && (
+          <details className="adv invite">
+            <summary><Icon name="link" size={15} /> Invite someone</summary>
+            <p className="small">Make a link that sets up sync on their device. They get their own branch in this repo. They need no GitHub account.</p>
+            <div className="newtrip">
+              <input value={inviteName} onChange={(e) => { setInviteName(e.target.value); setInviteLink(''); }} placeholder="Their name" />
+              <button className="iconbtn" aria-label="Create invite link" onClick={makeInvite}><Icon name="link" size={20} /></button>
+            </div>
+            {inviteLink && (
+              <>
+                <input readOnly value={inviteLink} onFocus={(e) => e.currentTarget.select()} />
+                <div className="rowflex">
+                  <button className="ibtn" onClick={() => copyText(inviteLink)}><Icon name="copy" size={16} /> Copy</button>
+                  {typeof navigator.share === 'function' && <button className="ibtn" onClick={() => navigator.share({ title: 'Join my trips', url: inviteLink }).catch(() => {})}><Icon name="upload" size={16} /> Share</button>}
+                </div>
+                <p className="small">Send it privately. Anyone with this link can read and change everything in the repo.</p>
+              </>
+            )}
+          </details>
+        )}
         <p className={`status s-${sync.status}`}>
           <Icon name={stIcon} size={16} className={sync.status === 'syncing' ? 'spin' : ''} />
           {sync.status === 'off' && 'Not synced. Data is on this device only.'}

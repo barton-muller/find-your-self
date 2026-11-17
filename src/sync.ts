@@ -93,11 +93,37 @@ async function diagnose(c: SyncConfig): Promise<string> {
 
 export const samePlan = (a: Plan, b: Plan) => JSON.stringify(a) === JSON.stringify(b);
 
+// Each person can have their own branch. Create it from the default branch when it does not exist yet.
+// Returns true when the branch is the default one (only then may a first commit be made without naming a branch).
+async function prepareBranch(c: SyncConfig): Promise<boolean> {
+  const api = `https://api.github.com/repos/${c.repo}`;
+  const h = headers(c);
+  const enc = encodeURIComponent;
+  const exists = await fetch(`${api}/branches/${enc(c.branch)}`, { headers: h, cache: 'no-store' });
+  if (exists.ok) return true;
+  if (exists.status !== 404) return true;
+  const repo = await fetch(api, { headers: h, cache: 'no-store' });
+  if (!repo.ok) return true;
+  const def = ((await repo.json()) as { default_branch: string }).default_branch;
+  if (c.branch === def) return true;
+  const base = await fetch(`${api}/git/ref/heads/${enc(def)}`, { headers: h, cache: 'no-store' });
+  if (!base.ok) throw new Error(`The repo has no ${def} branch yet. Add a first commit (a README) and try again.`);
+  const sha = ((await base.json()) as { object: { sha: string } }).object.sha;
+  const mk = await fetch(`${api}/git/refs`, {
+    method: 'POST',
+    headers: { ...h, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ref: `refs/heads/${c.branch}`, sha }),
+  });
+  if (!mk.ok && mk.status !== 422) throw new Error(`Could not create branch ${c.branch}: GitHub ${mk.status}`);
+  return false;
+}
+
 export async function syncPlan(c: SyncConfig, local: Plan, attempt = 0): Promise<Plan> {
   const remote = await fetchRemote(c);
   if (!remote) {
+    const onDefault = await prepareBranch(c);
     let r = await putRemote(c, local);
-    if (r === null) r = await putRemote(c, local, undefined, false);
+    if (r === null && onDefault) r = await putRemote(c, local, undefined, false);
     if (r === null) throw new Error(await diagnose(c));
     if (!r) throw new Error('Could not create file');
     return local;

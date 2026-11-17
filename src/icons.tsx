@@ -1,6 +1,6 @@
 export type IconName =
   | 'plane' | 'train' | 'bus' | 'boat' | 'car' | 'bike' | 'walk' | 'arrow' | 'moon'
-  | 'list' | 'map' | 'timeline' | 'settings' | 'check' | 'sync' | 'alert' | 'fork' | 'plus' | 'x' | 'cloud' | 'minus' | 'up' | 'down' | 'reorder' | 'undo' | 'redo' | 'locate' | 'todo' | 'bed' | 'download' | 'bolt' | 'fit' | 'sun' | 'rain' | 'flag' | 'pin' | 'branch' | 'help' | 'book' | 'calendar' | 'upload' | 'copy' | 'trash' | 'lock' | 'repo' | 'archive';
+  | 'list' | 'map' | 'timeline' | 'settings' | 'check' | 'sync' | 'alert' | 'fork' | 'plus' | 'x' | 'cloud' | 'minus' | 'up' | 'down' | 'reorder' | 'undo' | 'redo' | 'locate' | 'todo' | 'bed' | 'download' | 'bolt' | 'fit' | 'sun' | 'rain' | 'flag' | 'pin' | 'branch' | 'help' | 'book' | 'calendar' | 'upload' | 'copy' | 'trash' | 'lock' | 'repo' | 'archive' | 'link';
 
 const P: Record<IconName, string> = {
   plane: 'M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z',
@@ -45,6 +45,7 @@ const P: Record<IconName, string> = {
   copy: 'M8 8h11v12H8zM5 16V4h11',
   trash: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
   lock: 'M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3',
+  link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
   archive: 'M3 5h18v4H3zM5 9v10h14V9M10 13h4',
   repo: 'M4 6a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z',
   sun: 'M8 12a4 4 0 1 0 8 0 4 4 0 0 0-8 0M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',

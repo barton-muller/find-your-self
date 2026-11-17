@@ -7,6 +7,7 @@ import { useStore } from './store';
 import { MapView } from './views/MapView';
 import { Place } from './views/Place';
 import { PlanView } from './views/PlanView';
+import { Join } from './views/Join';
 import { Settings } from './views/Settings';
 import { Timeline } from './views/Timeline';
 import { Todo } from './views/Todo';
@@ -57,6 +58,7 @@ export function App() {
         {route.view === 'place' && <Place id={route.id} />}
         {route.view === 'todo' && <Todo />}
         {route.view === 'settings' && <Settings />}
+        {route.view === 'join' && <Join data={route.data} />}
       </main>
       <nav className="tabs">
         {(['map', 'timeline', 'plan', 'todo'] as const).map((v) => (

@@ -46,7 +46,7 @@ Optional. You make a private GitHub repo, give the app a token that can only wri
 
 The same repo can be handed to an AI agent such as Claude Code. Ask it "add two nights in Hanoi after Ninh Binh" and it edits the plan, checks the dates, and saves. The folder [`data-template`](data-template) is a ready-made starter repo with the rules for agents already written.
 
-Step by step, including how to create the token: **[Sync and AI guide](docs/SYNC-AND-AI.md)**.
+Step by step, including how to create the token: **[Sync and AI guide](docs/SYNC-AND-AI.md)**. If friends or family cannot make a token, you can set it up once and send them an invite link: [Share a trip repo](docs/FRIENDS.md).
 
 Keep your own data repo private. It holds your dates, places and booking notes. The template is public and has no personal data.
 

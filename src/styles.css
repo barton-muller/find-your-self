@@ -189,6 +189,7 @@ html.lock, html.lock body { overflow: hidden; height: 100%; min-height: 0; overs
 .g-todaylbl { fill: var(--accent); font-size: 10px; font-weight: 700; }
 .g-end { stroke: var(--danger); stroke-dasharray: 4 4; }
 .g-moon { color: var(--fork); }
+.wx-sun { color: var(--c5); } .wx-cloud { color: var(--muted); } .wx-rain { color: var(--c0); }
 .g-node { cursor: pointer; } .g-label { cursor: pointer; }
 .g-name { fill: var(--ink); font-size: 13px; font-weight: 600; }
 .g-n { fill: var(--muted); font-size: 11px; font-weight: 400; }

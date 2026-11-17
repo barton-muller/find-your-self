@@ -1,6 +1,6 @@
 export type IconName =
   | 'plane' | 'train' | 'bus' | 'boat' | 'car' | 'bike' | 'walk' | 'arrow' | 'moon'
-  | 'list' | 'map' | 'timeline' | 'settings' | 'check' | 'sync' | 'alert' | 'fork' | 'plus' | 'x' | 'cloud' | 'minus' | 'up' | 'down' | 'reorder' | 'undo' | 'redo' | 'locate' | 'todo' | 'bed' | 'download' | 'bolt' | 'fit';
+  | 'list' | 'map' | 'timeline' | 'settings' | 'check' | 'sync' | 'alert' | 'fork' | 'plus' | 'x' | 'cloud' | 'minus' | 'up' | 'down' | 'reorder' | 'undo' | 'redo' | 'locate' | 'todo' | 'bed' | 'download' | 'bolt' | 'fit' | 'sun' | 'rain';
 
 const P: Record<IconName, string> = {
   plane: 'M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z',
@@ -35,6 +35,14 @@ const P: Record<IconName, string> = {
   minus: 'M5 12h14',
   x: 'M6 6l12 12M18 6 6 18',
   cloud: 'M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z',
+  sun: 'M8 12a4 4 0 1 0 8 0 4 4 0 0 0-8 0M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+  rain: 'M7 14a4 4 0 0 1-.5-8A6 6 0 0 1 18 5a4.5 4.5 0 0 1-.5 9z',
+};
+
+export const rainDrops: Record<1 | 2 | 3, string> = {
+  1: 'M12 17.5l-1.2 3.5',
+  2: 'M9.5 17.5l-1.2 3.5M14.5 17.5l-1.2 3.5',
+  3: 'M7.5 17.5l-1.2 3.5M12 17.5l-1.2 3.5M16.5 17.5l-1.2 3.5',
 };
 
 export const iconPath = (n: IconName) => P[n];

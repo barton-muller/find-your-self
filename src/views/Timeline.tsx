@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { countryOf } from '../cities';
 import { addDays, diffDays, fmtMonthName, fmtShortDate, todayStr } from '../dates';
-import { Icon, iconPath } from '../icons';
+import { Icon, iconPath, rainDrops } from '../icons';
 import {
   activeOutLeg, chosenOption, colorIndex, ins, lanes, legOvernight, liveLegs, liveStops, schedule,
 } from '../model';
 import { go } from '../nav';
 import { useStore } from '../store';
 import { modeIcon } from '../ui';
+import { locKey, rainLevel, useWeather, type Wx, type WxReq } from '../weather';
 
 const HH = 46;
 const TH = 54;
@@ -47,6 +48,21 @@ function connector(x1: number, y1: number, x2: number, y2: number, branchOut: bo
   return `M${x1},${y1} L${x1},${yb} A${R},${R} 0 0 ${s1} ${x1 + sg * R},${yb + R} L${x2 - sg * R},${yb + R} A${R},${R} 0 0 ${s2} ${x2},${yb + 2 * R} L${x2},${y2}`;
 }
 
+function WxGlyph({ w, x, y, size }: { w: Wx; x: number; y: number; size: number }) {
+  const tip = [
+    w.kind === 'rain' ? `rain ${w.mm < 1 ? '<1' : Math.round(w.mm)} mm` : w.kind === 'cloud' ? 'cloudy' : 'sunny',
+    w.hi === null ? '' : `${Math.round(w.hi)}°`,
+    w.est ? 'typical' : '',
+  ].filter(Boolean).join(' · ');
+  return (
+    <g transform={`translate(${x - size / 2},${y - size / 2}) scale(${size / 24})`} className={`wx wx-${w.kind}`} opacity={w.est ? 0.6 : 1}>
+      <title>{tip}</title>
+      <path d={iconPath(w.kind === 'rain' ? 'rain' : w.kind === 'cloud' ? 'cloud' : 'sun')} fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+      {w.kind === 'rain' && <path d={rainDrops[rainLevel(w.mm)]} fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" />}
+    </g>
+  );
+}
+
 export function Timeline() {
   const { plan } = useStore();
   const s = useMemo(() => schedule(plan), [plan]);
@@ -56,6 +72,7 @@ export function Timeline() {
   const [W, setW] = useState(() => Math.min(window.innerWidth, 820));
   const [ppdState, setPpd] = useState<number>(() => load('tl-ppd2', 26));
   const [mode, setMode] = useState<ColorMode>(() => load<ColorMode>('tl-mode', 'auto'));
+  const [wxOn, setWxOn] = useState<boolean>(() => load('tl-wx', true));
   const anchor = useRef<{ day: number; screenY: number } | null>(null);
   const pts = useRef(new Map<number, { x: number; y: number }>());
   const pinch = useRef<{ d: number; ppd: number } | null>(null);
@@ -85,6 +102,7 @@ export function Timeline() {
   }, []);
   useEffect(() => save('tl-ppd2', ppdState), [ppdState]);
   useEffect(() => save('tl-mode', mode), [mode]);
+  useEffect(() => save('tl-wx', wxOn), [wxOn]);
 
   const svgTop = () => (wrap.current?.getBoundingClientRect().top ?? 0) + window.scrollY;
   const applyAnchor = useCallback(() => {
@@ -156,6 +174,25 @@ export function Timeline() {
     return { st, hotel, dots, a, lastDay: a + dots - 1, hollow: hotel === 0 };
   };
 
+  const wxReqs = useMemo<WxReq[]>(() => {
+    const m = new Map<string, WxReq>();
+    for (const x of stops) {
+      if (x.lat === null || x.lng === null) continue;
+      const g = geo(x.id);
+      const key = locKey(x.lat, x.lng);
+      const r = m.get(key) ?? { key, lat: Number(x.lat.toFixed(2)), lng: Number(x.lng.toFixed(2)), dates: [] };
+      for (let d = g.a; d <= g.lastDay; d++) r.dates.push(addDays(plan.start, d));
+      m.set(key, r);
+    }
+    return [...m.values()].map((r) => ({ ...r, dates: [...new Set(r.dates)].sort() }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan, s, stops]);
+  const wx = useWeather(wxReqs, wxOn);
+  const wxOf = (id: string, day: number): Wx | undefined => {
+    const x = plan.stops[id];
+    return x.lat === null || x.lng === null ? undefined : wx[locKey(x.lat, x.lng)]?.[addDays(plan.start, day)];
+  };
+
   // date ticks
   const step = [1, 2, 7, 14, 30].find((n) => n * ppd >= 22) ?? 30;
   const ticks = Array.from({ length: maxDay + 1 }, (_, i) => {
@@ -182,6 +219,7 @@ export function Timeline() {
   stops.filter((x) => !s.onPath.has(x.id)).forEach((x) => {
     raw.push({ id: x.id, y: Y(s.arrive[x.id]), side: (laneSide(lane[x.id]) || 1) as -1 | 1, lane: lane[x.id] });
   });
+  const sideOf = new Map(raw.map((r) => [r.id, r.side]));
   const labels = ([-1, 1] as const).flatMap((side) => {
     const list = raw.filter((r) => r.side === side).sort((a, b) => a.y - b.y);
     return list.map((r, k) => {
@@ -278,6 +316,21 @@ export function Timeline() {
           );
         })}
 
+        {wxOn && ppd >= 12 && stops.map((x) => {
+          const g = geo(x.id);
+          const side = sideOf.get(x.id) ?? 1;
+          const sz = clamp(ppd * 0.5, 9, 12);
+          const gx = laneX(lane[x.id]) + side * (rd + 2.5 + 2 + sz / 2);
+          return (
+            <g key={`w-${x.id}`} opacity={g.a + x.nights < today ? 0.4 : 1} pointerEvents="none">
+              {Array.from({ length: g.dots }, (_, k) => {
+                const w = wxOf(x.id, g.a + k);
+                return w ? <WxGlyph key={k} w={w} x={gx} y={Y(g.a + k)} size={sz} /> : null;
+              })}
+            </g>
+          );
+        })}
+
         {labels.map(({ id, y, side, lane: l, lines }) => {
           const x = plan.stops[id];
           const on = s.onPath.has(id);
@@ -309,6 +362,7 @@ export function Timeline() {
         <button aria-label="zoom out" onClick={() => zoomTo(ppd / 1.4, window.innerHeight / 2)}><Icon name="minus" size={20} /></button>
         <button aria-label="zoom in" onClick={() => zoomTo(ppd * 1.4, window.innerHeight / 2)}><Icon name="plus" size={20} /></button>
         <button aria-label="fit whole trip" onClick={fit}><Icon name="fit" size={20} /></button>
+        <button aria-label="toggle weather" aria-pressed={wxOn} className={wxOn ? 'on' : ''} onClick={() => setWxOn(!wxOn)}><Icon name="sun" size={20} /></button>
       </div>
       <button className="tl-mode" onClick={() => setMode(NEXT_MODE[mode])}>{MODE_LABEL[mode]}</button>
     </div>

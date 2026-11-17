@@ -1,4 +1,4 @@
-import { addDays, diffDays, parseDate } from './dates';
+import { diffDays, parseDate } from './dates';
 import type { Leg, Plan, Stop, Todo, TransportOption } from './types';
 
 export const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
@@ -66,9 +66,6 @@ export const schedule = (p: Plan): Schedule => {
   }
   return { path, onPath, activeLegs, arrive };
 };
-
-export const dateOf = (p: Plan, s: Schedule, id: string): string | null =>
-  s.arrive[id] === undefined ? null : addDays(p.start, s.arrive[id]);
 
 export interface Branch {
   leg: Leg;
@@ -186,7 +183,7 @@ export const touchLeg = (p: Plan, id: string) => {
   p.legs[id].updatedAt = now();
 };
 
-export const addLeg = (p: Plan, from: string, to: string): Leg => {
+const addLeg = (p: Plan, from: string, to: string): Leg => {
   const o = newOption();
   const leg: Leg = { id: uid(), from, to, options: [o], chosen: o.id, updatedAt: now() };
   p.legs[leg.id] = leg;
@@ -296,7 +293,7 @@ export const swapWithNext = (p: Plan, b: string) => {
   touchStop(p, c);
 };
 
-export const PALETTE = 8;
+const PALETTE = 8;
 
 export const colorIndex = (p: Plan, s: Schedule): Record<string, number> => {
   const idx: Record<string, number> = {};
@@ -333,7 +330,7 @@ export interface CheckItem {
   todoId?: string;
 }
 
-export const liveTodos = (p: Plan): Todo[] => Object.values(p.todos ?? {}).filter((t) => !t.deleted);
+const liveTodos = (p: Plan): Todo[] => Object.values(p.todos ?? {}).filter((t) => !t.deleted);
 
 export const checklist = (p: Plan, s: Schedule, today = -1e9): CheckItem[] => {
   const out: CheckItem[] = [];

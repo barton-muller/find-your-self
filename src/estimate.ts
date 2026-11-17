@@ -15,7 +15,7 @@ export const haversineKm = (a: Pt, b: Pt): number => {
   return 12742 * Math.asin(Math.sqrt(h));
 };
 
-export const fmtHours = (h: number): string => {
+const fmtHours = (h: number): string => {
   if (h >= 20) return `~${Math.round(h / 24 * 2) / 2 || 1} day${h >= 36 ? 's' : ''}`;
   const mins = Math.round((h * 60) / 15) * 15;
   const hh = Math.floor(mins / 60);

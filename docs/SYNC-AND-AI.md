@@ -6,12 +6,25 @@ This is optional. Without it, your trip lives in the browser on one device. With
 - A backup with full history.
 - A repo you can hand to an AI agent, such as Claude Code, so it can change the plan for you. For example: "Add two nights in Hanoi after Ninh Binh and check that the dates still work."
 
-Nothing goes through a server run by Go Find Yourself. The app talks straight to GitHub.
+Your trips never go through a server of ours. The app talks straight to GitHub.
+
+There are two ways to connect: **sign in with GitHub** (if the site you use has it turned on, which is the easiest), or a **token** you make yourself. Both end the same way: the app saves your trips to a repo.
 
 ## What you need
 
 - A free GitHub account.
 - Ten minutes.
+
+## Easiest: sign in with GitHub
+
+If *Settings*, step 3 shows **Sign in with GitHub**:
+1. Make a private repo (step 1 below) with at least one file in it.
+2. Press **Sign in with GitHub** and approve.
+3. Press **Add a repo**, install the app on your repo, and come back. Press **Refresh list** and tap your repo.
+
+That is all. You can skip step 2 below. Signed-in devices repeat the sign-in. Invite links and the token in *Copy for AI* do not apply (see the [friends guide](FRIENDS.md)); your agent uses your own GitHub login instead.
+
+If you do not see the button, use a token as described next.
 
 ## 1. Make a private repo from the template
 
@@ -34,7 +47,7 @@ Without the command line: create a new **private** repo on GitHub, then use *Add
 
 **Keep it private.** `plan.json` holds your dates, places and booking notes. A public repo can be found and read by anyone. The template itself is public and has no personal data in it, so it is safe to share. Your own data repo is not.
 
-## 2. Make a token that can only touch that repo
+## 2. Make a token that can only touch that repo (without sign-in)
 
 The app needs a key to write to your repo. GitHub calls it a fine-grained personal access token. GitHub's own steps are here: [Creating a fine-grained personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token).
 
@@ -56,7 +69,7 @@ Open the app, then *Settings*. The steps there are in order:
 
 1. **Your trip.** Name your trip, or pick one you already have. You can keep several trips on the device, with or without sync.
 2. **Trip dates.**
-3. **Sync and AI agents.** Enter:
+3. **Sync and AI agents.** Open *Use a token or invite link instead* and enter:
    - **Repository**: `your-username/my-trip-data`
    - **Token**: the one you just made
 

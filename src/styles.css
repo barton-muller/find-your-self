@@ -96,9 +96,6 @@ button.big { width: 100%; padding: 14px; border-style: dashed; color: var(--acce
 .page label { display: block; margin-top: 8px; font-size: 14px; color: var(--muted); }
 .card label input { margin-top: 3px; }
 .status.s-error { color: var(--danger); } .status.s-ok { color: var(--accent); }
-.toolbar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
-.toolbar button { display: inline-flex; gap: 6px; align-items: center; }
-.toolbar button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .rrow { display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
 .rrow .mv { width: 46px; height: 44px; padding: 0; display: grid; place-items: center; }
 .rrow small { display: block; color: var(--muted); }
@@ -113,17 +110,6 @@ button.big { width: 100%; padding: 14px; border-style: dashed; color: var(--acce
 .pin.alt { opacity: .6; }
 .maplabel { font-size: 12px; font-weight: 600; padding: 1px 6px; }
 .leaflet-container { font: inherit; }
-.tl-scroll { overflow-x: auto; }
-.tl-scroll svg { display: block; font-family: inherit; }
-.tl-scroll .grid { stroke: var(--line); stroke-width: 1; }
-.tl-scroll .grid.week { stroke: var(--line2); } .tl-scroll .grid.month { stroke: var(--muted); }
-.tl-scroll .endline { stroke: var(--danger); stroke-dasharray: 4 4; }
-.tl-scroll .tick { fill: var(--muted); font-size: 11px; } .tl-scroll .wd { opacity: .7; }
-.tl-scroll .mon { fill: var(--ink); font-size: 11px; font-weight: 700; }
-.tl-scroll .edge path { stroke-width: 2; stroke-dasharray: 5 5; opacity: .6; }
-.tl-scroll .edge.on path { stroke-width: 2.5; stroke-dasharray: none; opacity: 1; }
-.tl-scroll .node.alt rect { opacity: .55; }
-.tl-scroll .node .lbl { fill: var(--ink); font-size: 13px; font-weight: 600; } .tl-scroll .node .n { fill: var(--muted); font-size: 11px; }
 .lc0 { stroke: var(--c0); }
 .lc1 { stroke: var(--c1); }
 .lc2 { stroke: var(--c2); }
@@ -149,8 +135,6 @@ html.lock, html.lock body { overflow: hidden; height: 100%; min-height: 0; overs
 .today-next { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
 .locate { position: absolute; z-index: 1200; right: 12px; top: 12px; width: 44px; height: 44px; padding: 0; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 1px 6px #0004; }
 .pin.now { box-shadow: 0 0 0 4px var(--accent), 0 1px 4px #0006; }
-.tl-scroll .todaybg { fill: var(--accent); opacity: .12; pointer-events: none; }
-.tl-scroll .todaylbl { fill: var(--accent); font-size: 10px; font-weight: 700; }
 .addtodo { display: flex; gap: 8px; align-items: center; }
 .addtodo input[type=date] { width: 140px; flex: none; }
 .addtodo button { flex: none; width: 44px; display: grid; place-items: center; padding: 9px 0; }
@@ -175,8 +159,6 @@ html.lock, html.lock body { overflow: hidden; height: 100%; min-height: 0; overs
 .pastsum { width: 100%; display: flex; align-items: center; gap: 8px; color: var(--muted); background: var(--bg2); border-style: dashed; font-size: 14px; }
 .pastrow { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; padding: 6px 10px; margin-top: 4px; border-radius: 8px; background: var(--bg2); opacity: .6; font-size: 14px; cursor: pointer; border-left-width: 4px; }
 .pastrow span { color: var(--muted); font-size: 13px; white-space: nowrap; }
-.tl-scroll .node.past { opacity: .5; }
-.tl-scroll .pastday { opacity: .6; }
 .pin.past { opacity: .5; }
 .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .tl-wrap { max-width: 820px; margin: 0 auto; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
@@ -194,7 +176,6 @@ html.lock, html.lock body { overflow: hidden; height: 100%; min-height: 0; overs
 .g-name { fill: var(--ink); font-size: 13px; font-weight: 600; }
 .g-n { fill: var(--muted); font-size: 11px; font-weight: 400; }
 .g-sub { fill: var(--muted); font-size: 11px; }
-.g-ok { color: var(--accent); } .g-warn { color: var(--warn); }
 .tl-ctl { position: fixed; z-index: 1500; right: 12px; bottom: calc(var(--th) + var(--sab) + 12px); display: flex; flex-direction: column; gap: 8px; }
 .tl-ctl button { width: 44px; height: 44px; padding: 0; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 1px 6px #0004; }
 .tl-mode { position: fixed; z-index: 1500; left: 12px; bottom: calc(var(--th) + var(--sab) + 12px); border-radius: 99px; font-size: 13px; padding: 8px 14px; box-shadow: 0 1px 6px #0004; }
@@ -210,7 +191,6 @@ html.lock, html.lock body { overflow: hidden; height: 100%; min-height: 0; overs
 .dayadd { display: inline-flex; align-items: center; gap: 4px; text-transform: none; letter-spacing: 0; }
 .wxstrip { display: flex; gap: 3px; align-items: center; flex: none; max-width: 45%; flex-wrap: wrap; justify-content: flex-end; }
 
-.about-head { display: flex; gap: 12px; align-items: center; } .about-head b { font-size: 20px; } .about-head img { border-radius: 12px; }
 .btnlink { display: inline-block; text-decoration: none; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line2); background: var(--bg2); color: var(--ink); font-size: 15px; }
 .btnlink.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .card a:not(.btnlink) { color: var(--accent); }
@@ -259,7 +239,6 @@ code { font-size: .92em; background: var(--bg2); padding: 1px 5px; border-radius
 .syncsum { display: flex; gap: 12px; align-items: flex-start; margin: 2px 0 4px; } .syncsum .ico { color: var(--accent); margin-top: 2px; flex: none; }
 .linkout { margin-top: 10px; font-size: 13px; }
 .ailine { margin-top: 8px; align-items: center; }
-.actrow { gap: 8px; }
 
 .actgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
 .actgrid button { width: 100%; justify-content: center; white-space: nowrap; min-height: 44px; padding: 8px 10px; }

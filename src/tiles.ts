@@ -2,7 +2,7 @@ import { get, set } from './storage';
 import type { Plan } from './types';
 
 export const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-export const TILE_CACHE = 'osm-tiles';
+const TILE_CACHE = 'osm-tiles';
 const FLAG = 'tiles-overview-v2';
 
 export interface Pt { lat: number; lng: number }
@@ -37,7 +37,7 @@ const bounds = (pts: Pt[]) => {
 const url = (z: number, x: number, y: number) => TILE_URL.replace('{z}', String(z)).replace('{x}', String(x)).replace('{y}', String(y));
 
 // Whole world at low zoom, then the region around the stops at higher zoom (as many levels as fit).
-export const overviewUrls = (pts: Pt[]): string[] => {
+const overviewUrls = (pts: Pt[]): string[] => {
   const urls: string[] = [];
   for (let z = 0; z <= 3; z++) for (let x = 0; x < 2 ** z; x++) for (let y = 0; y < 2 ** z; y++) urls.push(url(z, x, y));
   const b = bounds(pts);

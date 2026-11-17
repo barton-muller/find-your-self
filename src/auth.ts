@@ -20,7 +20,7 @@ const SKEW = 5 * 60 * 1000;
 export const authAvailable = !!(BRAND.auth.clientId && BRAND.auth.relay);
 // Before the person leaves for github.com to install the app, leave a note saying which site to come back to.
 // All pages of one origin share localStorage, so a forwarder page at the root of the origin can read it (see the relay repo).
-export const RETURN_KEY = 'gh-auth-return';
+const RETURN_KEY = 'gh-auth-return';
 export const rememberReturn = () => {
   try { localStorage.setItem(RETURN_KEY, redirectUri()); } catch { /* ignore */ }
 };
@@ -37,7 +37,7 @@ const sha256url = async (s: string) => {
   return btoa(String.fromCharCode(...h)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
-export const redirectUri = () => `${location.origin}${location.pathname}`;
+const redirectUri = () => `${location.origin}${location.pathname}`;
 
 export async function startSignIn(): Promise<void> {
   const verifier = rand(48);

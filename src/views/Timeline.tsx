@@ -52,10 +52,9 @@ function WxGlyph({ w, x, y, size }: { w: Wx; x: number; y: number; size: number 
   const tip = [
     w.kind === 'rain' ? `rain ${w.mm < 1 ? '<1' : Math.round(w.mm)} mm` : w.kind === 'cloud' ? 'cloudy' : 'sunny',
     w.hi === null ? '' : `${Math.round(w.hi)}°`,
-    w.est ? 'typical' : '',
   ].filter(Boolean).join(' · ');
   return (
-    <g transform={`translate(${x - size / 2},${y - size / 2}) scale(${size / 24})`} className={`wx wx-${w.kind}`} opacity={w.est ? 0.6 : 1}>
+    <g transform={`translate(${x - size / 2},${y - size / 2}) scale(${size / 24})`} className={`wx wx-${w.kind}`}> 
       <title>{tip}</title>
       <path d={iconPath(w.kind === 'rain' ? 'rain' : w.kind === 'cloud' ? 'cloud' : 'sun')} fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
       {w.kind === 'rain' && <path d={rainDrops[rainLevel(w.mm)]} fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" />}
@@ -272,8 +271,9 @@ export function Timeline() {
           const R = x1 === x2 ? 0 : Math.max(1, Math.min(6, Math.max(y2 - y1, 2) / 2, Math.abs(x2 - x1) / 2));
           const v0 = branchOut ? y1 + 2 * R : y1;
           const v1 = branchOut ? y2 : y2 - 2 * R;
-          const iy = (v0 + v1) / 2;
-          const sz = ppd >= 18 ? 16 : 13;
+          const dk = clamp(Math.round(((v0 + v1) / 2 - TOP) / ppd - 0.5), g.lastDay, Math.max(s.arrive[l.to] - 1, g.lastDay));
+          const iy = Y(dk + 0.5);
+          const sz = Math.min(ppd >= 18 ? 16 : 13, ppd * 0.7);
           const iLane = branchOut ? lane[l.to] : lane[l.from];
           const side = iLane === 0 ? -1 : laneSide(iLane);
           const ix = (branchOut ? x2 : x1) + side * (6 + sz / 2);
@@ -283,11 +283,11 @@ export function Timeline() {
               <path d={connector(x1, y1, x2, y2, branchOut)} fill="none" stroke="var(--ink)" strokeWidth={3} strokeLinecap="round" />
               {o && ppd >= 12 && room >= sz - 2 && (
                 <g color="var(--ink)">
-                  <g transform={`translate(${ix - sz / 2},${iy - sz / 2 - (ov ? sz * 0.6 : 0)}) scale(${sz / 24})`}>
+                  <g transform={`translate(${ix - sz / 2},${(ov ? Y(g.lastDay + 0.5) : iy) - sz / 2}) scale(${sz / 24})`}>
                     <path d={iconPath(modeIcon(o.mode))} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
                   </g>
                   {ov && (
-                    <g transform={`translate(${ix - sz / 2},${iy - sz / 2 + sz * 0.7}) scale(${sz / 24})`} className="g-moon">
+                    <g transform={`translate(${ix - sz / 2},${Y(g.lastDay + 1.5) - sz / 2}) scale(${sz / 24})`} className="g-moon">
                       <path d={iconPath('moon')} fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinejoin="round" />
                     </g>
                   )}

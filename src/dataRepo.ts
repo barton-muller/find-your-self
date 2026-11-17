@@ -1,5 +1,5 @@
 import { BRAND } from './brand';
-import { createRepo, listRepos, putFile } from './auth';
+import { createRepo, freshAccess, listRepos } from './auth';
 
 // The starter files for a new data repo are the ones in data-template/, bundled at build time: the rules and scripts an AI agent needs.
 const raw = import.meta.glob(['../data-template/*.md', '../data-template/scripts/*.py'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
@@ -29,7 +29,8 @@ Data kept by web apps that use GitHub as their storage. Each app keeps its files
 
 export interface NewRepo { full: string; branch: string; ready: boolean }
 
-// Creates a private repo with the starter files. ready is false when GitHub made the repo but the app cannot reach it yet.
+// Creates a private repo. ready is false when GitHub made the repo but the app cannot reach it yet.
+// The starter files are not written here: call pushStarterFiles afterwards, in the background.
 export async function createDataRepo(): Promise<NewRepo> {
   let made: { full: string; branch: string } | null = null;
   for (let n = 1; n <= 5 && !made; n++) {
@@ -41,9 +42,33 @@ export async function createDataRepo(): Promise<NewRepo> {
     }
   }
   if (!made) throw new Error('Could not find a free repo name. Create one on github.com and add it with "Add existing".');
-  const reachable = (await listRepos()).some((r) => r.full === made!.full);
-  if (!reachable) return { ...made, ready: false };
-  await putFile(made.full, 'README.md', rootReadme(made.full.split('/')[1]));
-  for (const [path, text] of Object.entries(templateFiles())) await putFile(made.full, path, text);
-  return { ...made, ready: true };
+  const ready = (await listRepos()).some((r) => r.full === made!.full);
+  return { ...made, ready };
+}
+
+// Adds the starter files in one commit through the Git data API (a handful of requests, however many files).
+// A branch that moved in the meantime, for example from the first sync, makes the last step fail, so it starts again.
+export async function pushStarterFiles(repo: string, branch: string): Promise<void> {
+  const token = await freshAccess();
+  if (!token) throw new Error('Signed out of GitHub.');
+  const api = `https://api.github.com/repos/${repo}`;
+  const h = { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' };
+  const call = async (path: string, method = 'GET', body?: unknown) => {
+    const r = await fetch(`${api}${path}`, { method, headers: h, cache: 'no-store', ...(body ? { body: JSON.stringify(body) } : {}) });
+    if (!r.ok && !(method === 'PATCH' && (r.status === 422 || r.status === 409))) throw new Error(`GitHub ${r.status}`);
+    return r;
+  };
+  const files = { 'README.md': rootReadme(repo.split('/')[1]), ...templateFiles() };
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const head = ((await (await call(`/git/ref/heads/${encodeURIComponent(branch)}`)).json()) as { object: { sha: string } }).object.sha;
+    const base = ((await (await call(`/git/commits/${head}`)).json()) as { tree: { sha: string } }).tree.sha;
+    const tree = (await (await call('/git/trees', 'POST', {
+      base_tree: base,
+      tree: Object.entries(files).map(([path, content]) => ({ path, mode: '100644', type: 'blob', content })),
+    })).json()) as { sha: string };
+    const commit = (await (await call('/git/commits', 'POST', { message: `Add starter files for ${BRAND.name}`, tree: tree.sha, parents: [head] })).json()) as { sha: string };
+    const up = await call(`/git/refs/heads/${encodeURIComponent(branch)}`, 'PATCH', { sha: commit.sha });
+    if (up.ok) return;
+  }
+  throw new Error('The branch kept changing. Try again later.');
 }

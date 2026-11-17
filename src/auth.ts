@@ -31,11 +31,6 @@ export const installUrl = () => client.installUrl();
 
 export const startSignIn = () => client.signIn();
 export const createRepo = (name: string, description?: string) => client.createRepo(name, { description });
-// Creates or replaces a file in a repo the app can reach.
-export async function putFile(repo: string, path: string, text: string): Promise<void> {
-  const cur = await client.read(repo, path);
-  await client.write(repo, path, text, cur && 'sha' in cur ? cur.sha : undefined);
-}
 export const loadAuth = () => client.auth();
 export const clearAuth = () => client.signOut();
 // A valid access token, renewed through the relay shortly before it expires. Null when signed out.

@@ -5,7 +5,7 @@ import { configured, listRemoteTrips, type RemoteTrip } from '../sync';
 import { prettyName, slug, uniquePath } from '../trips';
 import { inviteCode, makeInviteLink, parseInvite } from '../invite';
 import { aiBrief } from '../aiBrief';
-import { createDataRepo } from '../dataRepo';
+import { createDataRepo, pushStarterFiles } from '../dataRepo';
 import { authAvailable, installUrl, listRepos, rememberReturn, type RepoChoice } from '../auth';
 import { useStore } from '../store';
 import { GithubMark, Icon, type IconName } from '../icons';
@@ -89,6 +89,11 @@ export function Settings() {
       if (!r.ready) { setRepoMsg(`Created ${r.full}, but the app cannot reach it yet. Tap Add existing and select it.`); loadRepos(); return; }
       await chooseRepo(r.full, r.branch, `${BRAND.folder}/`);
       setRepoMsg('');
+      // the plan syncs first; the starter files for an AI agent follow in the background
+      setAiMsg('Adding the starter files for your AI agent…');
+      pushStarterFiles(r.full, r.branch)
+        .then(() => { setAiMsg('Starter files added.'); window.setTimeout(() => setAiMsg(''), 4000); })
+        .catch((e: Error) => setAiMsg(`Could not add the starter files: ${e.message}`));
     } catch (e) {
       setRepoMsg(String((e as Error).message ?? e));
     } finally {

@@ -61,6 +61,7 @@ export interface SyncConfig {
   repo: string;
   path: string;
   branch: string;
+  dir?: string; // folder of the repo that holds this app's files, '' (or unset) for the repo root, else 'find-your-self/'
 }
 
 export interface TripMeta {

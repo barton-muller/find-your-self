@@ -1,3 +1,4 @@
+import { BRAND } from './brand';
 import type { Plan, SyncConfig } from './types';
 
 const b64enc = (s: string) => {
@@ -145,8 +146,22 @@ export async function syncPlan(c: SyncConfig, local: Plan, attempt = 0): Promise
 
 export interface RemoteTrip { name: string; path: string }
 
-// Trips in the repo: every folder under trips/ that holds a plan.json, plus a plan.json in the repo root.
+// Where this app keeps its files in a repo: the root for repos that already have trips there (older setups), else a folder named after the app.
+export async function detectDir(c: SyncConfig): Promise<string> {
+  try {
+    const r = await fetch(`https://api.github.com/repos/${c.repo}/contents/?ref=${encodeURIComponent(c.branch)}&_=${Date.now()}`, { headers: headers(c), cache: 'no-store' });
+    if (!r.ok) return '';
+    const root = (await r.json()) as { name: string; type: string }[];
+    const legacy = root.some((e) => (e.type === 'dir' && e.name === 'trips') || (e.type === 'file' && e.name === 'plan.json'));
+    return legacy ? '' : `${BRAND.folder}/`;
+  } catch {
+    return '';
+  }
+}
+
+// Trips in the repo: every folder under trips/ that holds a plan.json, plus a plan.json in the app's root. Paths are relative to the app's folder.
 export async function listRemoteTrips(c: SyncConfig): Promise<RemoteTrip[]> {
+  const dir = c.dir ?? '';
   const api = (path: string) => `https://api.github.com/repos/${c.repo}/contents/${path}?ref=${encodeURIComponent(c.branch)}&_=${Date.now()}`;
   const get = async (path: string) => {
     const r = await fetch(api(path), { headers: headers(c), cache: 'no-store' });
@@ -155,7 +170,7 @@ export async function listRemoteTrips(c: SyncConfig): Promise<RemoteTrip[]> {
     const j = await r.json();
     return Array.isArray(j) ? (j as { name: string; type: string }[]) : [];
   };
-  const [root, trips] = await Promise.all([get(''), get('trips')]);
+  const [root, trips] = await Promise.all([get(dir.replace(/\/$/, '')), get(`${dir}trips`)]);
   const out: RemoteTrip[] = [];
   if (root.some((e) => e.type === 'file' && e.name === 'plan.json')) out.push({ name: 'Main trip', path: 'plan.json' });
   for (const e of trips) if (e.type === 'dir') out.push({ name: e.name, path: `trips/${e.name}/plan.json` });

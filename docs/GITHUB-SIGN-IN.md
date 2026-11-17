@@ -22,7 +22,7 @@ The relay keeps nothing: no database and no copy of any token. The secret lives 
 ## 1. Set up the relay and the GitHub App
 
 The relay and the GitHub App live in their own repo, because they are general and any app can share them: **[pages-storage](https://github.com/barton-muller/pages-storage)**. Its README has the full steps:
-1. Make a GitHub App (the exact fields are listed there) and keep its Client ID and client secret.
+1. Make a GitHub App (the exact fields are listed there) and keep its Client ID and client secret. Give it the *Repository creation* permission too (read and write), or the **New** button cannot create a repo for people.
 2. Use the Deploy to Cloudflare button in its README. It copies the repo into your account and asks for the Client ID, the client secret and the allowed sites. The secret is stored as a Cloudflare secret, never in a repo.
 3. Set the GitHub App's Setup URL to `<relay address>/return`, and note the relay's address and the app's slug.
 
@@ -43,7 +43,7 @@ Run the *Deploy* workflow again (or push to `main`). The deploy workflow passes 
 ## 3. Try it
 
 1. Open the app, *Settings*, step 3, and press **Sign in with GitHub**. Approve.
-2. The app shows "Signed in as ...". Press **Add a repo**, install the app on a private repo, come back and press **Refresh list**.
+2. The app shows "Signed in as ...". Press **New** to create a private repo with the starter files, or **Add existing** to install the app on a repo you have, come back and tap it.
 3. Tap the repo. The app starts syncing to it.
 
 ## More apps on the same storage
@@ -76,5 +76,5 @@ The GitHub App has access to every repo it is installed on, and the token works 
 | "Sign-in failed: redirect_not_allowed" | Same cause |
 | GitHub says the redirect URI is not valid | The *Callback URL* in the GitHub App does not match the site's address exactly, including the trailing `/` |
 | "Sign-in failed: bad_verification_code" | The code was already used or expired. Try again |
-| The repo list is empty | The app is not installed on any repo yet. Use **Add a repo**, then **Refresh list** |
+| The repo list is empty | The app is not installed on any repo yet. Use **Add existing**, then come back to the app |
 | Sync says "Signed out of GitHub" | The refresh token expired (after about six months) or the app was removed. Sign in again |

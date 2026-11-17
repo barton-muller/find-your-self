@@ -5,9 +5,10 @@ import { configured, listRemoteTrips, type RemoteTrip } from '../sync';
 import { prettyName, slug, uniquePath } from '../trips';
 import { inviteCode, makeInviteLink, parseInvite } from '../invite';
 import { aiBrief } from '../aiBrief';
-import { authAvailable, installUrl, listRepos, manageUrl, rememberReturn, type RepoChoice } from '../auth';
+import { createDataRepo } from '../dataRepo';
+import { authAvailable, installUrl, listRepos, rememberReturn, type RepoChoice } from '../auth';
 import { useStore } from '../store';
-import { Icon, type IconName } from '../icons';
+import { GithubMark, Icon, type IconName } from '../icons';
 import { copyText, weatherReport } from '../weather';
 import { BRAND } from '../brand';
 import type { Plan, SyncConfig } from '../types';
@@ -74,10 +75,25 @@ export function Settings() {
   };
   const [repos, setRepos] = useState<RepoChoice[] | null>(null);
   const [repoMsg, setRepoMsg] = useState('');
+  const [creating, setCreating] = useState(false);
   const loadRepos = () => {
     setRepoMsg('Looking for your repos…');
     listRepos()
       .then((r) => { setRepos(r); setRepoMsg(''); }).catch((e) => setRepoMsg(String(e.message ?? e)));
+  };
+  const makeRepo = async () => {
+    setCreating(true);
+    setRepoMsg('Creating a private repo…');
+    try {
+      const r = await createDataRepo();
+      if (!r.ready) { setRepoMsg(`Created ${r.full}, but the app cannot reach it yet. Tap Add existing and select it.`); loadRepos(); return; }
+      await chooseRepo(r.full, r.branch, `${BRAND.folder}/`);
+      setRepoMsg('');
+    } catch (e) {
+      setRepoMsg(String((e as Error).message ?? e));
+    } finally {
+      setCreating(false);
+    }
   };
   useEffect(() => { if (auth && !configured(cfg)) loadRepos(); }, [auth, cfg]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(refreshRemote, [cfg, sync.status === 'ok']); // eslint-disable-line react-hooks/exhaustive-deps
@@ -119,7 +135,6 @@ export function Settings() {
       alert('Not a valid plan file');
     }
   };
-  const goSync = () => document.getElementById('sync')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const nights = Math.max(diffDays(plan.start, plan.end), 0);
   const stIcon: IconName = sync.status === 'ok' ? 'check' : sync.status === 'error' ? 'alert' : sync.status === 'syncing' ? 'sync' : 'cloud';
 
@@ -134,7 +149,6 @@ export function Settings() {
           </div>
         </div>
         <div className="rowflex">
-          <button className="primary ibtn" onClick={goSync}><Icon name="branch" size={18} /> Sync via GitHub</button>
           <a className="btnlink ibtn" href={BRAND.repo} target="_blank" rel="noreferrer"><Icon name="book" size={18} /> README</a>
         </div>
       </section>
@@ -196,10 +210,10 @@ export function Settings() {
       </Sec>
 
       <Sec
-        id="sync" num={3} icon="branch" title="Sync and AI agents"
+        id="sync" num={3} icon="branch" title="Sync data to GitHub"
         hint={<>
-          Your trips are saved to a <b>private</b> GitHub repo. You sign in with GitHub, or use a token limited to that one repo (permission: Contents, read and write). Either way, the key stays on this device.
-          An AI coding agent such as Claude Code can edit the same repo, so you can ask it to change your plan.
+          Your trips are saved to a <b>private</b> GitHub repo that you own, so every device stays in step. Sign in with GitHub, then pick a repo: <b>Add existing</b> lets the app use a repo you already have, and <b>New</b> creates a private one with the starter files an AI agent needs.
+          An AI coding agent such as Claude Code can then edit the same repo, so you can ask it to change your plan. The sign-in stays on this device.
         </>}
       >
         {configured(cfg) ? (
@@ -208,7 +222,7 @@ export function Settings() {
               <Icon name="repo" size={22} className="ico" />
               <div>
                 <div>Syncing with <b>{cfg.repo}</b></div>
-                <div className="small">{cfg.viaGitHub && auth ? <>Signed in as <b>{auth.login}</b>. </> : null}Branch <code>{cfg.branch}</code>. This trip is saved as <code>{tripPath}</code>.</div>
+                {cfg.viaGitHub && auth && <div className="small">Signed in as <b>{auth.login}</b></div>}
               </div>
             </div>
             <p className={`status s-${sync.status}`}>
@@ -221,23 +235,21 @@ export function Settings() {
             </p>
             <div className="actgrid">
               <button className="ibtn" onClick={syncNow}><Icon name="sync" size={18} /> Sync now</button>
-              <button className="ibtn" onClick={() => copyBrief({ repo: cfg.repo, token: cfg.viaGitHub ? undefined : cfg.token, branch: cfg.branch, trip: activeTrip.name, path: tripPath })}>
+              <button className="ibtn" onClick={() => copyBrief({ repo: cfg.repo, token: cfg.viaGitHub ? undefined : cfg.token, branch: cfg.branch, trip: activeTrip.name, path: tripPath, dir: cfg.dir })}>
                 <Icon name="sparkle" size={18} /> Copy for AI
               </button>
               {cfg.viaGitHub ? (
-                <button className="ibtn wide danger" onClick={() => confirm('Sign out of GitHub on this device? Your trips stay here.') && signOut()}>
-                  <Icon name="x" size={18} /> Sign out
-                </button>
+                <>
+                  <button className="ibtn" onClick={() => saveCfg(null)}><Icon name="repo" size={18} /> Choose another repo</button>
+                  <button className="ibtn danger" onClick={() => confirm('Sign out of GitHub on this device? Your trips stay here.') && signOut()}><Icon name="x" size={18} /> Sign out</button>
+                </>
               ) : (
                 <button className="ibtn wide" onClick={() => copyLink(makeInviteLink({ repo: cfg.repo, token: cfg.token, branch: cfg.branch }), 'Link copied. Open it on your other device and press Join.')}>
                   <Icon name="link" size={18} /> Copy link for another device
                 </button>
               )}
             </div>
-            <p className="small">{aiMsg || (cfg.viaGitHub ? 'On another device, open the app and sign in with GitHub. The AI text has no token: your agent uses your own GitHub login.' : 'The link and the AI text contain your token. Send them only to yourself or people you trust.')}</p>
-            <p className="small">
-              Want a repo of your own? <a href={BRAND.syncGuide} target="_blank" rel="noreferrer">How to set one up</a>.
-            </p>
+            {aiMsg && <p className="small">{aiMsg}</p>}
             {!cfg.viaGitHub && <details className="adv">
               <summary>Change connection</summary>
               <label className="fld"><span className="fl"><Icon name="repo" size={16} /> Repository</span>
@@ -252,64 +264,33 @@ export function Settings() {
                 <button className="ibtn danger" onClick={() => { saveCfg(null); setC({ ...c, token: '' }); }}><Icon name="x" size={18} /> Disconnect</button>
               </div>
             </details>}
-            {cfg.viaGitHub && <p className="small"><a href={manageUrl()} onClick={rememberReturn} target="_blank" rel="noreferrer">Manage which repos the app can use</a>.</p>}
           </>
-        ) : (
-          <>
-            <p className="lead">Keep your trips in a GitHub repo you own. Every device stays in step, and an AI agent can edit them for you.</p>
-            {authAvailable && (
-              <div className="signin">
-                {authError && <p className="small err">{authError}</p>}
-                {!auth ? (
-                  <button className="primary ibtn wide" onClick={signIn}><Icon name="branch" size={18} /> Sign in with GitHub</button>
-                ) : (
-                  <>
-                    <p className="lead">Signed in as <b>{auth.login}</b>. Pick the repo for your trips.</p>
-                    {repos && repos.length > 0 && (
-                      <ul className="triplist">
-                        {repos.map((r) => (
-                          <li key={r.full}><button className="tripbtn" onClick={() => chooseRepo(r.full, r.branch)}><Icon name="repo" size={18} /> <span>{r.full}</span></button></li>
-                        ))}
-                      </ul>
-                    )}
-                    {repos && repos.length === 0 && <p className="small">The app is not installed on any repo yet.</p>}
-                    {repoMsg && <p className="small">{repoMsg}</p>}
-                    <div className="actgrid">
-                      <a className="btnlink ibtn" href={installUrl()} onClick={rememberReturn} target="_blank" rel="noreferrer"><Icon name="plus" size={18} /> Add a repo</a>
-                      <button className="ibtn" onClick={loadRepos}><Icon name="sync" size={18} /> Refresh list</button>
-                      <button className="ibtn wide danger" onClick={signOut}><Icon name="x" size={18} /> Sign out</button>
-                    </div>
-                  </>
-                )}
-                <p className="small">Choose a private repo you own. The app can only use repos you add here.</p>
-              </div>
-            )}
-            {authAvailable ? (
-              <details className="adv"><summary>Use a token or invite link instead</summary>
-            <div className="guidelinks">
-              <a className="ibtn" href={BRAND.syncGuide} target="_blank" rel="noreferrer"><Icon name="book" size={16} /> How to set up sync</a>
-              <a className="ibtn" href={BRAND.tokenGuide} target="_blank" rel="noreferrer"><Icon name="lock" size={16} /> How to create a token</a>
-            </div>
-            <label className="fld"><span className="fl"><Icon name="link" size={16} /> Got an invite link? Paste it here</span>
-              <input value={pasted} onChange={(e) => joinFromPaste(e.target.value)} placeholder="https://…#/j/…" autoCapitalize="none" autoCorrect="off" />
-              {pasteErr && <span className="small err">{pasteErr}</span>}
-            </label>
-            <label className="fld"><span className="fl"><Icon name="repo" size={16} /> Repository</span>
-              <input value={c.repo} onChange={set('repo')} placeholder="owner/trip-data" autoCapitalize="none" autoCorrect="off" />
-            </label>
-            <label className="fld"><span className="fl"><Icon name="lock" size={16} /> Token</span>
-              <input type="password" value={c.token} onChange={set('token')} placeholder="github_pat_…" autoComplete="off" />
-            </label>
-            <details className="adv">
-              <summary>Advanced</summary>
-              <label className="fld"><span className="fl">Branch</span><input value={c.branch} onChange={set('branch')} autoCapitalize="none" /></label>
-            </details>
-            <div className="rowflex">
-              <button className="primary ibtn" disabled={!configured(c)} onClick={() => saveCfg(c)}><Icon name="sync" size={18} /> Save and sync</button>
-            </div>
-              </details>
+        ) : authAvailable ? (
+          <div className="signin">
+            {authError && <p className="small err">{authError}</p>}
+            {!auth ? (
+              <button className="ghbtn" onClick={signIn}><GithubMark size={20} /> Sign in with GitHub</button>
             ) : (
               <>
+                <p className="lead">Signed in as <b>{auth.login}</b></p>
+                {repos && repos.length > 0 && (
+                  <ul className="triplist">
+                    {repos.map((r) => (
+                      <li key={r.full}><button className="tripbtn" onClick={() => chooseRepo(r.full, r.branch)}><Icon name="repo" size={18} /> <span>{r.full}</span></button></li>
+                    ))}
+                  </ul>
+                )}
+                {repoMsg && <p className="small">{repoMsg}</p>}
+                <div className="actgrid">
+                  <a className="btnlink ibtn" href={installUrl()} onClick={rememberReturn} target="_blank" rel="noreferrer"><Icon name="plus" size={18} /> Add existing</a>
+                  <button className="ibtn" disabled={creating} onClick={makeRepo}><Icon name="plus" size={18} /> New</button>
+                  <button className="ibtn wide danger" onClick={signOut}><Icon name="x" size={18} /> Sign out</button>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <>
             <div className="guidelinks">
               <a className="ibtn" href={BRAND.syncGuide} target="_blank" rel="noreferrer"><Icon name="book" size={16} /> How to set up sync</a>
               <a className="ibtn" href={BRAND.tokenGuide} target="_blank" rel="noreferrer"><Icon name="lock" size={16} /> How to create a token</a>
@@ -331,19 +312,15 @@ export function Settings() {
             <div className="rowflex">
               <button className="primary ibtn" disabled={!configured(c)} onClick={() => saveCfg(c)}><Icon name="sync" size={18} /> Save and sync</button>
             </div>
-              </>
-            )}
-            <p className={`status s-${sync.status}`}>
-              <Icon name={stIcon} size={16} />
-              Not synced. Data is on this device only.
-            </p>
           </>
         )}
-        <div className="wxline">
-          <Icon name="sun" size={20} className="ico" />
-          <button className="ibtn" onClick={copyWeather}><Icon name="copy" size={16} /> Copy forecast for AI</button>
-          <span className="small">{wx || 'Or add a weather MCP connector to your AI tool.'}</span>
+      </Sec>
+
+      <Sec icon="sun" title="Forecast for AI" hint="Copies the Open-Meteo forecast for every upcoming stop, at its planned dates, as text you can paste into an AI chat. You can also add a weather connector (MCP) to your AI tool.">
+        <div className="actgrid">
+          <button className="ibtn wide" onClick={copyWeather}><Icon name="copy" size={18} /> Copy forecast</button>
         </div>
+        {wx && <p className="small">{wx}</p>}
         {wxText && <textarea readOnly value={wxText} rows={8} onFocus={(e) => e.currentTarget.select()} />}
       </Sec>
 

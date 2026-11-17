@@ -18,11 +18,12 @@ There are two ways to connect: **sign in with GitHub** (if the site you use has 
 ## Easiest: sign in with GitHub
 
 If *Settings*, step 3 shows **Sign in with GitHub**:
-1. Make a private repo (step 1 below) with at least one file in it.
-2. Press **Sign in with GitHub** and approve.
-3. Press **Add a repo**, install the app on your repo, and come back. Press **Refresh list** and tap your repo.
+1. Press **Sign in with GitHub** and approve.
+2. Press **New**. The app creates a private repo for you with the starter files your AI agent needs, and starts syncing. Or press **Add existing**, install the app on a repo you already have, come back, and tap the repo.
 
-That is all. You can skip step 2 below. Signed-in devices repeat the sign-in. Invite links and the token in *Copy for AI* do not apply (see the [friends guide](FRIENDS.md)); your agent uses your own GitHub login instead.
+Your trips go in a `find-your-self/` folder of the repo, so the repo can hold other apps' data too. Repos that already have `trips/` in the root keep working as they are.
+
+That is all. You can skip the steps below. Signed-in devices repeat the sign-in. Invite links and the token in *Copy for AI* do not apply (see the [friends guide](FRIENDS.md)); your agent uses your own GitHub login instead.
 
 If you do not see the button, use a token as described next.
 

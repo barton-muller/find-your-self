@@ -7,7 +7,7 @@ import { emptyPlan, uniquePath } from './trips';
 import { planPts, prefetchOverview } from './tiles';
 import { clearAuth, finishSignIn, freshAccess, loadAuth, startSignIn, type AuthState } from './auth';
 import { seedPlan } from './seed';
-import { configured, fetchRemote, mergePlans, samePlan, syncPlan } from './sync';
+import { configured, detectDir, fetchRemote, mergePlans, samePlan, syncPlan } from './sync';
 import type { Plan, SyncConfig, TripMeta, TripsState } from './types';
 
 export type SyncState = { status: 'off' | 'idle' | 'syncing' | 'ok' | 'error'; at?: number; error?: string };
@@ -37,7 +37,7 @@ interface Ctx {
   authError: string;
   signIn: () => void;
   signOut: () => Promise<void>;
-  chooseRepo: (repo: string, branch: string) => void;
+  chooseRepo: (repo: string, branch: string, dir?: string) => Promise<void>;
   effCfg: () => Promise<SyncConfig | null>;
 }
 
@@ -105,7 +105,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     try {
       const c = await effCfg();
       if (!c) throw new Error('Signed out of GitHub. Sign in again in Settings.');
-      const merged = await syncPlan({ ...c, path: activePath() }, p);
+      const merged = await syncPlan({ ...c, path: `${c.dir ?? ''}${activePath()}` }, p);
       if (tripsRef.current.active !== tid) {
         set(planKey(tid), merged).catch(() => {});
       } else if (!samePlan(merged, planRef.current!)) {
@@ -300,7 +300,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     try {
       const c = await effCfg();
       if (!c) return 'Signed out of GitHub. Sign in again in Settings.';
-      const remote = await fetchRemote({ ...c, path });
+      const remote = await fetchRemote({ ...c, path: `${c.dir ?? ''}${path}` });
       if (!remote) return `No plan.json found at ${path}.`;
       await flush();
       const cur = tripsRef.current;
@@ -330,8 +330,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (cfgRef.current?.viaGitHub) saveCfg(null);
   }, [saveCfg]);
 
-  const chooseRepo = useCallback((repo: string, branch: string) => {
-    saveCfg({ repo, branch, path: 'plan.json', token: '', viaGitHub: true });
+  const chooseRepo = useCallback(async (repo: string, branch: string, dir?: string) => {
+    const base: SyncConfig = { repo, branch, path: 'plan.json', token: '', viaGitHub: true };
+    const t = await freshAccess();
+    saveCfg({ ...base, dir: dir ?? (t ? await detectDir({ ...base, token: t }) : '') });
   }, [saveCfg]);
 
   const value = useMemo<Ctx | null>(

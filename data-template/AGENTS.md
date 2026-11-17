@@ -7,10 +7,10 @@ This repo is the data for trips planned in the Go Find Yourself app (https://git
 Read `DECISIONS.md` (preferences for every trip) and the `DECISIONS.md` inside the trip's folder first. They hold the traveller's preferences, constraints, route decisions and verified transport facts. Update them when a decision changes. Ask which trip is meant if it is not clear.
 
 ## Editing rules
-1. Run `git pull --ff-only origin main` first. The app commits to `main` ("Update trip plan"), so a local copy goes stale quickly. Never write `plan.json` from an old copy.
+1. Run `git pull --ff-only` first. The app commits to the branch it syncs with ("Update trip plan"), so a local copy goes stale quickly. Never write `plan.json` from an old copy.
 2. Edit through `scripts/plan.py`, not by hand-editing JSON. Pass the trip's path to `load()` and `save()`. `save()` refuses invalid plans, hard deletes, and any changed record whose `updatedAt` was not bumped.
 3. Run `python3 scripts/plan.py summary trips/<name>/plan.json` and look at every branch before pushing.
-4. Commit normally and push to `main`. The app picks the change up on its next sync. Never force-push or rewrite history.
+4. Commit normally and push to the branch you have checked out. The app picks the change up on its next sync from the branch set in its Settings. In a repo shared with other people, each person has their own branch (`u/<name>`): stay on yours and do not edit or push to anyone else's. Never force-push or rewrite history.
 5. Say in your reply what changed and which fork is active.
 
 ```python

@@ -33,6 +33,20 @@ What the token cannot do: it only works on this one repo. It cannot touch your o
 
 After that they make trips as usual. Their trips are saved to their branch. Their step 3 only says which repo they are syncing with. They can invite others from step 4 too, since the same link works for anyone who has it.
 
+## Editing with an AI agent
+
+A friend does not need their own repo or a GitHub account for this, but they do need an AI coding agent that works on files in a folder (Claude Code, for example) and git on their computer. The invite link holds everything the agent needs:
+
+```
+git clone --branch u/maria https://TOKEN@github.com/OWNER/REPO.git
+```
+
+- `u/maria` is the branch from the link, `OWNER/REPO` is the repo, and `TOKEN` is `github_pat_` followed by the last part of the link (the part after the third `~`).
+- The clone contains `AGENTS.md`, which tells the agent how to edit a trip safely and to stay on that branch. Changes it pushes show up in the app on the next sync.
+- The token ends up in the clone's `.git/config` in plain text, so treat that folder like the link.
+
+This is a lot to ask of most friends. Two easier routes: ask the person who runs the repo to make the change for them (their agent can edit any branch), or use the app's own editing. A way to copy a trip as text for a chat assistant and paste the result back is not built yet.
+
 ## Keep it safe
 
 - Do not post the link anywhere public, and do not put the token in a public repo or chat room. GitHub revokes tokens it finds in public repos.

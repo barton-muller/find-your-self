@@ -282,7 +282,10 @@ export function Timeline() {
         {today >= 0 && today <= maxDay && <rect x={0} y={Y(today) - Math.max(ppd, 8) / 2} width={W} height={Math.max(ppd, 8)} className="g-today" />}
         <line x1={AXIS} x2={W - 4} y1={Y(days)} y2={Y(days)} className="g-end" />
 
-        {liveLegs(plan).map((l) => {
+        {(() => {
+        // travel icons are drawn after every connector so no line ever covers one
+        const icons: React.ReactNode[] = [];
+        const lines = liveLegs(plan).map((l) => {
           if (s.arrive[l.from] === undefined || s.arrive[l.to] === undefined) return null;
           const g = geo(l.from);
           const x1 = laneX(lane[l.from]);
@@ -307,29 +310,34 @@ export function Timeline() {
           const side = iLane !== 0 ? laneSide(iLane) : altOnSide(1, d0, d1) && !altOnSide(-1, d0, d1) ? -1 : 1;
           const ix = (branchOut ? x2 : x1) + side * (6 + sz / 2);
           const room = curved ? Infinity : y2 - y1;
+          const op = (active ? 1 : 0.7) * (s.arrive[l.from] + g.st.nights < today ? 0.5 : 1);
+          const halo = { fill: 'var(--bg)', stroke: 'var(--bg)', strokeWidth: 6, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
+          if (o && ppd >= 16 && room >= sz - 2) {
+            const my = ov ? Y(g.lastDay + 0.5) : iy;
+            icons.push(
+              <g key={`i-${l.id}`} opacity={op} color="var(--ink)" onClick={() => go({ view: 'place', id: l.from })} className="g-badge">
+                <g transform={`translate(${ix - sz / 2},${my - sz / 2}) scale(${sz / 24})`}>
+                  <path d={iconPath(modeIcon(o.mode))} {...halo} />
+                  <path d={iconPath(modeIcon(o.mode))} fill="var(--bg)" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+                </g>
+                {ov && (
+                  <g transform={`translate(${ix - sz / 2},${Y(g.lastDay + 1.5) - sz / 2}) scale(${sz / 24})`} className="g-moon">
+                    <path d={iconPath('moon')} {...halo} />
+                    <path d={iconPath('moon')} fill="var(--bg)" stroke="currentColor" strokeWidth={2.4} strokeLinejoin="round" />
+                  </g>
+                )}
+              </g>,
+            );
+          }
           return (
-            <g key={l.id} opacity={(active ? 1 : 0.7) * (s.arrive[l.from] + g.st.nights < today ? 0.5 : 1)} onClick={() => go({ view: 'place', id: l.from })} className="g-badge">
+            <g key={l.id} opacity={op} onClick={() => go({ view: 'place', id: l.from })} className="g-badge">
               <path d={connector(x1, y1, x2, y2, ppd, branchOut, back)} fill="none" stroke="var(--ink)" strokeWidth={3} strokeLinecap="round" />
               {back && <title>{`Arrives in ${plan.stops[l.to].name} ${eff - s.arrive[l.to]} ${eff - s.arrive[l.to] === 1 ? 'day' : 'days'} later than the chosen route`}</title>}
-              {o && ppd >= 16 && room >= sz - 2 && (
-                <g color="var(--ink)">
-                  <circle cx={ix} cy={ov ? Y(g.lastDay + 0.5) : iy} r={sz * 0.62} fill="var(--bg)" />
-                  <g transform={`translate(${ix - sz / 2},${(ov ? Y(g.lastDay + 0.5) : iy) - sz / 2}) scale(${sz / 24})`}>
-                    <path d={iconPath(modeIcon(o.mode))} fill="var(--bg)" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
-                  </g>
-                  {ov && (
-                    <>
-                      <circle cx={ix} cy={Y(g.lastDay + 1.5)} r={sz * 0.62} fill="var(--bg)" />
-                      <g transform={`translate(${ix - sz / 2},${Y(g.lastDay + 1.5) - sz / 2}) scale(${sz / 24})`} className="g-moon">
-                        <path d={iconPath('moon')} fill="var(--bg)" stroke="currentColor" strokeWidth={2.4} strokeLinejoin="round" />
-                      </g>
-                    </>
-                  )}
-                </g>
-              )}
             </g>
           );
-        })}
+        });
+        return <>{lines}{icons}</>;
+        })()}
 
         {stops.map((x) => {
           const g = geo(x.id);

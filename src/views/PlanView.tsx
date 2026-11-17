@@ -152,11 +152,13 @@ export function PlanView() {
                     <label key={b.leg.id} className={`branch ${b.active ? 'on' : ''}`}>
                       <input type="radio" name={`f-${id}`} checked={b.active} onChange={() => update((d) => setActiveOut(d, id, b.leg.id))} />
                       <span className="grow">
-                        <b>{b.stops.length ? b.stops.map((x) => plan.stops[x].name).join(' → ') : plan.stops[b.leg.to].name}</b>
+                        <b>{b.stops.length ? b.stops.map((x) => plan.stops[x].name).join(' → ') : `Direct to ${plan.stops[b.leg.to].name}`}</b>
                         <small>
-                          {b.stops.length > 0 && `${b.nights} nights`}
-                          {b.merge && ` · rejoins at ${plan.stops[b.merge].name}`}
-                          {b.delta !== null && !b.active && ` · ${b.delta === 0 ? 'same date' : b.delta > 0 ? `+${b.delta}d later` : `${-b.delta}d earlier`}`}
+                          {[
+                            b.stops.length > 0 && `${b.nights} nights`,
+                            b.stops.length > 0 && b.merge && `rejoins at ${plan.stops[b.merge].name}`,
+                            b.delta !== null && (b.active ? '' : b.delta === 0 ? 'same date' : b.delta > 0 ? `+${b.delta}d later` : `${-b.delta}d earlier`),
+                          ].filter(Boolean).join(' · ')}
                         </small>
                       </span>
                       {!b.active && (

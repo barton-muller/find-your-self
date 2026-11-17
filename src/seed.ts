@@ -40,7 +40,11 @@ export const seedPlan = (): Plan => {
   });
   stop('vv', 'Vang Vieng', 2, { days: ['Tubing', 'Viewpoint hike and blue lagoon'] });
   stop('nk', 'Nong Khiaw', 2, { notes: 'Quiet river town. Boat to Muang Ngoi for a day.' });
-  stop('vte', 'Vientiane', 2, { notes: 'Last stop. Fly home from here.' });
+  stop('vte', 'Vientiane', 2, { notes: 'Fork: three ways back to Bangkok. They arrive on different days.' });
+  stop('udn', 'Udon Thani', 2, { notes: 'Cross the border at Nong Khai.' });
+  stop('kkc', 'Khon Kaen', 2);
+  stop('ayu', 'Ayutthaya', 2, { days: ['Temples by bike', 'Boat on the river'] });
+  stop('bkk2', 'Bangkok', 2, { notes: 'Fly home from here.' });
 
   leg('bkk', 'cnx', [
     opt('Sleeper train', '12h', { overnight: true, booked: true, notes: 'Lower berth, second class' }),
@@ -55,7 +59,17 @@ export const seedPlan = (): Plan => {
   leg('lpb', 'nk', [opt('Minivan', '3h')], 0);
   leg('vv', 'vte', [opt('Train', '1h'), opt('Bus', '3h')], 0);
   leg('nk', 'vte', [opt('Sleeper bus', '11h', { overnight: true })], 0);
+  leg('vte', 'bkk2', [
+    opt('Sleeper train', '15h', { overnight: true, notes: 'Bus to Nong Khai, then the night train' }),
+    opt('Flight', '1h 10m'),
+  ], 0);
+  leg('vte', 'udn', [opt('Bus', '2h 30m')], 0);
+  leg('udn', 'bkk2', [opt('Train', '9h'), opt('Flight', '1h')], 0);
+  leg('vte', 'kkc', [opt('Bus', '5h')], 0);
+  leg('kkc', 'ayu', [opt('Train', '5h')], 0);
+  leg('ayu', 'bkk2', [opt('Train', '1h 30m')], 0);
   stops.lpb.activeOut = 'lpb-vv';
+  stops.vte.activeOut = 'vte-bkk2';
 
   const todo = (id: string, text: string, due: string | null, done = false) => {
     todos[id] = { id, text, done, due, updatedAt: t };
@@ -64,5 +78,5 @@ export const seedPlan = (): Plan => {
   todo('t2', 'Download offline maps', addDays(start, -1), true);
   todo('t3', 'Check visa rules for Laos', addDays(start, 4));
 
-  return { v: 1, start, end: addDays(start, 15), metaUpdatedAt: t, startId: 'bkk', stops, legs, todos };
+  return { v: 1, start, end: addDays(start, 17), metaUpdatedAt: t, startId: 'bkk', stops, legs, todos };
 };

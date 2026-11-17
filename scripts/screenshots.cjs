@@ -39,6 +39,7 @@ async function mockApis(ctx) {
 async function raw(browser, name, opts, steps) {
   const ctx = await browser.newContext({ serviceWorkers: 'block', ...opts });
   await mockApis(ctx);
+  await ctx.addInitScript(() => { try { localStorage.setItem('tl-ppd2', '34'); } catch { /* ignore */ } });
   const page = await ctx.newPage();
   await page.clock.setFixedTime(T0);
   await page.goto(`${BASE}#/settings`);
@@ -46,7 +47,7 @@ async function raw(browser, name, opts, steps) {
   // move the example trip so that it is already underway on the screenshot date
   const dates = page.locator('input[type=date]');
   await dates.nth(0).fill('2026-11-17');
-  await dates.nth(1).fill('2026-12-02');
+  await dates.nth(1).fill('2026-12-04');
   await page.waitForTimeout(500);
   await page.reload();
   await page.waitForTimeout(800);
@@ -91,15 +92,15 @@ async function shot(browser, html, w, h, file) {
     const phoneOpts = { ...devices['Pixel 7'], deviceScaleFactor: 2 };
     const light = await raw(browser, 'light', phoneOpts, {
       plan: async (p) => { await p.goto(`${BASE}#/plan`); },
-      fork: async (p) => { await p.goto(`${BASE}#/plan`); await p.evaluate(() => document.getElementById('stop-lpb')?.scrollIntoView({ block: 'start' })); },
-      timeline: async (p) => { await p.goto(`${BASE}#/timeline`); },
+      fork: async (p) => { await p.goto(`${BASE}#/plan`); await p.evaluate(() => document.getElementById('stop-vte')?.scrollIntoView({ block: 'start' })); },
+      timeline: async (p) => { await p.goto(`${BASE}#/timeline`); await p.addStyleTag({ content: '.tl-ctl,.tl-mode{display:none}' }); },
       place: async (p) => { await p.goto(`${BASE}#/place/cnx`); await p.waitForTimeout(600); await p.evaluate(() => window.scrollTo(0, 420)); },
       todo: async (p) => { await p.goto(`${BASE}#/todo`); },
       settings: async (p) => { await p.goto(`${BASE}#/settings`); await p.waitForTimeout(600); await p.evaluate(() => { const h = [...document.querySelectorAll('h2')].find((x) => /github sync/i.test(x.textContent)); window.scrollTo(0, h.getBoundingClientRect().top + window.scrollY - 70); }); },
     });
     const panels = [
       ['plan', '#D5E9E5', 'Plan the route,<br>not just the list', 'Stops, nights and transport in one place. Dates update as you change anything.', light.plan],
-      ['fork', '#E3DCF0', 'Branch when you<br>cannot decide', 'Keep two routes side by side. Pick one and see how it moves the dates.', light.fork],
+      ['fork', '#E3DCF0', 'Branch when you<br>cannot decide', 'Keep several routes open. Pick one and see on which day each one rejoins.', light.fork],
       ['timeline', '#D6E4F2', 'See the whole<br>trip at a glance', 'One dot per night. Travel days and overnight rides are easy to spot.', light.timeline],
       ['weather', '#F6E3B4', 'Weather for<br>every day', 'Forecast for each stop on the days you are there.', light.place],
       ['todo', '#F2DCE6', 'Know what is<br>still unbooked', 'Stays and transport turn into a checklist, soonest first.', light.todo],

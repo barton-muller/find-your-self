@@ -1,7 +1,7 @@
 {
  "v": 1,
  "start": "2027-01-11",
- "end": "2027-01-26",
+ "end": "2027-01-28",
  "metaUpdatedAt": 1,
  "startId": "bkk",
  "stops": {
@@ -103,7 +103,58 @@
    "lng": 102.6331,
    "country": "Laos",
    "nights": 2,
-   "notes": "Last stop. Fly home from here.",
+   "notes": "Fork: three ways back to Bangkok. They arrive on different days.",
+   "days": [],
+   "activeOut": "vte-bkk2",
+   "updatedAt": 1
+  },
+  "udn": {
+   "id": "udn",
+   "name": "Udon Thani",
+   "lat": 17.4138,
+   "lng": 102.7872,
+   "country": "Thailand",
+   "nights": 2,
+   "notes": "Cross the border at Nong Khai.",
+   "days": [],
+   "activeOut": null,
+   "updatedAt": 1
+  },
+  "kkc": {
+   "id": "kkc",
+   "name": "Khon Kaen",
+   "lat": 16.4419,
+   "lng": 102.835,
+   "country": "Thailand",
+   "nights": 2,
+   "notes": "",
+   "days": [],
+   "activeOut": null,
+   "updatedAt": 1
+  },
+  "ayu": {
+   "id": "ayu",
+   "name": "Ayutthaya",
+   "lat": 14.3532,
+   "lng": 100.5689,
+   "country": "Thailand",
+   "nights": 2,
+   "notes": "",
+   "days": [
+    "Temples by bike",
+    "Boat on the river"
+   ],
+   "activeOut": null,
+   "updatedAt": 1
+  },
+  "bkk2": {
+   "id": "bkk2",
+   "name": "Bangkok",
+   "lat": 13.7563,
+   "lng": 100.5018,
+   "country": "Thailand",
+   "nights": 2,
+   "notes": "Fly home from here.",
    "days": [],
    "activeOut": null,
    "updatedAt": 1
@@ -280,6 +331,132 @@
     }
    ],
    "chosen": "o12",
+   "updatedAt": 1
+  },
+  "vte-bkk2": {
+   "id": "vte-bkk2",
+   "from": "vte",
+   "to": "bkk2",
+   "options": [
+    {
+     "id": "o13",
+     "mode": "Sleeper train",
+     "duration": "15h",
+     "cost": "",
+     "notes": "Bus to Nong Khai, then the night train",
+     "overnight": true,
+     "extraDays": 0
+    },
+    {
+     "id": "o14",
+     "mode": "Flight",
+     "duration": "1h 10m",
+     "cost": "",
+     "notes": "",
+     "overnight": false,
+     "extraDays": 0
+    }
+   ],
+   "chosen": "o13",
+   "updatedAt": 1
+  },
+  "vte-udn": {
+   "id": "vte-udn",
+   "from": "vte",
+   "to": "udn",
+   "options": [
+    {
+     "id": "o15",
+     "mode": "Bus",
+     "duration": "2h 30m",
+     "cost": "",
+     "notes": "",
+     "overnight": false,
+     "extraDays": 0
+    }
+   ],
+   "chosen": "o15",
+   "updatedAt": 1
+  },
+  "udn-bkk2": {
+   "id": "udn-bkk2",
+   "from": "udn",
+   "to": "bkk2",
+   "options": [
+    {
+     "id": "o16",
+     "mode": "Train",
+     "duration": "9h",
+     "cost": "",
+     "notes": "",
+     "overnight": false,
+     "extraDays": 0
+    },
+    {
+     "id": "o17",
+     "mode": "Flight",
+     "duration": "1h",
+     "cost": "",
+     "notes": "",
+     "overnight": false,
+     "extraDays": 0
+    }
+   ],
+   "chosen": "o16",
+   "updatedAt": 1
+  },
+  "vte-kkc": {
+   "id": "vte-kkc",
+   "from": "vte",
+   "to": "kkc",
+   "options": [
+    {
+     "id": "o18",
+     "mode": "Bus",
+     "duration": "5h",
+     "cost": "",
+     "notes": "",
+     "overnight": false,
+     "extraDays": 0
+    }
+   ],
+   "chosen": "o18",
+   "updatedAt": 1
+  },
+  "kkc-ayu": {
+   "id": "kkc-ayu",
+   "from": "kkc",
+   "to": "ayu",
+   "options": [
+    {
+     "id": "o19",
+     "mode": "Train",
+     "duration": "5h",
+     "cost": "",
+     "notes": "",
+     "overnight": false,
+     "extraDays": 0
+    }
+   ],
+   "chosen": "o19",
+   "updatedAt": 1
+  },
+  "ayu-bkk2": {
+   "id": "ayu-bkk2",
+   "from": "ayu",
+   "to": "bkk2",
+   "options": [
+    {
+     "id": "o20",
+     "mode": "Train",
+     "duration": "1h 30m",
+     "cost": "",
+     "notes": "",
+     "overnight": false,
+     "extraDays": 0
+    }
+   ],
+   "chosen": "o20",
    "updatedAt": 1
   }
  },

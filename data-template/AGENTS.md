@@ -2,7 +2,7 @@
 
 `CLAUDE.md` is a symlink to this file.
 
-This repo is the data for a trip planned in the Tripfork app (https://github.com/barton-muller/tripfork). `plan.json` is the single source of truth. The app reads and writes it on `main` through the GitHub Contents API. Read `DECISIONS.md` first. It holds the traveller's preferences, constraints, route decisions and verified transport facts. Update it when a decision changes.
+This repo is the data for a trip planned in the Go Find Yourself app (https://github.com/barton-muller/find-your-self). `plan.json` is the single source of truth. The app reads and writes it on `main` through the GitHub Contents API. Read `DECISIONS.md` first. It holds the traveller's preferences, constraints, route decisions and verified transport facts. Update it when a decision changes.
 
 ## Editing rules
 1. Run `git pull --ff-only origin main` first. The app commits to `main` ("Update trip plan"), so a local copy goes stale quickly. Never write `plan.json` from an old copy.

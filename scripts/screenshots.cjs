@@ -8,7 +8,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const OUT = path.join(__dirname, '..', 'docs', 'img');
-const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'tripfork-shots-'));
+const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'gofindyourself-shots-'));
 const BASE = 'http://127.0.0.1:4173/';
 const DAY = 864e5;
 const T0 = new Date('2026-11-20T10:00:00');
@@ -118,10 +118,10 @@ async function shot(browser, html, w, h, file) {
     const logo = fs.readFileSync(path.join(__dirname, '..', 'public', 'icon.svg'), 'utf8').replace('<svg ', '<svg width="150" height="150" style="border-radius:34px" ');
     const hero = `<html><style>${CSS}
       .hero{width:1600px;height:800px;position:relative;overflow:hidden;background:#FFFCF0;padding:100px 110px}
-      .hero h1{font-size:104px;letter-spacing:-3px;margin-top:34px;font-weight:800}
+      .hero h1{font-size:96px;line-height:1;letter-spacing:-3px;margin-top:34px;font-weight:800}
       .hero p{font-size:42px;margin-top:20px;max-width:640px;line-height:1.3;color:#3a3935}
       .blob{position:absolute;right:-120px;top:-200px;width:1000px;height:1200px;background:#D5E9E5;border-radius:50% 0 0 50%}
-    </style><body><div class="hero"><div class="blob"></div>${logo}<h1>Tripfork</h1><p>A trip planner for routes that branch.</p>
+    </style><body><div class="hero"><div class="blob"></div>${logo}<h1>Go Find<br>Yourself</h1><p>A trip planner for routes that branch.</p>
       ${phone(dark.timeline, 360, 'left:790px;top:110px;transform:rotate(-4deg)')}
       ${phone(light.plan, 360, 'left:1020px;top:170px;transform:rotate(3deg)')}
       ${phone(light.place, 360, 'left:1250px;top:90px;transform:rotate(-2deg)')}

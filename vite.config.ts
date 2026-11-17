@@ -22,7 +22,7 @@ export default defineConfig({
       includeAssets: ['apple-touch-icon.png', 'icon.svg'],
       manifest: {
         name: `${BRAND.name}: trip planner`,
-        short_name: BRAND.name,
+        short_name: BRAND.short,
         description: BRAND.tagline,
         theme_color: '#0f766e',
         background_color: '#f6f5f1',

@@ -1,12 +1,12 @@
-<p align="center"><img src="docs/img/hero.png" alt="Tripfork: a trip planner for routes that branch" width="100%"></p>
+<p align="center"><img src="docs/img/hero.png" alt="Go Find Yourself: a trip planner for routes that branch" width="100%"></p>
 
-# Tripfork
+# Go Find Yourself
 
 A trip planner for routes that branch. Add the stops, set the nights, pick how you travel between them. Keep two routes open until you decide which one to take.
 
-**[Open the app](https://barton-muller.github.io/tripfork/)** &nbsp;·&nbsp; **[Make your own copy](https://github.com/barton-muller/tripfork/fork)** &nbsp;·&nbsp; [Sync and AI guide](docs/SYNC-AND-AI.md)
+**[Open the app](https://barton-muller.github.io/find-your-self/)** &nbsp;·&nbsp; **[Make your own copy](https://github.com/barton-muller/find-your-self/fork)** &nbsp;·&nbsp; [Sync and AI guide](docs/SYNC-AND-AI.md)
 
-Tripfork is free and open source. You can copy it, change it, and publish your own version as a GitHub page in about five minutes. [How to do that](docs/MAKE-YOUR-OWN.md).
+Go Find Yourself is free and open source. You can copy it, change it, and publish your own version as a GitHub page in about five minutes. [How to do that](docs/MAKE-YOUR-OWN.md).
 
 <p align="center">
 <img src="docs/img/panel-plan.png" width="32%" alt="Plan view with stops, nights and transport">
@@ -36,7 +36,7 @@ Tripfork is free and open source. You can copy it, change it, and publish your o
 
 ## Your data
 
-Tripfork has no accounts and no server. Your trip is saved in your browser, on your device. Nothing is sent anywhere unless you turn on sync.
+Go Find Yourself has no accounts and no server. Your trip is saved in your browser, on your device. Nothing is sent anywhere unless you turn on sync.
 
 Browsers can delete stored data, and iOS does so for sites you have not used for a while. Add the app to your home screen, and either turn on sync or export a backup now and then (*Settings, Backup*).
 
@@ -58,7 +58,7 @@ Keep your own data repo private. It holds your dates, places and booking notes. 
 
 ## Make your own copy
 
-1. [Fork the repo](https://github.com/barton-muller/tripfork/fork).
+1. [Fork the repo](https://github.com/barton-muller/find-your-self/fork).
 2. In your fork, *Settings, Pages, Source*: choose *GitHub Actions*.
 3. Open the *Actions* tab, enable workflows, and run *Deploy*.
 4. Your site is at `https://YOUR-USERNAME.github.io/REPO-NAME/`.
@@ -67,7 +67,7 @@ Then change what you like, by hand or with an AI coding agent. Every push to `ma
 
 ## About this project
 
-Tripfork started as one person's planner for seven weeks in South East Asia. Almost all of the code was written by Claude, an AI assistant, from the author's instructions. It works for the author's own trips. It has no automated tests, so expect rough edges, and back up trips you care about.
+Go Find Yourself started as one person's planner for seven weeks in South East Asia. Almost all of the code was written by Claude, an AI assistant, from the author's instructions. It works for the author's own trips. It has no automated tests, so expect rough edges, and back up trips you care about.
 
 Because of that, copying it and adding your own features is the normal way to use it. If you build something others would want, issues and pull requests are welcome.
 

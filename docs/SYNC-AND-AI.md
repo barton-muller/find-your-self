@@ -6,7 +6,7 @@ This is optional. Without it, your trip lives in the browser on one device. With
 - A backup with full history.
 - A repo you can hand to an AI agent, such as Claude Code, so it can change the plan for you. For example: "Add two nights in Hanoi after Ninh Binh and check that the dates still work."
 
-Nothing goes through a server run by Tripfork. The app talks straight to GitHub.
+Nothing goes through a server run by Go Find Yourself. The app talks straight to GitHub.
 
 ## What you need
 
@@ -20,9 +20,9 @@ The folder [`data-template`](../data-template) in this repo is a ready-to-use da
 With the GitHub command line (`gh`):
 
 ```
-git clone https://github.com/barton-muller/tripfork
+git clone https://github.com/barton-muller/find-your-self
 mkdir my-trip-data
-cp -a tripfork/data-template/. my-trip-data/
+cp -a find-your-self/data-template/. my-trip-data/
 cd my-trip-data
 git init -b main
 git add -A

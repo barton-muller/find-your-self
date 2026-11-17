@@ -60,7 +60,7 @@ export function Settings() {
         </div>
         <p>
           Your trip is saved on this device. Nothing leaves it unless you turn on sync below.
-          Tripfork is free and open source. You can make your own copy, change it, and publish it as your own page on GitHub.
+          Go Find Yourself is free and open source. You can make your own copy, change it, and publish it as your own page on GitHub.
         </p>
         <div className="rowflex">
           <a className="btnlink primary" href={BRAND.fork} target="_blank" rel="noreferrer">Make your own copy</a>

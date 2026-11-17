@@ -1,12 +1,12 @@
 # Make your own copy
 
-Tripfork is a static website. You can copy it to your own GitHub account, change anything you like, and publish it at your own address. It takes about five minutes and costs nothing.
+Go Find Yourself is a static website. You can copy it to your own GitHub account, change anything you like, and publish it at your own address. It takes about five minutes and costs nothing.
 
 The app was written with AI help and has no test suite. Treat it as a starting point, not a finished product. That is also why copying it is encouraged: you can fix what bothers you and add what you need.
 
 ## Steps
 
-1. **Fork the repo.** Open the [fork page](https://github.com/barton-muller/tripfork/fork) and click *Create fork*. You need a free GitHub account.
+1. **Fork the repo.** Open the [fork page](https://github.com/barton-muller/find-your-self/fork) and click *Create fork*. You need a free GitHub account.
 2. **Turn on GitHub Pages.** In your fork go to *Settings, Pages*. Under *Build and deployment*, set *Source* to *GitHub Actions*.
 3. **Run the deploy.** Open the *Actions* tab. GitHub switches workflows off in new forks, so click the green button to enable them. Pick *Deploy* in the list, then *Run workflow*. It takes about a minute.
 4. **Open your site.** The address is `https://YOUR-USERNAME.github.io/REPO-NAME/`. You can also find it on the finished *Deploy* run.
@@ -56,4 +56,4 @@ On your fork's page, use *Sync fork*. If you changed the same files as the origi
 
 ## Share it back
 
-If you fix a bug or build something others would want, open a pull request or an issue on the [original repo](https://github.com/barton-muller/tripfork).
+If you fix a bug or build something others would want, open a pull request or an issue on the [original repo](https://github.com/barton-muller/find-your-self).

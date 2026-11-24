@@ -30,6 +30,11 @@ The plan can sync to a separate GitHub repo that the user owns (see `docs/SYNC-A
 - `src/sync.ts`: GitHub Contents API with a fine-grained PAT (Contents read/write on one private repo). Merge per record, newest `updatedAt` wins (`mergePlans`). GitHub *secrets* cannot be read from a client; do not suggest them.
 - `src/history.ts`: undo/redo records only the records a step changed, restores them with a fresh `updatedAt` (so it syncs and never reverts other devices' edits). Rapid edits to the same records coalesce.
 
+## Security
+- Plan data can be written by other devices, an AI agent or an invited friend, so it is untrusted. React escapes text; the only HTML strings are Leaflet tooltips and icons in `MapView.tsx`, and everything from the plan goes through `esc()` (`src/html.ts`) there. Never use `dangerouslySetInnerHTML`, `innerHTML` or an `href` built from plan data.
+- The build adds a Content Security Policy meta tag (`csp()` in `vite.config.ts`): scripts only from this site, connections only to the services listed there. A new external service (API, tile server) must be added to `connect-src` or `img-src` there, or the browser blocks it. Check `npm run build` and the browser console for "Content Security Policy" messages after adding one.
+- Sign-in tokens sit in IndexedDB and are readable by any script on the origin, so keep the origin free of other people's code. Pages on one `github.io` address share it.
+
 ## UI map (`src/views`)
 Plan cards also show a small weather strip right of the stop name (same data and `tl-wx` toggle). Tabs: Map, Timeline, Plan, To-do; Place (stop detail) and Settings via hash routes (`src/nav.ts`).
 - `PlanView` (+`Today`): list, nights steppers, fork picker, reorder mode (swap with neighbour, `swapWithNext`), insert stop between, past stops collapsed.

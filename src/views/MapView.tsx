@@ -4,6 +4,7 @@ import { fmtShortDate, addDays, diffDays, todayStr } from '../dates';
 import { Icon } from '../icons';
 import { TILE_URL } from '../tiles';
 import { chosenOption, colorIndex, liveLegs, liveStops, schedule } from '../model';
+import { esc } from '../html';
 import { go } from '../nav';
 import { useStore } from '../store';
 import { iconSvgString } from '../icons';
@@ -139,7 +140,7 @@ export function MapView() {
         dashArray: gm.active ? undefined : '6 8',
         opacity: gm.active ? 0.95 : 0.6,
       }).addTo(g);
-      if (o) line.bindTooltip(`${iconSvgString(modeIcon(o.mode))} ${o.mode}${o.duration ? ' · ' + o.duration : ''}${o.overnight ? ' ' + iconSvgString('moon') : ''}`, { sticky: true });
+      if (o) line.bindTooltip(`${iconSvgString(modeIcon(o.mode))} ${esc(o.mode)}${o.duration ? ' · ' + esc(o.duration) : ''}${o.overnight ? ' ' + iconSvgString('moon') : ''}`, { sticky: true });
     }
     for (const x of stops) {
       const p = at(x.id);
@@ -149,7 +150,7 @@ export function MapView() {
       const html = `<div class="pin ${idx >= 0 ? 'on' : 'alt'}${x.id === nowId ? ' now' : ''}${idx >= 0 && s.arrive[x.id] + x.nights < today ? ' past' : ''}" style="background:var(--c${ci[x.id]})">${idx >= 0 ? idx + 1 : '·'}</div>`;
       const mk = L.marker(p, { icon: L.divIcon({ html, className: '', iconSize: [26, 26], iconAnchor: [13, 13] }) }).addTo(g);
       const d = s.arrive[x.id] !== undefined ? `${fmtShortDate(addDays(plan.start, s.arrive[x.id]))} · ` : '';
-      mk.bindTooltip(idx >= 0 ? x.name : `${x.name} (${d}${x.nights}n)`, { permanent: idx >= 0, direction: 'right', offset: [10, 0], className: 'maplabel' });
+      mk.bindTooltip(idx >= 0 ? esc(x.name) : `${esc(x.name)} (${d}${esc(x.nights)}n)`, { permanent: idx >= 0, direction: 'right', offset: [10, 0], className: 'maplabel' });
       mk.on('click', () => go({ view: 'place', id: x.id }));
     }
     if (!fitted.current && pts.length) {

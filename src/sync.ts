@@ -12,14 +12,19 @@ const b64dec = (s: string) => {
   return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
 };
 
-const url = (c: SyncConfig) => `https://api.github.com/repos/${c.repo}/contents/${c.path}`;
-const headers = (c: SyncConfig) => ({
-  Authorization: `Bearer ${c.token}`,
-  Accept: 'application/vnd.github+json',
-  'X-GitHub-Api-Version': '2022-11-28',
-});
+// A connection with a token goes to GitHub, or to a Forgejo, Gitea or Codeberg server when `server` is set. The two APIs are alike:
+// the same contents calls with a sha, the same branch and repo objects. They differ in the address, the token header and
+// that Forgejo creates a file with POST and updates it with PUT.
+const apiBase = (c: SyncConfig) => (c.server ? `${c.server.replace(/\/+$/, '')}/api/v1/repos/${c.repo}` : `https://api.github.com/repos/${c.repo}`);
+const host = (c: SyncConfig) => (c.server ? new URL(c.server).host : 'GitHub');
+const url = (c: SyncConfig) => `${apiBase(c)}/contents/${c.path}`;
+const headers = (c: SyncConfig): Record<string, string> =>
+  c.server
+    ? { Authorization: `token ${c.token}`, Accept: 'application/json' }
+    : { Authorization: `Bearer ${c.token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
 
-export const configured = (c: SyncConfig | null): c is SyncConfig => !!c && (!!c.token || !!c.viaGitHub) && /^[^/]+\/[^/]+$/.test(c.repo) && !!c.path;
+export const configured = (c: SyncConfig | null): c is SyncConfig =>
+  !!c && (!!c.token || !!c.viaGitHub) && /^[^/]+\/[^/]+$/.test(c.repo) && !!c.path && (!c.server || /^https:\/\/[^/]+/.test(c.server));
 
 export async function fetchRemote(c: SyncConfig): Promise<{ plan: Plan; sha: string } | null> {
   const r = await fetch(`${url(c)}?ref=${encodeURIComponent(c.branch)}&_=${Date.now()}`, {
@@ -27,14 +32,14 @@ export async function fetchRemote(c: SyncConfig): Promise<{ plan: Plan; sha: str
     cache: 'no-store',
   });
   if (r.status === 404) return null;
-  if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.text()).slice(0, 160)}`);
+  if (!r.ok) throw new Error(`${host(c)} ${r.status}: ${(await r.text()).slice(0, 160)}`);
   const j = await r.json();
   return { plan: JSON.parse(b64dec(j.content)) as Plan, sha: j.sha };
 }
 
 async function putRemote(c: SyncConfig, plan: Plan, sha?: string, withBranch = true): Promise<boolean | null> {
   const r = await fetch(url(c), {
-    method: 'PUT',
+    method: c.server && !sha ? 'POST' : 'PUT',
     headers: { ...headers(c), 'Content-Type': 'application/json' },
     body: JSON.stringify({
       message: 'Update trip plan',
@@ -45,7 +50,7 @@ async function putRemote(c: SyncConfig, plan: Plan, sha?: string, withBranch = t
   });
   if (r.status === 409 || r.status === 422) return false;
   if (r.status === 404 && !sha) return null;
-  if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.text()).slice(0, 160)}`);
+  if (!r.ok) throw new Error(`${host(c)} ${r.status}: ${(await r.text()).slice(0, 160)}`);
   return true;
 }
 
@@ -84,7 +89,7 @@ export function mergePlans(local: Plan, remote: Plan): Plan {
 }
 
 async function diagnose(c: SyncConfig): Promise<string> {
-  const r = await fetch(`https://api.github.com/repos/${c.repo}`, { headers: headers(c), cache: 'no-store' });
+  const r = await fetch(apiBase(c), { headers: headers(c), cache: 'no-store' });
   if (r.status === 404) return `Repo ${c.repo} not found for this token. Check the name, and that the token's repository access includes it.`;
   if (r.status === 401) return 'Token rejected (expired or wrong).';
   const j = await r.json();
@@ -97,7 +102,7 @@ export const samePlan = (a: Plan, b: Plan) => JSON.stringify(a) === JSON.stringi
 // Each person can have their own branch. Create it from the default branch when it does not exist yet.
 // Returns true when the branch is the default one (only then may a first commit be made without naming a branch).
 async function prepareBranch(c: SyncConfig): Promise<boolean> {
-  const api = `https://api.github.com/repos/${c.repo}`;
+  const api = apiBase(c);
   const h = headers(c);
   const enc = encodeURIComponent;
   const exists = await fetch(`${api}/branches/${enc(c.branch)}`, { headers: h, cache: 'no-store' });
@@ -114,6 +119,16 @@ async function prepareBranch(c: SyncConfig): Promise<boolean> {
   if (base?.ok) baseName = 'template';
   else base = await fetch(`${api}/git/ref/heads/${enc(def)}`, { headers: h, cache: 'no-store' });
   if (!base || !base.ok) throw new Error(`The repo has no ${baseName} branch yet. Add a first commit (a README) and try again.`);
+  if (c.server) {
+    // Forgejo has its own call for a new branch
+    const mkb = await fetch(`${api}/branches`, {
+      method: 'POST',
+      headers: { ...h, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ new_branch_name: c.branch, old_branch_name: baseName }),
+    });
+    if (!mkb.ok && mkb.status !== 409) throw new Error(`Could not create branch ${c.branch}: ${host(c)} ${mkb.status}`);
+    return false;
+  }
   const sha = ((await base.json()) as { object: { sha: string } }).object.sha;
   const mk = await fetch(`${api}/git/refs`, {
     method: 'POST',
@@ -149,7 +164,7 @@ export interface RemoteTrip { name: string; path: string }
 // Where this app keeps its files in a repo: the root for repos that already have trips there (older setups), else a folder named after the app.
 export async function detectDir(c: SyncConfig): Promise<string> {
   try {
-    const r = await fetch(`https://api.github.com/repos/${c.repo}/contents/?ref=${encodeURIComponent(c.branch)}&_=${Date.now()}`, { headers: headers(c), cache: 'no-store' });
+    const r = await fetch(`${apiBase(c)}/contents/?ref=${encodeURIComponent(c.branch)}&_=${Date.now()}`, { headers: headers(c), cache: 'no-store' });
     if (!r.ok) return '';
     const root = (await r.json()) as { name: string; type: string }[];
     const legacy = root.some((e) => (e.type === 'dir' && e.name === 'trips') || (e.type === 'file' && e.name === 'plan.json'));
@@ -162,11 +177,11 @@ export async function detectDir(c: SyncConfig): Promise<string> {
 // Trips in the repo: every folder under trips/ that holds a plan.json, plus a plan.json in the app's root. Paths are relative to the app's folder.
 export async function listRemoteTrips(c: SyncConfig): Promise<RemoteTrip[]> {
   const dir = c.dir ?? '';
-  const api = (path: string) => `https://api.github.com/repos/${c.repo}/contents/${path}?ref=${encodeURIComponent(c.branch)}&_=${Date.now()}`;
+  const api = (path: string) => `${apiBase(c)}/contents/${path}?ref=${encodeURIComponent(c.branch)}&_=${Date.now()}`;
   const get = async (path: string) => {
     const r = await fetch(api(path), { headers: headers(c), cache: 'no-store' });
     if (r.status === 404) return [];
-    if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.text()).slice(0, 160)}`);
+    if (!r.ok) throw new Error(`${host(c)} ${r.status}: ${(await r.text()).slice(0, 160)}`);
     const j = await r.json();
     return Array.isArray(j) ? (j as { name: string; type: string }[]) : [];
   };

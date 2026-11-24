@@ -64,6 +64,12 @@ Copy the token when GitHub shows it (it starts with `github_pat_`). GitHub shows
 
 The token is saved in the browser on the device where you paste it. It is not sent anywhere except to GitHub. If you lose the device, delete the token on GitHub and make a new one.
 
+### Codeberg, Forgejo or Gitea instead of GitHub
+
+The same steps work with a repo on Codeberg or a Forgejo or Gitea server. Make the repo there, create an access token with write access to that repo only, and in Settings open **Advanced: connect with a token**. Put the server address (for example `https://codeberg.org`) in the **Server** field, the repo as `owner/name`, and the token. Leave **Server** empty for GitHub.
+
+Notes: the server must allow web pages to call its API (Codeberg does; on your own server turn on `[cors]` in `app.ini` and list the site). A site that you host yourself must also allow the server in its Content Security Policy: build it with `VITE_CSP_CONNECT="https://git.example.org"`. Invite links do not carry the server, so they are not offered for these connections.
+
 ## 3. Connect the app
 
 Open the app, then *Settings*. The steps there are in order:

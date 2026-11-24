@@ -251,7 +251,7 @@ export function Settings() {
             <div className="syncsum">
               <Icon name="repo" size={22} className="ico" />
               <div>
-                <div>Syncing with <b>{cfg.repo}</b></div>
+                <div>Syncing with <b>{cfg.repo}</b>{cfg.server && <> on {new URL(cfg.server).host}</>}</div>
                 {cfg.viaGitHub && auth && <div className="small">Signed in as <b>{auth.login}</b></div>}
               </div>
             </div>
@@ -265,7 +265,7 @@ export function Settings() {
             </p>
             <div className="actgrid">
               <button className="ibtn" onClick={syncNow}><Icon name="sync" size={18} /> Sync now</button>
-              <button className="ibtn" onClick={() => copyBrief({ repo: cfg.repo, token: cfg.viaGitHub ? undefined : cfg.token, branch: cfg.branch, trip: activeTrip.name, path: tripPath, dir: cfg.dir })}>
+              <button className="ibtn" onClick={() => copyBrief({ repo: cfg.repo, token: cfg.viaGitHub ? undefined : cfg.token, branch: cfg.branch, trip: activeTrip.name, path: tripPath, dir: cfg.dir, server: cfg.server })}>
                 <Icon name="sparkle" size={18} /> Copy for AI
               </button>
               {cfg.viaGitHub ? (
@@ -273,7 +273,7 @@ export function Settings() {
                   <button className="ibtn" onClick={() => saveCfg(null)}><Icon name="repo" size={18} /> Choose another repo</button>
                   <button className="ibtn danger" onClick={() => confirm('Sign out of GitHub on this device? Your trips stay here.') && signOut()}><Icon name="x" size={18} /> Sign out</button>
                 </>
-              ) : (
+              ) : cfg.server ? null : (
                 <button className="ibtn wide" onClick={() => copyLink(makeInviteLink({ repo: cfg.repo, token: cfg.token, branch: cfg.branch }), 'Link copied. Open it on your other device and press Join.')}>
                   <Icon name="link" size={18} /> Copy link for another device
                 </button>
@@ -300,6 +300,9 @@ export function Settings() {
             )}
             {!cfg.viaGitHub && <details className="adv">
               <summary>Change connection</summary>
+              <label className="fld"><span className="fl"><Icon name="link" size={16} /> Server, blank for GitHub</span>
+                <input value={c.server ?? ''} onChange={set('server')} placeholder="https://codeberg.org" autoCapitalize="none" autoCorrect="off" />
+              </label>
               <label className="fld"><span className="fl"><Icon name="repo" size={16} /> Repository</span>
                 <input value={c.repo} onChange={set('repo')} placeholder="owner/trip-data" autoCapitalize="none" autoCorrect="off" />
               </label>
@@ -314,6 +317,7 @@ export function Settings() {
             </details>}
           </>
         ) : authAvailable ? (
+          <>
           <div className="signin">
             {authError && <p className="small err">{authError}</p>}
             {!auth ? (
@@ -337,6 +341,27 @@ export function Settings() {
               </>
             )}
           </div>
+          <details className="adv">
+            <summary>Advanced: connect with a token</summary>
+            <p className="small">Use a token instead of signing in: a GitHub fine-grained token, or a token for a repo on Codeberg, Forgejo or Gitea. The token stays on this device.</p>
+            <div className="guidelinks">
+              <a className="ibtn" href={BRAND.tokenGuide} target="_blank" rel="noreferrer"><Icon name="lock" size={16} /> How to create a token</a>
+            </div>
+            <label className="fld"><span className="fl"><Icon name="link" size={16} /> Server, blank for GitHub</span>
+              <input value={c.server ?? ''} onChange={set('server')} placeholder="https://codeberg.org" autoCapitalize="none" autoCorrect="off" />
+            </label>
+            <label className="fld"><span className="fl"><Icon name="repo" size={16} /> Repository</span>
+              <input value={c.repo} onChange={set('repo')} placeholder="owner/trip-data" autoCapitalize="none" autoCorrect="off" />
+            </label>
+            <label className="fld"><span className="fl"><Icon name="lock" size={16} /> Token</span>
+              <input type="password" value={c.token} onChange={set('token')} autoComplete="off" />
+            </label>
+            <label className="fld"><span className="fl">Branch</span><input value={c.branch} onChange={set('branch')} autoCapitalize="none" /></label>
+            <div className="rowflex">
+              <button className="primary ibtn" disabled={!configured(c)} onClick={() => saveCfg(c)}><Icon name="sync" size={18} /> Save and sync</button>
+            </div>
+          </details>
+          </>
         ) : (
           <>
             <div className="guidelinks">
@@ -355,6 +380,9 @@ export function Settings() {
             </label>
             <details className="adv">
               <summary>Advanced</summary>
+              <label className="fld"><span className="fl"><Icon name="link" size={16} /> Server, blank for GitHub</span>
+                <input value={c.server ?? ''} onChange={set('server')} placeholder="https://codeberg.org" autoCapitalize="none" autoCorrect="off" />
+              </label>
               <label className="fld"><span className="fl">Branch</span><input value={c.branch} onChange={set('branch')} autoCapitalize="none" /></label>
             </details>
             <div className="rowflex">
@@ -372,7 +400,7 @@ export function Settings() {
         {wxText && <textarea readOnly value={wxText} rows={8} onFocus={(e) => e.currentTarget.select()} />}
       </Sec>
 
-      {configured(cfg) && !cfg.viaGitHub && (
+      {configured(cfg) && !cfg.viaGitHub && !cfg.server && (
         <Sec
           num={4} icon="link" title="Invite someone"
           hint="Make a link that sets up sync on another person's device, using this repo. They get their own branch, so their trips are saved separately, and they need no GitHub account. Anyone with the link can read and change everything in the repo."

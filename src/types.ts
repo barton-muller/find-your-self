@@ -61,6 +61,7 @@ export interface SyncConfig {
   repo: string;
   path: string;
   branch: string;
+  server?: string; // base address of a Forgejo, Gitea or Codeberg server (https://codeberg.org); unset for GitHub
   dir?: string; // folder of the repo that holds this app's files, '' (or unset) for the repo root, else 'find-your-self/'
 }
 

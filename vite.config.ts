@@ -16,13 +16,16 @@ const build = (() => {
 // services the app uses. A script injected through plan data can then neither load code nor send a token elsewhere.
 // Styles allow 'unsafe-inline' because React and Leaflet set style attributes. The relay comes from the same setting the app uses.
 const csp = (): Plugin => {
-  const relay = loadEnv('production', process.cwd(), 'VITE_').VITE_GH_RELAY || BRAND.auth.relay;
+  const env = loadEnv('production', process.cwd(), 'VITE_');
+  const relay = env.VITE_GH_RELAY || BRAND.auth.relay;
+  // Other git servers people may connect with a token (a self-hosted Forgejo or Gitea): VITE_CSP_CONNECT="https://git.example.org https://other.example"
+  const extraConnect = (env.VITE_CSP_CONNECT || '').split(/\s+/).filter((h) => /^https:\/\/[\w.-]+(:\d+)?$/.test(h)).map((h) => ` ${h}`).join('');
   const policy = [
     "default-src 'self'",
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://tile.openstreetmap.org",
-    `connect-src 'self' https://api.github.com ${new URL(relay).origin} https://api.open-meteo.com https://geocoding-api.open-meteo.com https://router.project-osrm.org https://tile.openstreetmap.org`,
+    `connect-src 'self' https://api.github.com https://codeberg.org ${new URL(relay).origin} https://api.open-meteo.com https://geocoding-api.open-meteo.com https://router.project-osrm.org https://tile.openstreetmap.org${extraConnect}`,
     "font-src 'self' data:",
     "worker-src 'self'",
     "manifest-src 'self'",

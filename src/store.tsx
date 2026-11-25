@@ -128,6 +128,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       let tr: TripsState | undefined;
       let p: Plan | undefined;
       let c: SyncConfig | undefined;
+      let firstRun = false;
       await migrateLegacy();
       try {
         c = await get<SyncConfig>(CFG_KEY);
@@ -145,6 +146,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           if (legacy) await set(planKey('main'), legacy);
           await set(TRIPS_KEY, tr);
           p = legacy;
+          firstRun = !legacy;
         } else {
           p = await get<Plan>(planKey(tr.active));
         }
@@ -159,6 +161,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       cfgRef.current = c ?? null;
       setPlan(initial);
       setCfg(c ?? null);
+      // first launch ever: open Settings to prompt for the setup, but leave invite links and deep links alone
+      if (firstRun && /^#?\/?(plan)?$/.test(location.hash)) location.replace('#/settings');
       if (configured(c ?? null)) {
         setSync({ status: 'idle' });
         runSync();

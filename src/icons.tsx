@@ -1,6 +1,6 @@
 export type IconName =
   | 'plane' | 'train' | 'bus' | 'boat' | 'car' | 'bike' | 'walk' | 'arrow' | 'moon'
-  | 'list' | 'map' | 'timeline' | 'settings' | 'check' | 'sync' | 'alert' | 'fork' | 'plus' | 'x' | 'cloud' | 'minus' | 'up' | 'down' | 'reorder' | 'undo' | 'redo' | 'locate' | 'todo' | 'bed' | 'download' | 'bolt' | 'fit' | 'sun' | 'rain' | 'flag' | 'pin' | 'branch' | 'help' | 'book' | 'calendar' | 'upload' | 'copy' | 'trash' | 'lock' | 'repo' | 'archive' | 'link' | 'sparkle' | 'bookopen';
+  | 'list' | 'map' | 'timeline' | 'settings' | 'check' | 'sync' | 'alert' | 'fork' | 'plus' | 'x' | 'cloud' | 'minus' | 'up' | 'down' | 'reorder' | 'undo' | 'redo' | 'locate' | 'todo' | 'bed' | 'download' | 'bolt' | 'fit' | 'sun' | 'rain' | 'flag' | 'pin' | 'branch' | 'help' | 'book' | 'calendar' | 'upload' | 'copy' | 'trash' | 'lock' | 'repo' | 'archive' | 'link' | 'sparkle' | 'bookopen' | 'right';
 
 const P: Record<IconName, string> = {
   plane: 'M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z',
@@ -26,6 +26,7 @@ const P: Record<IconName, string> = {
   download: 'M12 4v11M7 11l5 5 5-5M5 20h14',
   up: 'M6 15l6-6 6 6',
   down: 'M6 9l6 6 6-6',
+  right: 'M9 6l6 6-6 6',
   reorder: 'M8 9l4-4 4 4M8 15l4 4 4-4',
   check: 'M5 12l5 5L20 7',
   sync: 'M21 12a9 9 0 0 1-15.5 6.2M3 12a9 9 0 0 1 15.5-6.2M18 2v4h-4M6 22v-4h4',

@@ -181,21 +181,24 @@ export function Place({ id }: { id: string }) {
         const d = arrive ? addDays(arrive, i) : null;
         const lbl = i === 0 ? 'Arrive' : i === st.nights ? 'Depart' : `Day ${i + 1}`;
         const outLeg = next.find((l) => s.activeLegs.has(l.id)) ?? next[0];
-        const open = !!st.days[i]?.trim() || openDays.has(i);
-        const openIt = () => setOpenDays((o) => new Set(o).add(i));
+        const open = openDays.has(i);
+        const toggle = () => setOpenDays((o) => { const n = new Set(o); if (!n.delete(i)) n.add(i); return n; });
+        const sum = (st.days[i] ?? '').split('\n').map((x) => x.trim()).find(Boolean) ?? '';
         return (
           <div key={i} className={`card day ${open ? '' : 'closed'}`}>
-            <div className="label">
-              {lbl}{d && ` · ${fmtDate(d)}`}
-              {i === st.nights && outLeg && legOvernight(outLeg) && <> · <Icon name="moon" size={13} className="moon" /> overnight travel</>}
-              {!open && <button type="button" className="link dayadd" onClick={openIt}><Icon name="plus" size={14} /> Add</button>}
-            </div>
+            <button type="button" className="dayhead" aria-expanded={open} onClick={toggle}>
+              <span className="label">
+                {lbl}{d && ` · ${fmtDate(d)}`}
+                {i === st.nights && outLeg && legOvernight(outLeg) && <> · <Icon name="moon" size={13} className="moon" /> overnight travel</>}
+              </span>
+              {!open && sum && <span className="daysum">{sum}</span>}
+              <Icon name={open ? 'down' : 'right'} size={16} className="chev" />
+            </button>
             {open && (
               <AutoTextarea
-                autoFocus={openDays.has(i) && !st.days[i]}
+                autoFocus={!st.days[i]}
                 value={st.days[i] ?? ''}
                 placeholder="Activities, one per line"
-                onFocus={openIt}
                 onChange={(e) => edit((x) => { const a = [...x.days]; while (a.length <= i) a.push(''); a[i] = e.target.value; x.days = a; })}
               />
             )}
@@ -315,11 +318,9 @@ function LegEditor({ leg, fork, active }: { leg: Leg; fork: boolean; active: boo
               <button className={`bk big-bk ${o.booked ? 'on' : ''}`} onClick={() => upd((x) => { x.booked = !x.booked; })}>
                 <Icon name="check" size={14} /> {o.booked ? 'Booked' : 'Not booked'}
               </button>
-              <label className="check"><input type="checkbox" checked={o.overnight} onChange={(e) => upd((x) => { x.overnight = e.target.checked; })} /> <Icon name="moon" size={15} className="moon" /> Overnight</label>
-              <label className="check">
-                +days
-                <input type="number" min={0} className="num" value={o.extraDays} onChange={(e) => upd((x) => { x.extraDays = Math.max(0, parseInt(e.target.value || '0', 10)); })} />
-              </label>
+              <button type="button" className={`ovn ${o.overnight ? 'on' : ''}`} aria-pressed={o.overnight} onClick={() => upd((x) => { x.overnight = !x.overnight; })}>
+                <span className="mw"><Icon name="moon" size={15} /></span> Overnight
+              </button>
             </div>
           </div>
         );

@@ -10,9 +10,10 @@ import { authAvailable, history, installUrl, listRepos, readAt, rememberReturn, 
 import { restorePlan } from '../model';
 import { useStore } from '../store';
 import { GithubMark, Icon, type IconName } from '../icons';
+import { TokenConnect } from './TokenConnect';
 import { copyText, weatherReport } from '../weather';
 import { BRAND } from '../brand';
-import type { Plan, SyncConfig } from '../types';
+import type { Plan } from '../types';
 
 function Sec({ id, num, icon, title, hint, children }: { id?: string; num?: number; icon: IconName; title: string; hint?: React.ReactNode; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -35,7 +36,6 @@ function Sec({ id, num, icon, title, hint, children }: { id?: string; num?: numb
 
 export function Settings() {
   const { setMeta, cfg, saveCfg, sync, syncNow, plan, replacePlan, resetSeed, trips, activeTrip, switchTrip, newTrip, renameTrip, archiveTrip, importTrip, auth, authError, signIn, signOut, chooseRepo, effCfg } = useStore();
-  const [c, setC] = useState<SyncConfig>(cfg ?? { token: '', repo: '', path: 'plan.json', branch: 'main' });
   const file = useRef<HTMLInputElement>(null);
   const [tiles, setTiles] = useState<string>('');
   const [wx, setWx] = useState('');
@@ -150,7 +150,6 @@ export function Settings() {
   const refreshTiles = () =>
     overviewCount(pts).then((n) => setTiles(`${n.saved} of ${n.total} map tiles saved`)).catch(() => setTiles('Offline cache unavailable'));
   useEffect(() => { refreshTiles(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const set = (k: keyof SyncConfig) => (e: React.ChangeEvent<HTMLInputElement>) => setC({ ...c, [k]: e.target.value.trim() });
 
   const exportJson = () => {
     const a = document.createElement('a');
@@ -300,20 +299,9 @@ export function Settings() {
             )}
             {!cfg.viaGitHub && <details className="adv">
               <summary>Change connection</summary>
-              <label className="fld"><span className="fl"><Icon name="link" size={16} /> Server, blank for GitHub</span>
-                <input value={c.server ?? ''} onChange={set('server')} placeholder="https://codeberg.org" autoCapitalize="none" autoCorrect="off" />
-              </label>
-              <label className="fld"><span className="fl"><Icon name="repo" size={16} /> Repository</span>
-                <input value={c.repo} onChange={set('repo')} placeholder="owner/trip-data" autoCapitalize="none" autoCorrect="off" />
-              </label>
-              <label className="fld"><span className="fl"><Icon name="lock" size={16} /> Token</span>
-                <input type="password" value={c.token} onChange={set('token')} placeholder="github_pat_…" autoComplete="off" />
-              </label>
-              <label className="fld"><span className="fl">Branch</span><input value={c.branch} onChange={set('branch')} autoCapitalize="none" /></label>
-              <div className="rowflex">
-                <button className="primary ibtn" disabled={!configured(c)} onClick={() => saveCfg(c)}><Icon name="sync" size={18} /> Save and sync</button>
-                <button className="ibtn danger" onClick={() => { saveCfg(null); setC({ ...c, token: '' }); }}><Icon name="x" size={18} /> Disconnect</button>
-              </div>
+              <TokenConnect cfg={cfg} onSave={saveCfg}>
+                <button className="ibtn danger" onClick={() => saveCfg(null)}><Icon name="x" size={18} /> Disconnect</button>
+              </TokenConnect>
             </details>}
           </>
         ) : authAvailable ? (
@@ -343,23 +331,11 @@ export function Settings() {
           </div>
           <details className="adv">
             <summary>Advanced: connect with a token</summary>
-            <p className="small">Use a token instead of signing in: a GitHub fine-grained token, or a token for a repo on Codeberg, Forgejo or Gitea. The token stays on this device.</p>
+            <p className="small">Use an access token instead of signing in. Paste the address of a repo on GitHub, Codeberg, a Forgejo or Gitea server, with a token that can write to it. The token stays on this device.</p>
             <div className="guidelinks">
               <a className="ibtn" href={BRAND.tokenGuide} target="_blank" rel="noreferrer"><Icon name="lock" size={16} /> How to create a token</a>
             </div>
-            <label className="fld"><span className="fl"><Icon name="link" size={16} /> Server, blank for GitHub</span>
-              <input value={c.server ?? ''} onChange={set('server')} placeholder="https://codeberg.org" autoCapitalize="none" autoCorrect="off" />
-            </label>
-            <label className="fld"><span className="fl"><Icon name="repo" size={16} /> Repository</span>
-              <input value={c.repo} onChange={set('repo')} placeholder="owner/trip-data" autoCapitalize="none" autoCorrect="off" />
-            </label>
-            <label className="fld"><span className="fl"><Icon name="lock" size={16} /> Token</span>
-              <input type="password" value={c.token} onChange={set('token')} autoComplete="off" />
-            </label>
-            <label className="fld"><span className="fl">Branch</span><input value={c.branch} onChange={set('branch')} autoCapitalize="none" /></label>
-            <div className="rowflex">
-              <button className="primary ibtn" disabled={!configured(c)} onClick={() => saveCfg(c)}><Icon name="sync" size={18} /> Save and sync</button>
-            </div>
+            <TokenConnect cfg={null} onSave={saveCfg} />
           </details>
           </>
         ) : (
@@ -372,22 +348,7 @@ export function Settings() {
               <input value={pasted} onChange={(e) => joinFromPaste(e.target.value)} placeholder="https://…#/j/…" autoCapitalize="none" autoCorrect="off" />
               {pasteErr && <span className="small err">{pasteErr}</span>}
             </label>
-            <label className="fld"><span className="fl"><Icon name="repo" size={16} /> Repository</span>
-              <input value={c.repo} onChange={set('repo')} placeholder="owner/trip-data" autoCapitalize="none" autoCorrect="off" />
-            </label>
-            <label className="fld"><span className="fl"><Icon name="lock" size={16} /> Token</span>
-              <input type="password" value={c.token} onChange={set('token')} placeholder="github_pat_…" autoComplete="off" />
-            </label>
-            <details className="adv">
-              <summary>Advanced</summary>
-              <label className="fld"><span className="fl"><Icon name="link" size={16} /> Server, blank for GitHub</span>
-                <input value={c.server ?? ''} onChange={set('server')} placeholder="https://codeberg.org" autoCapitalize="none" autoCorrect="off" />
-              </label>
-              <label className="fld"><span className="fl">Branch</span><input value={c.branch} onChange={set('branch')} autoCapitalize="none" /></label>
-            </details>
-            <div className="rowflex">
-              <button className="primary ibtn" disabled={!configured(c)} onClick={() => saveCfg(c)}><Icon name="sync" size={18} /> Save and sync</button>
-            </div>
+            <TokenConnect cfg={null} onSave={saveCfg} />
           </>
         )}
       </Sec>

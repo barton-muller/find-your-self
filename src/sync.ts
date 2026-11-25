@@ -97,6 +97,34 @@ async function diagnose(c: SyncConfig): Promise<string> {
   return `Could not create ${c.path} on branch ${c.branch}. Add an initial commit (README) on that branch, or check the branch name.`;
 }
 
+// The address of a repo on any git host as people copy it: https://host/owner/name(.git), optionally with a token in front
+// (https://token@host/owner/name.git), or owner/name for GitHub. github.com is reached through GitHub's API, any other host
+// through the Forgejo and Gitea API (Codeberg, self-hosted).
+export function parseRepoUrl(input: string): { server?: string; repo: string; token?: string } | null {
+  const t = input.trim();
+  if (/^[\w.-]+\/[\w.-]+$/.test(t)) return { repo: t };
+  let u: URL;
+  try { u = new URL(t); } catch { return null; }
+  const parts = u.pathname.replace(/\/+$/, '').replace(/\.git$/, '').split('/').filter(Boolean);
+  if (u.protocol !== 'https:' || parts.length !== 2) return null;
+  const token = decodeURIComponent(u.password || u.username) || undefined;
+  const repo = `${parts[0]}/${parts[1]}`;
+  return u.hostname === 'github.com' || u.hostname === 'www.github.com' ? { repo, token } : { server: u.origin, repo, token };
+}
+
+export const repoUrl = (c: SyncConfig) => `${c.server ?? 'https://github.com'}/${c.repo}`;
+
+// The branch a repo opens on, which also checks that the token reaches the repo.
+export async function defaultBranch(c: SyncConfig): Promise<string> {
+  const r = await fetch(apiBase(c), { headers: headers(c), cache: 'no-store' });
+  if (r.status === 404) throw new Error(`Repo ${c.repo} not found for this token. Check the address, and that the token's repository access includes it.`);
+  if (r.status === 401 || r.status === 403) throw new Error('Token rejected (expired or wrong).');
+  if (!r.ok) throw new Error(`${host(c)} ${r.status}`);
+  const j = (await r.json()) as { default_branch?: string; permissions?: { push?: boolean } };
+  if (j.permissions && !j.permissions.push) throw new Error('Token can read but not write: give it write access (Contents read and write).');
+  return j.default_branch || 'main';
+}
+
 export const samePlan = (a: Plan, b: Plan) => JSON.stringify(a) === JSON.stringify(b);
 
 // Each person can have their own branch. Create it from the default branch when it does not exist yet.

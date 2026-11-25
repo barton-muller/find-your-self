@@ -1,10 +1,11 @@
+import { storeFromUrl } from 'pages-storage/store';
 import { useState } from 'react';
 import { Icon } from '../icons';
-import { defaultBranch, parseRepoUrl, repoUrl } from '../sync';
+import { repoUrl } from '../sync';
 import type { SyncConfig } from '../types';
 
-// One form for every connection with a token: the address of the repo on any git host, an access token and, if it is not
-// the default, a branch. The address can carry the token (https://token@host/owner/name.git).
+// One form for every connection with a token: the address of the repo on any git host (GitHub, GitLab, Codeberg, Forgejo, Gitea),
+// an access token and, if it is not the default, a branch. The address can carry the token (https://token@host/group/name.git).
 export function TokenConnect({ cfg, onSave, children }: { cfg: SyncConfig | null; onSave: (c: SyncConfig) => void; children?: React.ReactNode }) {
   const [url, setUrl] = useState(cfg?.repo ? repoUrl(cfg) : '');
   const [token, setToken] = useState(cfg?.token ?? '');
@@ -13,16 +14,18 @@ export function TokenConnect({ cfg, onSave, children }: { cfg: SyncConfig | null
   const [busy, setBusy] = useState(false);
 
   const save = async () => {
-    const parsed = parseRepoUrl(url);
-    if (!parsed) return setErr('Enter the repo address, for example https://github.com/you/trip-data.git');
-    const t = token.trim() || parsed.token || '';
-    if (!t) return setErr('Enter an access token.');
     setErr('');
     setBusy(true);
     try {
-      const c: SyncConfig = { token: t, repo: parsed.repo, server: parsed.server, path: cfg?.path ?? 'plan.json', branch: branch.trim(), dir: cfg?.dir };
-      if (!c.branch) c.branch = await defaultBranch(c);
-      onSave(c);
+      // This finds out which host it is, checks the repo and the token, and looks up the default branch. The errors say what is wrong.
+      const store = await storeFromUrl(url, { token: token.trim() || undefined, branch: branch.trim() || undefined });
+      const info = await store.repoInfo();
+      if (info.canWrite === false) throw new Error('The token can read this repo but not write to it. Give it write access.');
+      const address = new URL(url.trim());
+      const repo = address.pathname.replace(/\/+$/, '').replace(/\.git$/, '').replace(/^\//, '');
+      const github = address.hostname === 'github.com' || address.hostname === 'www.github.com';
+      const secret = token.trim() || decodeURIComponent(address.password || address.username);
+      onSave({ token: secret, repo, server: github ? undefined : address.origin, path: cfg?.path ?? 'plan.json', branch: store.branch ?? info.defaultBranch, dir: cfg?.dir });
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {

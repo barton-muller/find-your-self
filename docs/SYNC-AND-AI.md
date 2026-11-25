@@ -66,9 +66,11 @@ The token is saved in the browser on the device where you paste it. It is not se
 
 ### Another git host
 
-Connecting with a token takes the address of the repo, wherever it is. In Settings open **Advanced: connect with a token** and paste the address as you would for `git clone`, for example `https://github.com/you/trip-data.git` or `https://codeberg.org/you/trip-data.git`. Add a token that can write to that repo, and leave the branch empty to use the repo's default one. The app picks the right API from the host: github.com is GitHub, any other host is treated as Forgejo or Gitea (Codeberg and self-hosted servers).
+Connecting with a token takes the address of the repo, wherever it is. In Settings open **Advanced: connect with a token** and paste the address as you would for `git clone`, for example `https://github.com/you/trip-data.git`, `https://gitlab.com/you/trip-data.git` or `https://codeberg.org/you/trip-data.git`. Add a token that can write to that repo, and leave the branch empty to use the repo's default one. The app finds out which kind of host it is: GitHub, GitLab, Forgejo, Gitea or Codeberg. GitLab group paths with subgroups work too.
 
-Notes: the server must allow web pages to call its API (Codeberg does; on your own server turn on `[cors]` in `app.ini` and list the site). A site that you host yourself must also allow the server in its Content Security Policy: build it with `VITE_CSP_CONNECT="https://git.example.org"`. Invite links do not carry the server, so they are not offered for these connections.
+If something is wrong, the message says what: the token was rejected, the repo was not found, the server could not be reached, or the server answered in a way the app does not understand (then it names the call).
+
+Notes: the server must allow web pages to call its API (GitHub, GitLab.com and Codeberg do; on your own server turn on CORS for the site). A site that you host yourself must also allow the server in its Content Security Policy: build it with `VITE_CSP_CONNECT="https://git.example.org"`. Invite links do not carry the server, so they are not offered for these connections.
 
 ## 3. Connect the app
 

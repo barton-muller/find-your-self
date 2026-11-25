@@ -25,7 +25,7 @@ const csp = (): Plugin => {
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://tile.openstreetmap.org",
-    `connect-src 'self' https://api.github.com https://codeberg.org ${new URL(relay).origin} https://api.open-meteo.com https://geocoding-api.open-meteo.com https://router.project-osrm.org https://tile.openstreetmap.org${extraConnect}`,
+    `connect-src 'self' https://api.github.com https://gitlab.com https://codeberg.org ${new URL(relay).origin} https://api.open-meteo.com https://geocoding-api.open-meteo.com https://router.project-osrm.org https://tile.openstreetmap.org${extraConnect}`,
     "font-src 'self' data:",
     "worker-src 'self'",
     "manifest-src 'self'",

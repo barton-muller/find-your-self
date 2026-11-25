@@ -2,7 +2,7 @@
 
 Go Find Yourself is a static website. You can copy it to your own GitHub account, change anything you like, and publish it at your own address. It takes about five minutes and costs nothing.
 
-The app was written with AI help and has no test suite. Treat it as a starting point, not a finished product. That is also why copying it is encouraged: you can fix what bothers you and add what you need.
+The app was written with AI help. The sync with git hosts has automated tests (`npm run test:sync`); the rest is checked by hand. Treat it as a starting point, not a finished product. That is also why copying it is encouraged: you can fix what bothers you and add what you need.
 
 ## Steps
 
@@ -31,6 +31,8 @@ npm run dev
 `npm run build` checks the types and builds the site.
 
 Before you publish, look at `auth` in `src/brand.ts`. It holds the original author's public GitHub App values for "Sign in with GitHub". Their relay refuses requests from your site, so the button would fail for your users. Either set your own three values (see [Set up Sign in with GitHub](GITHUB-SIGN-IN.md)) or empty them to hide the button.
+
+The build adds a Content Security Policy that lets the app talk only to the services it uses: GitHub, GitLab.com, Codeberg, your sign-in relay, and the map, route and weather services. If people should be able to connect to a git server of your own, allow it when you build: set `VITE_CSP_CONNECT="https://git.example.org"` (a space-separated list) as a repository variable and pass it to the build step in `.github/workflows/deploy.yml`.
 
 Things you will probably want to change first:
 - Name, tagline and links: `src/brand.ts`. Also `index.html`, and the title in `vite.config.ts`, if you rename it.

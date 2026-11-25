@@ -26,6 +26,7 @@ jobs:
           VITE_GH_CLIENT_ID: ${{ vars.VITE_GH_CLIENT_ID }}
           VITE_GH_RELAY: ${{ vars.VITE_GH_RELAY }}
           VITE_GH_APP_SLUG: ${{ vars.VITE_GH_APP_SLUG }}
+          VITE_CSP_CONNECT: ${{ vars.VITE_CSP_CONNECT }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

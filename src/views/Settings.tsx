@@ -239,9 +239,9 @@ export function Settings() {
       </Sec>
 
       <Sec
-        id="sync" num={3} icon="branch" title="Sync data to GitHub"
+        id="sync" num={3} icon="branch" title="Sync data to a git repo"
         hint={<>
-          Your trips are saved to a <b>private</b> GitHub repo that you own, so every device stays in step. Sign in with GitHub, then pick a repo: <b>Add existing</b> lets the app use a repo you already have, and <b>New</b> creates a private one with the starter files an AI agent needs.
+          Your trips are saved to a <b>private</b> git repo that you own, so every device stays in step. Sign in with GitHub, then pick a repo: <b>Add existing</b> lets the app use a repo you already have, and <b>New</b> creates a private one with the starter files an AI agent needs. For GitLab, Codeberg, Forgejo, Gitea or GitHub without signing in, use <b>Advanced</b> with the repo address and an access token.
           An AI coding agent such as Claude Code can then edit the same repo, so you can ask it to change your plan. The sign-in stays on this device.
         </>}
       >

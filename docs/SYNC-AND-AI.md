@@ -1,18 +1,18 @@
-# Keep your trip in a GitHub repo, and let an AI edit it
+# Keep your trips in a git repo, and let an AI edit them
 
-This is optional. Without it, your trip lives in the browser on one device. With it, the trip is a file in a GitHub repo that you own. That gives you three things:
+This is optional. Without it, your trip lives in the browser on one device. With it, each trip is a file in a git repo that you own, on GitHub, GitLab, Codeberg or any Forgejo or Gitea server. That gives you three things:
 
 - The same trip on your phone, tablet and laptop.
 - A backup with full history.
 - A repo you can hand to an AI agent, such as Claude Code, so it can change the plan for you. For example: "Add two nights in Hanoi after Ninh Binh and check that the dates still work."
 
-Your trips never go through a server of ours. The app talks straight to GitHub.
+Your trips never go through a server of ours. The app talks straight to your git host.
 
-There are two ways to connect: **sign in with GitHub** (if the site you use has it turned on, which is the easiest), or a **token** you make yourself. Both end the same way: the app saves your trips to a repo.
+There are two ways to connect: **sign in with GitHub** (if the site you use has it turned on, which is the easiest), or an **access token** you make yourself, which works with any supported host. Both end the same way: the app saves your trips to a repo.
 
 ## What you need
 
-- A free GitHub account.
+- A free account on a git host: GitHub, GitLab, Codeberg, or a Forgejo or Gitea server.
 - Ten minutes.
 
 ## Easiest: sign in with GitHub
@@ -25,13 +25,13 @@ Your trips go in a `find-your-self/` folder of the repo, so the repo can hold ot
 
 That is all. You can skip the steps below. Signed-in devices repeat the sign-in. Invite links and the token in *Copy for AI* do not apply (see the [friends guide](FRIENDS.md)); your agent uses your own GitHub login instead.
 
-If you do not see the button, use a token as described next.
+If you do not see the button, or you use another host, use a token as described next.
 
 ## 1. Make a private repo from the template
 
 The folder [`data-template`](../data-template) in this repo is a ready-to-use data repo. It holds an example trip in `trips/example-trip/`, rules for AI agents, notes files for your decisions and a script that checks the plans. Each trip lives in its own folder, `trips/<name>/plan.json`.
 
-With the GitHub command line (`gh`):
+With the GitHub command line (`gh`). On another host, make an empty private repo there and push to it the same way:
 
 ```
 git clone https://github.com/barton-muller/find-your-self
@@ -44,15 +44,15 @@ git commit -m "Start trip data"
 gh repo create my-trip-data --private --source . --push
 ```
 
-Without the command line: create a new **private** repo on GitHub, then use *Add file, Upload files* to upload the contents of `data-template`. `CLAUDE.md` is only a pointer to `AGENTS.md`, so you can skip it.
+Without the command line: create a new **private** repo on your host, then upload the contents of `data-template`. `CLAUDE.md` is only a pointer to `AGENTS.md`, so you can skip it.
 
-**Keep it private.** `plan.json` holds your dates, places and booking notes. A public repo can be found and read by anyone. The template itself is public and has no personal data in it, so it is safe to share. Your own data repo is not.
+**Keep it private.** `plan.json` holds your dates, places and booking notes. A public repo can be found and read by anyone. The repo also needs at least one commit (a README is enough) before the app can connect. The template itself is public and has no personal data in it, so it is safe to share. Your own data repo is not.
 
 ## 2. Make a token that can only touch that repo (without sign-in)
 
-The app needs a key to write to your repo. GitHub calls it a fine-grained personal access token. GitHub's own steps are here: [Creating a fine-grained personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token).
+The app needs a key to write to your repo. Make it for that one repo, with write access and an expiry date after your trip ends.
 
-Use these settings:
+**GitHub.** A fine-grained personal access token. GitHub's own steps: [Creating a fine-grained personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token). Use these settings:
 
 | Setting | Value |
 |---|---|
@@ -62,15 +62,11 @@ Use these settings:
 
 Copy the token when GitHub shows it (it starts with `github_pat_`). GitHub shows it once.
 
-The token is saved in the browser on the device where you paste it. It is not sent anywhere except to GitHub. If you lose the device, delete the token on GitHub and make a new one.
+**GitLab.** A project access token (or a personal one) with the `api` scope and the *Developer* role or higher. GitLab creates commits through its API, which needs that scope.
 
-### Another git host
+**Codeberg, Forgejo and Gitea.** An access token with read and write access to repositories, from *Settings, Applications*.
 
-Connecting with a token takes the address of the repo, wherever it is. In Settings open **Advanced: connect with a token** and paste the address as you would for `git clone`, for example `https://github.com/you/trip-data.git`, `https://gitlab.com/you/trip-data.git` or `https://codeberg.org/you/trip-data.git`. Add a token that can write to that repo, and leave the branch empty to use the repo's default one. The app finds out which kind of host it is: GitHub, GitLab, Forgejo, Gitea or Codeberg. GitLab group paths with subgroups work too.
-
-If something is wrong, the message says what: the token was rejected, the repo was not found, the server could not be reached, or the server answered in a way the app does not understand (then it names the call).
-
-Notes: the server must allow web pages to call its API (GitHub, GitLab.com and Codeberg do; on your own server turn on CORS for the site). A site that you host yourself must also allow the server in its Content Security Policy: build it with `VITE_CSP_CONNECT="https://git.example.org"`. Invite links do not carry the server, so they are not offered for these connections.
+The token is saved in the browser on the device where you paste it. It is not sent anywhere except to your git host. If you lose the device, delete the token on the host and make a new one.
 
 ## 3. Connect the app
 
@@ -78,11 +74,14 @@ Open the app, then *Settings*. The steps there are in order:
 
 1. **Your trip.** Name your trip, or pick one you already have. You can keep several trips on the device, with or without sync.
 2. **Trip dates.**
-3. **Sync and AI agents.** Open *Use a token or invite link instead* and enter:
-   - **Repository**: `your-username/my-trip-data`
-   - **Token**: the one you just made
+3. **Sync data to a git repo.** Open **Advanced: connect with a token** (or **Change connection** if you are connected already) and enter:
+   - **Repository address**: the address you would use for `git clone`, for example `https://github.com/you/my-trip-data.git`, `https://gitlab.com/you/my-trip-data.git` or `https://codeberg.org/you/my-trip-data.git`. GitLab addresses with subgroups work (`https://gitlab.com/group/sub/project.git`). You may also write `you/my-trip-data` for GitHub, or put the token in front of the host (`https://TOKEN@host/you/repo.git`).
+   - **Access token**: the one you just made.
+   - **Branch**: leave empty to use the repo's default branch.
 
-Press *Save and sync*. Do the same on each device. The app syncs when you open it and when you come back to it from another app.
+Press *Save and sync*. The app finds out which kind of host it is, checks the repo and the token, and says what is wrong if something is. Do the same on each device. The app syncs when you open it and when you come back to it from another app.
+
+**Hosts that work.** github.com, gitlab.com and codeberg.org are known. For any other server the app asks which API it speaks (GitLab, or Forgejo and Gitea). The server must allow web pages to call its API (GitHub, GitLab.com and Codeberg do; on your own server turn on CORS for the site). A copy of the app that you host yourself must also allow your server in its Content Security Policy: build it with `VITE_CSP_CONNECT="https://git.example.org"`. Invite links do not carry the server, so they are offered for GitHub repos only.
 
 **Several trips.** Each trip is saved in the repo as `trips/<name>/plan.json`, chosen when the trip is first synced. The trip list in step 1 also shows trips that are in the repo but not on this device yet. Tap one to download it. Use *New trip* to start another one. Renaming a trip in the app does not rename its folder.
 
@@ -93,7 +92,7 @@ Press *Save and sync*. Do the same on each device. The app syncs when you open i
 Clone the repo and open it in your agent:
 
 ```
-git clone https://github.com/your-username/my-trip-data
+git clone https://github.com/your-username/my-trip-data   # or the address on your host
 cd my-trip-data
 claude
 ```
@@ -114,11 +113,17 @@ If the people you plan with cannot make a token, you can set sync up once and se
 
 ## Fixing problems
 
+The app says what went wrong, in words. The common ones:
+
 | Message in the app | Likely cause |
 |---|---|
-| GitHub 401 | The token is wrong or has expired. Make a new one. |
-| GitHub 403 | The token does not have *Contents: Read and write* on this repo. |
-| GitHub 404 | The repo name or branch is wrong, or the token cannot see the repo. |
+| *… rejected the token (expired or wrong)* | The token is wrong or has expired. Make a new one. |
+| *… refused … The token may lack permission* | The token cannot write to this repo: GitHub needs *Contents: Read and write*, GitLab the `api` scope, Codeberg write access to repositories. |
+| *… could not find it … Check the repo address* | The address is wrong, or the token cannot see the repo. |
+| *Could not reach … (CORS)* | The address is wrong, there is no connection, or the server does not allow web pages to call its API. |
+| *Could not tell what kind of git host … is* | The server is not GitHub, GitLab, Forgejo or Gitea, or it answers on a different address. |
+| *… answered … in a way this adapter does not understand* | The host changed its API. The message names the call. This needs a fix in the app: please report it. |
+| *Add a first commit (a README) on …, then connect* | The repo is empty. Add a README on the host and try again. |
 | Edits seem to be missing | Two devices changed the same stop before syncing. The later edit wins. Use *Undo* or check the repo history. |
 
 If something goes badly wrong, the repo history has every earlier version of `plan.json`.
